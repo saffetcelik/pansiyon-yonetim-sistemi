@@ -33,9 +33,17 @@ namespace PansiyonYonetimSistemi.API.Data
 
             // Sale Mappings
             CreateMap<Sale, SaleDto>()
-                .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
-            
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src =>
+                    src.Customer != null ? $"{src.Customer.FirstName} {src.Customer.LastName}" : null))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod.ToString()));
+
             CreateMap<CreateSaleDto, Sale>();
+
+            // SaleItem Mappings
+            CreateMap<SaleItem, SaleItemDto>()
+                .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
+
+            CreateMap<CreateSaleItemDto, SaleItem>();
 
             // User Mappings
             CreateMap<User, UserDto>();

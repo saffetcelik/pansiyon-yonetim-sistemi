@@ -15,6 +15,7 @@ namespace PansiyonYonetimSistemi.API.Data
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<Sale> Sales { get; set; }
+        public DbSet<SaleItem> SaleItems { get; set; }
         public DbSet<StockTransaction> StockTransactions { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Log> Logs { get; set; }
@@ -66,18 +67,36 @@ namespace PansiyonYonetimSistemi.API.Data
             // Sale Configuration
             modelBuilder.Entity<Sale>(entity =>
             {
-                entity.Property(e => e.UnitPrice).HasPrecision(10, 2);
                 entity.Property(e => e.TotalAmount).HasPrecision(10, 2);
+                entity.Property(e => e.DiscountAmount).HasPrecision(10, 2);
+                entity.Property(e => e.NetAmount).HasPrecision(10, 2);
 
-                entity.HasOne(e => e.Product)
-                      .WithMany(e => e.Sales)
-                      .HasForeignKey(e => e.ProductId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Customer)
+                      .WithMany()
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasOne(e => e.Reservation)
-                      .WithMany(e => e.Sales)
+                      .WithMany()
                       .HasForeignKey(e => e.ReservationId)
                       .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // SaleItem Configuration
+            modelBuilder.Entity<SaleItem>(entity =>
+            {
+                entity.Property(e => e.UnitPrice).HasPrecision(10, 2);
+                entity.Property(e => e.TotalPrice).HasPrecision(10, 2);
+
+                entity.HasOne(e => e.Sale)
+                      .WithMany(e => e.SaleItems)
+                      .HasForeignKey(e => e.SaleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Product)
+                      .WithMany(e => e.SaleItems)
+                      .HasForeignKey(e => e.ProductId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // StockTransaction Configuration

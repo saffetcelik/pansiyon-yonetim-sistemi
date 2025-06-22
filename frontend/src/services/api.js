@@ -79,6 +79,28 @@ export const customerService = {
   search: (query) => api.get(`/customers/search?query=${query}`)
 };
 
+export const productService = {
+  getAll: (params) => api.get('/product', { params }),
+  getById: (id) => api.get(`/product/${id}`),
+  create: (data) => api.post('/product', data),
+  update: (id, data) => api.put(`/product/${id}`, data),
+  delete: (id) => api.delete(`/product/${id}`),
+  search: (query) => api.get(`/product/search?query=${query}`),
+  getLowStock: () => api.get('/product/low-stock'),
+  getStockAlerts: () => api.get('/product/stock-alerts'),
+  updateStock: (id, data) => api.post(`/product/${id}/stock`, data)
+};
+
+export const saleService = {
+  getAll: (params) => api.get('/sale', { params }),
+  getById: (id) => api.get(`/sale/${id}`),
+  create: (data) => api.post('/sale', data),
+  getDailySales: (date) => api.get(`/sale/daily/${date}`),
+  getMonthlySales: (year, month) => api.get(`/sale/monthly/${year}/${month}`),
+  getByCustomer: (customerId) => api.get(`/sale/customer/${customerId}`),
+  getByDateRange: (startDate, endDate) => api.get(`/sale/date-range?startDate=${startDate}&endDate=${endDate}`)
+};
+
 export const reservationService = {
   getAll: (params) => api.get('/reservations', { params }),
   getById: (id) => api.get(`/reservations/${id}`),
@@ -90,21 +112,7 @@ export const reservationService = {
   getCalendar: (month, year) => api.get(`/reservations/calendar?month=${month}&year=${year}`)
 };
 
-export const productService = {
-  getAll: (params) => api.get('/products', { params }),
-  getById: (id) => api.get(`/products/${id}`),
-  create: (productData) => api.post('/products', productData),
-  update: (id, productData) => api.put(`/products/${id}`, productData),
-  delete: (id) => api.delete(`/products/${id}`),
-  getLowStock: () => api.get('/products/low-stock')
-};
 
-export const saleService = {
-  getAll: (params) => api.get('/sales', { params }),
-  getById: (id) => api.get(`/sales/${id}`),
-  create: (saleData) => api.post('/sales', saleData),
-  getDailySales: (date) => api.get(`/sales/daily?date=${date}`)
-};
 
 export const testService = {
   health: () => api.get('/test/health'),

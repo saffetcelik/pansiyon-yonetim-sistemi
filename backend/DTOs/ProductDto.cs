@@ -11,14 +11,12 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public ProductCategory Category { get; set; }
         public string CategoryName => Category.ToString();
         public decimal Price { get; set; }
-        public decimal CostPrice { get; set; }
         public int StockQuantity { get; set; }
         public int MinStockLevel { get; set; }
         public string? Barcode { get; set; }
         public string? Unit { get; set; }
         public bool IsActive { get; set; }
         public bool IsLowStock => StockQuantity <= MinStockLevel;
-        public decimal ProfitMargin => Price > 0 ? ((Price - CostPrice) / Price) * 100 : 0;
     }
 
     public class CreateProductDto
@@ -35,9 +33,6 @@ namespace PansiyonYonetimSistemi.API.DTOs
 
         [Range(0.01, 10000, ErrorMessage = "Fiyat 0.01-10000 arasında olmalıdır")]
         public decimal Price { get; set; }
-
-        [Range(0, 10000, ErrorMessage = "Maliyet fiyatı 0-10000 arasında olmalıdır")]
-        public decimal CostPrice { get; set; }
 
         [Range(0, 100000, ErrorMessage = "Stok miktarı 0-100000 arasında olmalıdır")]
         public int StockQuantity { get; set; }
@@ -67,5 +62,18 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public bool? IsLowStock { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
+    }
+
+    public class UpdateStockDto
+    {
+        [Required]
+        public string Type { get; set; } = string.Empty; // StockIn, StockOut, Adjustment
+
+        [Required]
+        [Range(1, int.MaxValue)]
+        public int Quantity { get; set; }
+
+        [StringLength(500)]
+        public string? Notes { get; set; }
     }
 }

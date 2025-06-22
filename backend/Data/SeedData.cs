@@ -196,14 +196,226 @@ namespace PansiyonYonetimSistemi.API.Data
             {
                 var products = new List<Product>
                 {
-                    new Product { Name = "Su 0.5L", Category = ProductCategory.Beverage, Price = 5m, CostPrice = 2m, StockQuantity = 100, Unit = "Adet" },
-                    new Product { Name = "Çay", Category = ProductCategory.Beverage, Price = 8m, CostPrice = 3m, StockQuantity = 50, Unit = "Bardak" },
-                    new Product { Name = "Kahve", Category = ProductCategory.Beverage, Price = 15m, CostPrice = 6m, StockQuantity = 30, Unit = "Fincan" },
-                    new Product { Name = "Sandviç", Category = ProductCategory.Food, Price = 25m, CostPrice = 12m, StockQuantity = 20, Unit = "Adet" },
-                    new Product { Name = "Cips", Category = ProductCategory.Snack, Price = 12m, CostPrice = 5m, StockQuantity = 40, Unit = "Paket" },
-                    new Product { Name = "Çikolata", Category = ProductCategory.Snack, Price = 18m, CostPrice = 8m, StockQuantity = 25, Unit = "Adet" },
-                    new Product { Name = "Şampuan", Category = ProductCategory.Personal, Price = 35m, CostPrice = 15m, StockQuantity = 15, Unit = "Adet" },
-                    new Product { Name = "Diş Fırçası", Category = ProductCategory.Personal, Price = 20m, CostPrice = 8m, StockQuantity = 20, Unit = "Adet" }
+                    // İçecekler
+                    new Product
+                    {
+                        Name = "Çay",
+                        Description = "Sıcak demli çay",
+                        Category = ProductCategory.Beverage,
+                        Price = 8m,
+                        StockQuantity = 50,
+                        MinStockLevel = 10,
+
+                        Unit = "Bardak",
+                        Barcode = "8690123456789",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Türk Kahvesi",
+                        Description = "Geleneksel Türk kahvesi",
+                        Category = ProductCategory.Beverage,
+                        Price = 15m,
+                        StockQuantity = 30,
+                        MinStockLevel = 5,
+                        Unit = "Fincan",
+                        Barcode = "8690123456790",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Coca Cola",
+                        Description = "330ml kutu kola",
+                        Category = ProductCategory.Beverage,
+                        Price = 12m,
+                        StockQuantity = 48,
+                        MinStockLevel = 12,
+                        Unit = "Kutu",
+                        Barcode = "8690123456791",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Su",
+                        Description = "500ml doğal kaynak suyu",
+                        Category = ProductCategory.Beverage,
+                        Price = 5m,
+                        StockQuantity = 60,
+                        MinStockLevel = 20,
+                        Unit = "Şişe",
+                        Barcode = "8690123456792",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+
+                    // Atıştırmalıklar
+                    new Product
+                    {
+                        Name = "Cips",
+                        Description = "Patates cipsi 150g",
+                        Category = ProductCategory.Snack,
+                        Price = 12m,
+                        StockQuantity = 40,
+                        MinStockLevel = 8,
+                        Unit = "Paket",
+                        Barcode = "8690123456793",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Çikolata",
+                        Description = "Sütlü çikolata 80g",
+                        Category = ProductCategory.Snack,
+                        Price = 18m,
+                        StockQuantity = 25,
+                        MinStockLevel = 5,
+                        Unit = "Adet",
+                        Barcode = "8690123456794",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Bisküvi",
+                        Description = "Çikolatalı bisküvi paketi",
+                        Category = ProductCategory.Snack,
+                        Price = 15m,
+                        StockQuantity = 30,
+                        MinStockLevel = 6,
+                        Unit = "Paket",
+                        Barcode = "8690123456795",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Kuruyemiş",
+                        Description = "Karışık kuruyemiş 200g",
+                        Category = ProductCategory.Snack,
+                        Price = 25m,
+                        StockQuantity = 20,
+                        MinStockLevel = 4,
+                        Unit = "Paket",
+                        Barcode = "8690123456796",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+
+                    // Kişisel Bakım
+                    new Product
+                    {
+                        Name = "Şampuan",
+                        Description = "Doğal şampuan 250ml",
+                        Category = ProductCategory.Personal,
+                        Price = 35m,
+                        StockQuantity = 15,
+                        MinStockLevel = 3,
+                        Unit = "Adet",
+                        Barcode = "8690123456797",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Diş Fırçası",
+                        Description = "Yumuşak diş fırçası",
+                        Category = ProductCategory.Personal,
+                        Price = 20m,
+                        StockQuantity = 20,
+                        MinStockLevel = 5,
+                        Unit = "Adet",
+                        Barcode = "8690123456798",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Sabun",
+                        Description = "Doğal zeytinyağı sabunu",
+                        Category = ProductCategory.Personal,
+                        Price = 18m,
+                        StockQuantity = 25,
+                        MinStockLevel = 5,
+                        Unit = "Adet",
+                        Barcode = "8690123456799",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+
+                    // Temizlik
+                    new Product
+                    {
+                        Name = "Havlu",
+                        Description = "Pamuklu banyo havlusu",
+                        Category = ProductCategory.Other,
+                        Price = 45m,
+                        StockQuantity = 12,
+                        MinStockLevel = 3,
+                        Unit = "Adet",
+                        Barcode = "8690123456800",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Tuvalet Kağıdı",
+                        Description = "3 katlı tuvalet kağıdı 12'li",
+                        Category = ProductCategory.Other,
+                        Price = 28m,
+                        StockQuantity = 18,
+                        MinStockLevel = 4,
+                        Unit = "Paket",
+                        Barcode = "8690123456801",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+
+                    // Diğer
+                    new Product
+                    {
+                        Name = "Şarj Aleti",
+                        Description = "Universal telefon şarj aleti",
+                        Category = ProductCategory.Other,
+                        Price = 65m,
+                        StockQuantity = 8,
+                        MinStockLevel = 2,
+                        Unit = "Adet",
+                        Barcode = "8690123456802",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Product
+                    {
+                        Name = "Terlik",
+                        Description = "Tek kullanımlık terlik",
+                        Category = ProductCategory.Other,
+                        Price = 15m,
+                        StockQuantity = 30,
+                        MinStockLevel = 6,
+                        Unit = "Çift",
+                        Barcode = "8690123456803",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    }
                 };
 
                 context.Products.AddRange(products);
