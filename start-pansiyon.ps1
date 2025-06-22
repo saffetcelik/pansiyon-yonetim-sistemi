@@ -71,10 +71,6 @@ Write-Host ""
 Write-Host "Frontend hazır! Tarayıcı açılıyor..." -ForegroundColor Green
 Start-Process "http://localhost:3000"
 
-# Backend API için de tarayıcı aç
-Start-Sleep -Seconds 2
-Write-Host "Backend API (Swagger) açılıyor..." -ForegroundColor Green
-Start-Process "http://localhost:5297/swagger"
 
 Write-Host ""
 Write-Host "Pansiyon Yönetim Sistemi çalışıyor:" -ForegroundColor Green

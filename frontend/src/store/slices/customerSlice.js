@@ -56,7 +56,12 @@ const customerSlice = createSlice({
       })
       .addCase(fetchCustomers.fulfilled, (state, action) => {
         state.loading = false;
-        state.customers = action.payload;
+        state.customers = action.payload.data || action.payload;
+        state.pagination = {
+          page: action.payload.page || 1,
+          pageSize: action.payload.pageSize || 10,
+          total: action.payload.totalCount || 0,
+        };
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.loading = false;

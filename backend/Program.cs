@@ -7,6 +7,9 @@ using PansiyonYonetimSistemi.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure DateTime handling for PostgreSQL
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Add services to the container.
 builder.Services.AddControllers();
 

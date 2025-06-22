@@ -4,7 +4,7 @@ export const roomService = {
   // Get all rooms
   async getAllRooms() {
     try {
-      const response = await api.get('/room');
+      const response = await api.get('/rooms');
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -17,7 +17,7 @@ export const roomService = {
   // Get room by ID
   async getRoomById(id) {
     try {
-      const response = await api.get(`/room/${id}`);
+      const response = await api.get(`/rooms/${id}`);
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -30,7 +30,7 @@ export const roomService = {
   // Create new room
   async createRoom(roomData) {
     try {
-      const response = await api.post('/room', roomData);
+      const response = await api.post('/rooms', roomData);
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -43,7 +43,7 @@ export const roomService = {
   // Update room
   async updateRoom(id, roomData) {
     try {
-      const response = await api.put(`/room/${id}`, roomData);
+      const response = await api.put(`/rooms/${id}`, roomData);
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -56,7 +56,7 @@ export const roomService = {
   // Update room status
   async updateRoomStatus(id, status) {
     try {
-      const response = await api.patch(`/room/${id}/status`, { status });
+      const response = await api.patch(`/rooms/${id}/status`, { status });
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -69,7 +69,7 @@ export const roomService = {
   // Delete room
   async deleteRoom(id) {
     try {
-      const response = await api.delete(`/room/${id}`);
+      const response = await api.delete(`/rooms/${id}`);
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -82,7 +82,7 @@ export const roomService = {
   // Get available rooms
   async getAvailableRooms() {
     try {
-      const response = await api.get('/room/available');
+      const response = await api.get('/rooms/available');
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -95,7 +95,7 @@ export const roomService = {
   // Get room status summary
   async getRoomStatusSummary() {
     try {
-      const response = await api.get('/room/status-summary');
+      const response = await api.get('/rooms/status-summary');
       return { success: true, data: response.data };
     } catch (error) {
       return {

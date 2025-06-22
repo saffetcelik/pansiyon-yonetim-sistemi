@@ -48,19 +48,23 @@ const Dashboard = () => {
       const todayReservations = reservationsRes.data || [];
       const rooms = roomsRes.data || [];
 
+      // Ensure arrays are valid before using filter
+      const reservationsArray = Array.isArray(todayReservations) ? todayReservations : [];
+      const roomsArray = Array.isArray(rooms) ? rooms : [];
+
       setDashboardStats({
-        totalReservations: todayReservations.length,
-        todayCheckIns: todayReservations.filter(r =>
+        totalReservations: reservationsArray.length,
+        todayCheckIns: reservationsArray.filter(r =>
           new Date(r.checkInDate).toDateString() === new Date().toDateString() &&
           r.status === 1
         ).length,
-        todayCheckOuts: todayReservations.filter(r =>
+        todayCheckOuts: reservationsArray.filter(r =>
           new Date(r.checkOutDate).toDateString() === new Date().toDateString() &&
           r.status === 2
         ).length,
         totalCustomers: customersRes.data?.pagination?.total || 0,
-        occupiedRooms: rooms.filter(r => r.status === 1).length, // Occupied
-        totalRooms: rooms.length
+        occupiedRooms: roomsArray.filter(r => r.status === 1).length, // Occupied
+        totalRooms: roomsArray.length
       });
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
