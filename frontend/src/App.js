@@ -7,6 +7,7 @@ import { store } from './store/store';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
+import Sales from './pages/Sales';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const theme = createTheme({
@@ -36,6 +37,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sales"
+                element={
+                  <ProtectedRoute>
+                    <Sales />
                   </ProtectedRoute>
                 }
               />

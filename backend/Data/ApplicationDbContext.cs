@@ -17,6 +17,8 @@ namespace PansiyonYonetimSistemi.API.Data
         public DbSet<Sale> Sales { get; set; }
         public DbSet<SaleItem> SaleItems { get; set; }
         public DbSet<StockTransaction> StockTransactions { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Expense> Expenses { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Log> Logs { get; set; }
 
@@ -115,6 +117,48 @@ namespace PansiyonYonetimSistemi.API.Data
             {
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
+            });
+
+            // Payment Configuration
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.Property(e => e.Amount).HasPrecision(10, 2);
+
+                entity.HasOne(e => e.Reservation)
+                      .WithMany()
+                      .HasForeignKey(e => e.ReservationId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.Sale)
+                      .WithMany()
+                      .HasForeignKey(e => e.SaleId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.Customer)
+                      .WithMany()
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.User)
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Expense Configuration
+            modelBuilder.Entity<Expense>(entity =>
+            {
+                entity.Property(e => e.Amount).HasPrecision(10, 2);
+
+                entity.HasOne(e => e.User)
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.ApprovedByUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.ApprovedByUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Log Configuration

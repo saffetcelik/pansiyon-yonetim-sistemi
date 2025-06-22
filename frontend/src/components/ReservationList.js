@@ -10,6 +10,7 @@ import {
 import CheckInOutModal from './CheckInOutModal';
 import Swal from 'sweetalert2';
 import { Tooltip } from 'react-tooltip';
+import { reservationService } from '../services/api';
 
 const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const dispatch = useDispatch();
@@ -25,10 +26,13 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [selectedReservationForAction, setSelectedReservationForAction] = useState(null);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchReservations({ ...filters, ...pagination }));
   }, [dispatch, filters, pagination]);
+
+
 
   const handleFilterChange = (field, value) => {
     setLocalFilters(prev => ({ ...prev, [field]: value }));
@@ -104,6 +108,70 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
     setShowCheckInModal(false);
     setShowCheckOutModal(false);
     setSelectedReservationForAction(null);
+  };
+
+  const handleQuickStatusChange = async (reservationId, newStatus) => {
+    try {
+      console.log('Updating status:', reservationId, newStatus);
+
+      // Use dedicated status update endpoint
+      const token = localStorage.getItem('token');
+      console.log('Token exists:', !!token);
+      console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
+
+      if (!token) {
+        await Swal.fire({
+          title: 'Hata!',
+          text: 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.',
+          icon: 'error',
+          confirmButtonText: 'Tamam'
+        });
+        window.location.href = '/login';
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5297/api/reservations/${reservationId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: parseInt(newStatus) })
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error(`Status update failed: ${response.status}`);
+      }
+
+      await Swal.fire({
+        title: 'Başarılı!',
+        text: 'Rezervasyon durumu güncellendi.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Refresh the list
+      dispatch(fetchReservations({ ...filters, ...pagination }));
+      setOpenDropdownId(null);
+    } catch (error) {
+      console.error('Error updating reservation status:', error);
+      await Swal.fire({
+        title: 'Hata!',
+        text: 'Rezervasyon durumu güncellenirken bir hata oluştu.',
+        icon: 'error',
+        confirmButtonText: 'Tamam'
+      });
+      setOpenDropdownId(null);
+    }
+  };
+
+  const toggleDropdown = (reservationId) => {
+    setOpenDropdownId(openDropdownId === reservationId ? null : reservationId);
   };
 
   const getStatusBadge = (status) => {
@@ -250,7 +318,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -322,12 +390,12 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                       ✏️
                     </button>
 
-                    {reservation.status === 1 && (
+                    {(reservation.status === 0 || reservation.status === 1) && (
                       <button
                         onClick={() => handleCheckIn(reservation)}
                         className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50"
                         data-tooltip-id="checkin-tooltip"
-                        data-tooltip-content="Check-in yap"
+                        data-tooltip-content="Giriş yap"
                       >
                         🏨
                       </button>
@@ -338,11 +406,91 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                         onClick={() => handleCheckOut(reservation)}
                         className="text-orange-600 hover:text-orange-900 p-2 rounded-md hover:bg-orange-50"
                         data-tooltip-id="checkout-tooltip"
-                        data-tooltip-content="Check-out yap"
+                        data-tooltip-content="Çıkış yap"
                       >
                         🚪
                       </button>
                     )}
+
+                    {/* Quick Status Change Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => toggleDropdown(reservation.id)}
+                        className="text-purple-600 hover:text-purple-900 p-2 rounded-md hover:bg-purple-50"
+                        data-tooltip-id="status-change-tooltip"
+                        data-tooltip-content="Durum değiştir"
+                      >
+                        ⚡
+                      </button>
+
+                      {openDropdownId === reservation.id && (
+                        <>
+                          {/* Overlay */}
+                          <div
+                            className="fixed inset-0 bg-black bg-opacity-25"
+                            style={{ zIndex: 9998 }}
+                            onClick={() => setOpenDropdownId(null)}
+                          />
+                          {/* Dropdown */}
+                          <div
+                            className="fixed bg-white rounded-md shadow-xl border border-gray-200"
+                            style={{
+                              zIndex: 9999,
+                              minWidth: '200px',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                          >
+                          <div className="py-1">
+                            <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b bg-gray-50">
+                              Durum Değiştir
+                            </div>
+                            {reservation.status !== 0 && (
+                              <button
+                                onClick={() => handleQuickStatusChange(reservation.id, 0)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                🟡 Beklemede
+                              </button>
+                            )}
+                            {reservation.status !== 1 && (
+                              <button
+                                onClick={() => handleQuickStatusChange(reservation.id, 1)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                🔵 Onaylandı
+                              </button>
+                            )}
+                            {reservation.status !== 4 && (
+                              <button
+                                onClick={() => handleQuickStatusChange(reservation.id, 4)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                🔴 İptal Et
+                              </button>
+                            )}
+                            {reservation.status !== 5 && (
+                              <button
+                                onClick={() => handleQuickStatusChange(reservation.id, 5)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                ❌ Gelmedi
+                              </button>
+                            )}
+                            <div className="border-t">
+                              <button
+                                onClick={() => setOpenDropdownId(null)}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+                              >
+                                ✕ İptal
+                              </button>
+                            </div>
+                          </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
 
                     <button
                       onClick={() => handleDelete(reservation.id)}
@@ -444,6 +592,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       <Tooltip id="edit-reservation-tooltip" />
       <Tooltip id="checkin-tooltip" />
       <Tooltip id="checkout-tooltip" />
+      <Tooltip id="status-change-tooltip" />
       <Tooltip id="delete-reservation-tooltip" />
     </div>
   );

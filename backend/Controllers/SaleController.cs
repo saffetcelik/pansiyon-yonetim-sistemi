@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PansiyonYonetimSistemi.API.Models;
 using PansiyonYonetimSistemi.API.Services;
 using PansiyonYonetimSistemi.API.DTOs;
+using PansiyonYonetimSistemi.API.Attributes;
 
 namespace PansiyonYonetimSistemi.API.Controllers
 {
@@ -100,7 +101,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager,Staff")]
+        [AllRoles]
         public async Task<ActionResult<SaleDto>> CreateSale(CreateSaleDto createSaleDto)
         {
             try

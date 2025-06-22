@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PansiyonYonetimSistemi.API.Models;
 using PansiyonYonetimSistemi.API.Services;
 using PansiyonYonetimSistemi.API.DTOs;
+using PansiyonYonetimSistemi.API.Attributes;
 
 namespace PansiyonYonetimSistemi.API.Controllers
 {
@@ -83,7 +84,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [ManagerOrAbove]
         public async Task<ActionResult<ProductDto>> CreateProduct(CreateProductDto createProductDto)
         {
             try
@@ -127,7 +128,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [ManagerOrAbove]
         public async Task<ActionResult<ProductDto>> UpdateProduct(int id, UpdateProductDto updateProductDto)
         {
             try
@@ -173,7 +174,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [AdminOnly]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             try
@@ -285,7 +286,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost("{id}/stock")]
-        [Authorize(Roles = "Admin,Manager")]
+        [ManagerOrAbove]
         public async Task<IActionResult> UpdateStock(int id, UpdateStockDto updateStockDto)
         {
             try

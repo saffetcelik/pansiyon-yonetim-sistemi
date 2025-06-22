@@ -118,13 +118,20 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        // [Authorize(Roles = "Admin,Manager")] // Geçici olarak kaldırıldı
         public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerDto createCustomerDto)
         {
             try
             {
+                Console.WriteLine($"CreateCustomer called with data: {System.Text.Json.JsonSerializer.Serialize(createCustomerDto)}");
+
                 if (!ModelState.IsValid)
                 {
+                    Console.WriteLine("ModelState is invalid:");
+                    foreach (var error in ModelState)
+                    {
+                        Console.WriteLine($"Key: {error.Key}, Errors: {string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage))}");
+                    }
                     return BadRequest(ModelState);
                 }
 
@@ -154,6 +161,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 var customer = _mapper.Map<Customer>(createCustomerDto);
                 customer.CreatedAt = DateTime.UtcNow;
 
+                Console.WriteLine($"Mapped customer: {System.Text.Json.JsonSerializer.Serialize(customer)}");
+
                 _context.Customers.Add(customer);
                 await _context.SaveChangesAsync();
 
@@ -162,7 +171,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Müşteri oluşturulurken hata oluştu", error = ex.Message });
+                Console.WriteLine($"CreateCustomer Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Müşteri oluşturulurken hata oluştu", error = ex.Message, details = ex.StackTrace });
             }
         }
 

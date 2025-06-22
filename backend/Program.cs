@@ -26,6 +26,10 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddScoped<IFinancialReportService, FinancialReportService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // JWT Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -75,6 +79,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Seed test data for reporting - DISABLED
+// using (var scope = app.Services.CreateScope())
+// {
+//     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//     try
+//     {
+//         await PansiyonYonetimSistemi.API.SeedTestData.SeedReportingDataAsync(context);
+//     }
+//     catch (Exception ex)
+//     {
+//         Console.WriteLine($"Error seeding test data: {ex.Message}");
+//     }
+// }
 
 app.UseHttpsRedirection();
 

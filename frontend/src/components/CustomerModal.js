@@ -115,9 +115,15 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
       errors.email = 'Geçerli bir e-posta adresi giriniz';
     }
 
-    // Phone validation (basic)
-    if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
-      errors.phone = 'Geçerli bir telefon numarası giriniz';
+    // Phone validation - Türkiye telefon numarası formatı
+    if (formData.phone) {
+      // Türkiye telefon numarası: 5XXXXXXXXX (10 haneli, 5 ile başlayan)
+      const phoneRegex = /^5[0-9]{9}$/;
+      const cleanPhone = formData.phone.replace(/\D/g, ''); // Sadece rakamları al
+
+      if (!phoneRegex.test(cleanPhone)) {
+        errors.phone = 'Telefon numarası 5XXXXXXXXX formatında olmalıdır (örn: 5394795111)';
+      }
     }
 
     // Date validation
@@ -146,9 +152,19 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
 
     try {
       const customerData = {
-        ...formData,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        TCKimlikNo: formData.tcKimlikNo || null,
+        PassportNo: formData.passportNo || null,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        country: formData.country || null,
         dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : null
       };
+
+      console.log('Sending customer data:', customerData);
 
       if (isEdit) {
         await customerService.update(customer.id, customerData);
@@ -172,20 +188,53 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
       console.error('Error saving customer:', error);
       let errorMessage = `Müşteri ${isEdit ? 'güncellenirken' : 'oluşturulurken'} bir hata oluştu.`;
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Girilen bilgilerde hata var. Lütfen kontrol edin.';
+      // Backend validation hatalarını işle
+      if (error.response?.data) {
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          // ModelState validation hatalarını işle
+          const validationErrors = error.response.data.errors;
+          const errorMessages = [];
+
+          Object.keys(validationErrors).forEach(field => {
+            const fieldErrors = validationErrors[field];
+            if (Array.isArray(fieldErrors)) {
+              fieldErrors.forEach(err => errorMessages.push(err));
+            }
+          });
+
+          if (errorMessages.length > 0) {
+            errorMessage = errorMessages.join('\n');
+          }
+        } else if (error.response.status === 400) {
+          errorMessage = 'Girilen bilgilerde hata var. Lütfen kontrol edin.';
+        }
       } else if (error.response?.status === 500) {
         errorMessage = 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.';
       }
 
+      // Özel durumlar için SweetAlert tipini belirle
+      let alertType = 'error';
+      let alertTitle = 'Hata!';
+
+      // Aynı müşteri kontrolü
+      if (errorMessage.includes('TC Kimlik No ile kayıtlı müşteri') ||
+          errorMessage.includes('Pasaport No ile kayıtlı müşteri')) {
+        alertType = 'warning';
+        alertTitle = 'Uyarı!';
+      }
+
+      console.log('SweetAlert will show:', { alertTitle, errorMessage, alertType });
+
       await Swal.fire({
-        title: 'Hata!',
+        title: alertTitle,
         text: errorMessage,
-        icon: 'error',
+        icon: alertType,
         confirmButtonText: 'Tamam'
       });
+
+      console.log('SweetAlert completed');
     }
   };
 
@@ -320,7 +369,7 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
                     formErrors.phone ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="+90 555 123 45 67"
+                  placeholder="55512345678"
                 />
                 {formErrors.phone && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>
