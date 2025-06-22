@@ -66,7 +66,7 @@ export const roomService = {
   update: (id, roomData) => api.put(`/rooms/${id}`, roomData),
   delete: (id) => api.delete(`/rooms/${id}`),
   updateStatus: (id, status) => api.patch(`/rooms/${id}/status`, { status }),
-  getAvailability: (checkIn, checkOut) => api.get(`/rooms/availability?checkIn=${checkIn}&checkOut=${checkOut}`)
+  getAvailability: (checkInDate, checkOutDate) => api.get(`/rooms/availability?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}`)
 };
 
 export const customerService = {
