@@ -237,5 +237,35 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 return StatusCode(500, new { message = "Oda durumu özeti getirilirken hata oluştu", error = ex.Message });
             }
         }
+
+        [HttpGet("availability")]
+        public async Task<IActionResult> GetRoomAvailability([FromQuery] DateTime checkInDate, [FromQuery] DateTime checkOutDate)
+        {
+            try
+            {
+                if (checkInDate >= checkOutDate)
+                {
+                    return BadRequest(new { message = "Çıkış tarihi giriş tarihinden sonra olmalıdır" });
+                }
+
+                var availableRooms = await _context.Rooms
+                    .Where(r => r.Status == RoomStatus.Available)
+                    .Where(r => !_context.Reservations.Any(res =>
+                        res.RoomId == r.Id &&
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.NoShow &&
+                        res.CheckInDate < checkOutDate &&
+                        res.CheckOutDate > checkInDate))
+                    .OrderBy(r => r.RoomNumber)
+                    .ToListAsync();
+
+                var roomDtos = _mapper.Map<List<RoomDto>>(availableRooms);
+                return Ok(roomDtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Müsait odalar getirilirken hata oluştu", error = ex.Message });
+            }
+        }
     }
 }

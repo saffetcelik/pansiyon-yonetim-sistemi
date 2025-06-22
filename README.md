@@ -33,13 +33,19 @@ Pansiyon Yönetim Sistemi, konaklama sektöründeki işletmelerin operasyonel ve
 
 Bu proje, modern teknolojileri ve en iyi yazılım geliştirme pratiklerini bir araya getirerek hem geliştiriciler için esnek bir platform hem de son kullanıcılar için sezgisel bir arayüz sağlamayı hedefler.
 
-### ✨ Öne Çıkanlar
+## ✨ Öne Çıkanlar
 
 *   **Modern Teknoloji Yığını:** Performans ve ölçeklenebilirlik için **ASP.NET Core 8** ve **React 19**.
 *   **Tam Kapsamlı Yönetim:** Odalar, rezervasyonlar, müşteriler ve faturalar için entegre modüller.
 *   **Güvenli ve Yetkilendirilmiş:** JWT tabanlı kimlik doğrulama ve rol bazlı erişim kontrolü.
-*   **Geliştirici Dostu:** Etkileşimli API dokümantasyonu (Swagger), temiz kod mimarisi ve kolay kurulum.
+*   **Geliştirici Dostu:** Detaylı **Swagger** API dokümantasyonu.
 *   **Esnek ve Genişletilebilir:** İhtiyaçlara göre kolayca özelleştirilebilir ve yeni özellikler eklenebilir.
+
+---
+
+## 🖼️ Ekran Görüntüsü
+
+![Pansiyon Yönetim Sistemi Arayüzü](frontend/ss.png)
 
 ---
 
