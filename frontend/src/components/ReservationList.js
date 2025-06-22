@@ -8,6 +8,8 @@ import {
   deleteReservation
 } from '../store/slices/reservationSlice';
 import CheckInOutModal from './CheckInOutModal';
+import Swal from 'sweetalert2';
+import { Tooltip } from 'react-tooltip';
 
 const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const dispatch = useDispatch();
@@ -54,9 +56,37 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu rezervasyonu silmek istediğinizden emin misiniz?')) {
-      await dispatch(deleteReservation(id));
-      dispatch(fetchReservations({ ...filters, ...pagination }));
+    const result = await Swal.fire({
+      title: 'Rezervasyonu Sil',
+      text: 'Bu rezervasyonu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Evet, Sil',
+      cancelButtonText: 'İptal'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await dispatch(deleteReservation(id)).unwrap();
+        await Swal.fire({
+          title: 'Başarılı!',
+          text: 'Rezervasyon başarıyla silindi.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        dispatch(fetchReservations({ ...filters, ...pagination }));
+      } catch (error) {
+        console.error('Error deleting reservation:', error);
+        await Swal.fire({
+          title: 'Hata!',
+          text: 'Rezervasyon silinirken bir hata oluştu.',
+          icon: 'error',
+          confirmButtonText: 'Tamam'
+        });
+      }
     }
   };
 
@@ -285,34 +315,42 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => onEditReservation(reservation)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50"
+                      data-tooltip-id="edit-reservation-tooltip"
+                      data-tooltip-content="Rezervasyonu düzenle"
                     >
-                      Düzenle
+                      ✏️
                     </button>
-                    
+
                     {reservation.status === 1 && (
                       <button
                         onClick={() => handleCheckIn(reservation)}
-                        className="text-green-600 hover:text-green-900"
+                        className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50"
+                        data-tooltip-id="checkin-tooltip"
+                        data-tooltip-content="Check-in yap"
                       >
-                        Check-in
+                        🏨
                       </button>
                     )}
 
                     {reservation.status === 2 && (
                       <button
                         onClick={() => handleCheckOut(reservation)}
-                        className="text-orange-600 hover:text-orange-900"
+                        className="text-orange-600 hover:text-orange-900 p-2 rounded-md hover:bg-orange-50"
+                        data-tooltip-id="checkout-tooltip"
+                        data-tooltip-content="Check-out yap"
                       >
-                        Check-out
+                        🚪
                       </button>
                     )}
-                    
+
                     <button
                       onClick={() => handleDelete(reservation.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50"
+                      data-tooltip-id="delete-reservation-tooltip"
+                      data-tooltip-content="Rezervasyonu sil"
                     >
-                      Sil
+                      🗑️
                     </button>
                   </div>
                 </td>
@@ -401,6 +439,12 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         reservation={selectedReservationForAction}
         type="checkout"
       />
+
+      {/* Tooltips */}
+      <Tooltip id="edit-reservation-tooltip" />
+      <Tooltip id="checkin-tooltip" />
+      <Tooltip id="checkout-tooltip" />
+      <Tooltip id="delete-reservation-tooltip" />
     </div>
   );
 };

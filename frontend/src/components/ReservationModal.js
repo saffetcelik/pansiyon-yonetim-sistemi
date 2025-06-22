@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  createReservation, 
-  updateReservation, 
-  fetchReservations 
+import {
+  createReservation,
+  updateReservation,
+  fetchReservations
 } from '../store/slices/reservationSlice';
 import { fetchCustomers } from '../store/slices/customerSlice';
 import { customerService, roomService } from '../services/api';
+import Swal from 'sweetalert2';
 
 const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false }) => {
   const dispatch = useDispatch();
@@ -210,19 +211,44 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
       };
 
       if (isEdit) {
-        await dispatch(updateReservation({ 
-          id: reservation.id, 
-          reservationData 
+        await dispatch(updateReservation({
+          id: reservation.id,
+          reservationData
         })).unwrap();
       } else {
         await dispatch(createReservation(reservationData)).unwrap();
       }
+
+      // Show success message
+      await Swal.fire({
+        title: 'Başarılı!',
+        text: `Rezervasyon başarıyla ${isEdit ? 'güncellendi' : 'oluşturuldu'}.`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
 
       // Refresh reservations list
       dispatch(fetchReservations({}));
       onClose();
     } catch (error) {
       console.error('Error saving reservation:', error);
+      let errorMessage = `Rezervasyon ${isEdit ? 'güncellenirken' : 'oluşturulurken'} bir hata oluştu.`;
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Girilen bilgilerde hata var. Lütfen kontrol edin.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.';
+      }
+
+      await Swal.fire({
+        title: 'Hata!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'Tamam'
+      });
     }
   };
 

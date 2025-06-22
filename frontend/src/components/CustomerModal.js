@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createCustomer, fetchCustomers } from '../store/slices/customerSlice';
 import { customerService } from '../services/api';
+import Swal from 'sweetalert2';
 
 const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => {
   const dispatch = useDispatch();
@@ -155,11 +156,36 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
         await dispatch(createCustomer(customerData)).unwrap();
       }
 
+      // Show success message
+      await Swal.fire({
+        title: 'Başarılı!',
+        text: `Müşteri başarıyla ${isEdit ? 'güncellendi' : 'oluşturuldu'}.`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
       // Refresh customers list
       dispatch(fetchCustomers({}));
       onClose();
     } catch (error) {
       console.error('Error saving customer:', error);
+      let errorMessage = `Müşteri ${isEdit ? 'güncellenirken' : 'oluşturulurken'} bir hata oluştu.`;
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Girilen bilgilerde hata var. Lütfen kontrol edin.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.';
+      }
+
+      await Swal.fire({
+        title: 'Hata!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'Tamam'
+      });
     }
   };
 

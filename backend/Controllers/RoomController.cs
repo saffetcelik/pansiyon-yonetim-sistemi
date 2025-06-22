@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace PansiyonYonetimSistemi.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/rooms")]
     [Authorize]
     public class RoomController : ControllerBase
     {

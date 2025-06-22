@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,7 +34,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
@@ -47,15 +47,16 @@ export const authService = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
   logout: () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('tokenExpiresAt');
   },
   getCurrentUser: () => {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem('authToken');
   }
 };
 
@@ -75,7 +76,7 @@ export const customerService = {
   create: (customerData) => api.post('/customers', customerData),
   update: (id, customerData) => api.put(`/customers/${id}`, customerData),
   delete: (id) => api.delete(`/customers/${id}`),
-  search: (query) => api.get(`/customers/search?q=${query}`)
+  search: (query) => api.get(`/customers/search?query=${query}`)
 };
 
 export const reservationService = {

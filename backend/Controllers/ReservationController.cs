@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace PansiyonYonetimSistemi.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/reservations")]
     [Authorize]
     public class ReservationController : ControllerBase
     {
@@ -295,7 +295,46 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Rezervasyon güncellenirken hata oluştu", error = ex.Message });
+                Console.WriteLine($"UpdateReservation Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Rezervasyon güncellenirken hata oluştu", error = ex.Message, details = ex.StackTrace });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> DeleteReservation(int id)
+        {
+            try
+            {
+                var reservation = await _context.Reservations
+                    .Include(r => r.Room)
+                    .FirstOrDefaultAsync(r => r.Id == id);
+
+                if (reservation == null)
+                {
+                    return NotFound(new { message = "Rezervasyon bulunamadı" });
+                }
+
+                // If reservation is checked in, update room status to available
+                if (reservation.Status == ReservationStatus.CheckedIn)
+                {
+                    reservation.Room.Status = RoomStatus.Available;
+                    reservation.Room.UpdatedAt = DateTime.UtcNow;
+                }
+
+                _context.Reservations.Remove(reservation);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Rezervasyon başarıyla silindi" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Rezervasyon silinirken hata oluştu", error = ex.Message });
             }
         }
 

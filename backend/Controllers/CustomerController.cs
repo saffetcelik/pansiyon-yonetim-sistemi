@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace PansiyonYonetimSistemi.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/customers")]
     [Authorize]
     public class CustomerController : ControllerBase
     {
@@ -216,7 +216,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Müşteri güncellenirken hata oluştu", error = ex.Message });
+                Console.WriteLine($"UpdateCustomer Error: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Müşteri güncellenirken hata oluştu", error = ex.Message, details = ex.StackTrace });
             }
         }
 

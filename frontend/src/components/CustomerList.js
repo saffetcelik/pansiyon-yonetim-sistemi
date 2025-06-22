@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCustomers } from '../store/slices/customerSlice';
+import Swal from 'sweetalert2';
+import { Tooltip } from 'react-tooltip';
 import { customerService } from '../services/api';
 
 const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   const dispatch = useDispatch();
-  const { customers, loading, error } = useSelector((state) => state.customers);
+  const { customers, loading, error, pagination } = useSelector((state) => state.customers);
   
   const [filters, setFilters] = useState({
     name: '',
@@ -18,11 +20,6 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   });
 
   const [localFilters, setLocalFilters] = useState(filters);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0
-  });
 
   useEffect(() => {
     dispatch(fetchCustomers(filters));
@@ -55,13 +52,36 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu müşteriyi silmek istediğinizden emin misiniz?')) {
+    const result = await Swal.fire({
+      title: 'Müşteriyi Sil',
+      text: 'Bu müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Evet, Sil',
+      cancelButtonText: 'İptal'
+    });
+
+    if (result.isConfirmed) {
       try {
         await customerService.delete(id);
+        await Swal.fire({
+          title: 'Başarılı!',
+          text: 'Müşteri başarıyla silindi.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
         dispatch(fetchCustomers(filters));
       } catch (error) {
         console.error('Error deleting customer:', error);
-        alert('Müşteri silinirken hata oluştu');
+        await Swal.fire({
+          title: 'Hata!',
+          text: 'Müşteri silinirken bir hata oluştu.',
+          icon: 'error',
+          confirmButtonText: 'Tamam'
+        });
       }
     }
   };
@@ -261,15 +281,19 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => onEditCustomer(customer)}
-                      className="text-green-600 hover:text-green-900"
+                      className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50"
+                      data-tooltip-id="edit-tooltip"
+                      data-tooltip-content="Müşteriyi düzenle"
                     >
-                      Düzenle
+                      ✏️
                     </button>
                     <button
                       onClick={() => handleDelete(customer.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50"
+                      data-tooltip-id="delete-tooltip"
+                      data-tooltip-content="Müşteriyi sil"
                     >
-                      Sil
+                      🗑️
                     </button>
                   </div>
                 </td>
@@ -343,6 +367,10 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
           </div>
         </div>
       )}
+
+      {/* Tooltips */}
+      <Tooltip id="edit-tooltip" />
+      <Tooltip id="delete-tooltip" />
     </div>
   );
 };
