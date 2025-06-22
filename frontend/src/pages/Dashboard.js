@@ -5,6 +5,7 @@ import RoomPanel from '../components/RoomPanel';
 import Reservations from './Reservations';
 import Customers from './Customers';
 import Products from './Products';
+import Sales from './Sales';
 import { reservationService, customerService, roomService } from '../services/api';
 
 const Dashboard = () => {
@@ -80,6 +81,7 @@ const Dashboard = () => {
     { id: 'customers', label: 'Müşteriler', icon: '👥' },
     { id: 'rooms', label: 'Odalar', icon: '🏨' },
     { id: 'products', label: 'Ürünler', icon: '📦' },
+    { id: 'sales', label: 'Büfe Satış', icon: '🛒' },
     { id: 'reports', label: 'Raporlar', icon: '📊' },
   ];
 
@@ -91,6 +93,8 @@ const Dashboard = () => {
         return <Customers />;
       case 'products':
         return <Products />;
+      case 'sales':
+        return <Sales />;
       case 'dashboard':
       default:
         return (
@@ -188,7 +192,7 @@ const Dashboard = () => {
               )}
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
                 <button
                   onClick={() => setActiveTab('reservations')}
                   className="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg text-left transition-colors"
@@ -211,6 +215,14 @@ const Dashboard = () => {
                 >
                   <h4 className="font-semibold text-purple-900 mb-1">📦 Ürünler</h4>
                   <p className="text-sm text-purple-700">Büfe ürünleri ve stok yönetimi</p>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('sales')}
+                  className="bg-orange-50 hover:bg-orange-100 p-4 rounded-lg text-left transition-colors"
+                >
+                  <h4 className="font-semibold text-orange-900 mb-1">🛒 Büfe Satış</h4>
+                  <p className="text-sm text-orange-700">Hızlı satış işlemleri</p>
                 </button>
 
                 {user?.roleName === 'Admin' && (

@@ -22,24 +22,38 @@
   <img src="https://img.shields.io/badge/.NET-8-512BD4?style=for-the-badge&logo=dotnet" alt=".NET 8">
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react" alt="React 19">
   <img src="https://img.shields.io/badge/PostgreSQL-14354C?style=for-the-badge&logo=postgresql" alt="PostgreSQL">
-  <!-- CI/CD Badge: <img src="https://img.shields.io/github/actions/workflow/status/saffetcelik/pansiyon-yonetim-sistemi/main.yml?style=for-the-badge" alt="CI/CD"> -->
 </p>
 
 ---
 
 ## 📖 Proje Hakkında
 
-Pansiyon Yönetim Sistemi, konaklama sektöründeki işletmelerin operasyonel verimliliğini artırmak amacıyla geliştirilmiş açık kaynaklı bir web uygulamasıdır. Oda yönetiminden müşteri ilişkilerine, rezervasyon takibinden finansal raporlamaya kadar geniş bir yelpazede çözümler sunar.
+**Pansiyon Yönetim Sistemi**, konaklama sektöründeki işletmelerin operasyonel verimliliğini artırmak amacıyla geliştirilmiş, açık kaynaklı ve modern bir web uygulamasıdır. Oda yönetimi, müşteri ilişkileri, rezervasyon takibi, finansal raporlama ve satış işlemleri gibi birçok süreci dijitalleştirir.
 
-Bu proje, modern teknolojileri ve en iyi yazılım geliştirme pratiklerini bir araya getirerek hem geliştiriciler için esnek bir platform hem de son kullanıcılar için sezgisel bir arayüz sağlamayı hedefler.
+Bu platform, güncel teknolojiler ve en iyi yazılım geliştirme pratikleriyle hem geliştiriciler için esnek bir altyapı hem de son kullanıcılar için sezgisel bir arayüz sunar.
 
-## ✨ Öne Çıkanlar
+---
 
-*   **Modern Teknoloji Yığını:** Performans ve ölçeklenebilirlik için **ASP.NET Core 8** ve **React 19**.
-*   **Tam Kapsamlı Yönetim:** Odalar, rezervasyonlar, müşteriler ve faturalar için entegre modüller.
-*   **Güvenli ve Yetkilendirilmiş:** JWT tabanlı kimlik doğrulama ve rol bazlı erişim kontrolü.
-*   **Geliştirici Dostu:** Detaylı **Swagger** API dokümantasyonu.
-*   **Esnek ve Genişletilebilir:** İhtiyaçlara göre kolayca özelleştirilebilir ve yeni özellikler eklenebilir.
+## 🚀 Temel Özellikler
+
+- **Oda Yönetimi:** Oda ekleme, düzenleme, durum takibi (müsait/dolu/bakımda/temizlikte), fiyatlandırma, özellikler (balkon, deniz manzarası, klima, minibar, TV, WiFi).
+- **Rezervasyon Modülü:** Yeni rezervasyon oluşturma, güncelleme, iptal, check-in/check-out işlemleri, rezervasyon arama ve filtreleme, takvim görünümü.
+- **Müşteri Yönetimi:** Müşteri kaydı, bilgileri güncelleme, arama ve filtreleme, geçmiş rezervasyonlar.
+- **Satış ve Ürün Yönetimi:** Büfe/ekstra satış noktası, ürün ekleme/düzenleme, stok takibi, satış işlemleri, indirim ve notlar.
+- **Finansal Raporlama:** Günlük/aylık gelir-gider, ödeme yöntemleri analizi, kategori bazlı raporlar, kasa bakiyesi, trend analizleri.
+- **Fatura ve Ödeme Takibi:** Fatura oluşturma, ödeme kaydı, ödeme türleri (nakit, kredi kartı, havale vb.), ödeme durumu takibi.
+- **Kullanıcı ve Rol Yönetimi:** Farklı roller (admin, yönetici, çalışan), JWT tabanlı kimlik doğrulama, rol bazlı erişim kontrolü.
+- **Gelişmiş API:** Swagger/OpenAPI dokümantasyonu, RESTful uç noktalar.
+- **Duyarlı ve Modern Arayüz:** React 19 + Tailwind CSS ile tasarlanmış, mobil uyumlu ve hızlı kullanıcı deneyimi.
+
+---
+
+## 🏗️ Teknoloji Yığını
+
+- **Backend:** ASP.NET Core 8, Entity Framework Core, JWT, AutoMapper
+- **Frontend:** React 19, Redux, Tailwind CSS, Axios
+- **Veritabanı:** PostgreSQL
+- **Diğer:** Docker desteği, Swagger API dokümantasyonu
 
 ---
 
@@ -49,15 +63,96 @@ Bu proje, modern teknolojileri ve en iyi yazılım geliştirme pratiklerini bir 
 
 ---
 
-## 🚀 Başlarken
+## ⚡ Kurulum ve Çalıştırma
 
-Projeyi yerel makinenizde kurup çalıştırmak için aşağıdaki adımları izleyin.
+Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları takip edin:
 
-### 📋 Gereksinimler
+### Gereksinimler
 
-*   [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-*   [Node.js (LTS)](https://nodejs.org/)
-*   [PostgreSQL](https://www.postgresql.org/download/) veya [Docker](https://www.docker.com/products/docker-desktop/)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js (LTS)](https://nodejs.org/)
+- [PostgreSQL](https://www.postgresql.org/download/) veya [Docker](https://www.docker.com/products/docker-desktop/)
+
+### Kurulum Adımları
+
+1. **Veritabanı Kurulumu:**
+   - PostgreSQL sunucusu kurun ve yeni bir veritabanı oluşturun.
+   - `backend/appsettings.json` dosyasındaki bağlantı ayarlarını güncelleyin.
+2. **Backend’i Başlatma:**
+   ```bash
+   cd backend
+   dotnet restore
+   dotnet ef database update  # İlk kez çalıştırırken
+   dotnet run
+   ```
+3. **Frontend’i Başlatma:**
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+4. **Giriş:**
+   - Varsayılan yönetici hesabı veya ilk kullanıcı kaydı ile giriş yapın.
+
+> **Not:** Docker ile tam kurulum için `docker-compose` desteği eklenebilir.
+
+---
+
+## 👤 Kullanıcı Rolleri ve Yetkilendirme
+
+- **Admin:** Tüm sistem ayarlarına ve verilere tam erişim.
+- **Yönetici:** Oda, rezervasyon, müşteri, satış ve rapor yönetimi.
+- **Çalışan:** Sadece kendi görevleriyle ilgili modüllere erişim (ör. check-in/out, satış işlemleri).
+- **Kimlik Doğrulama:** JWT tabanlı, güvenli oturum yönetimi.
+
+---
+
+## 🛠️ Ana Modüller
+
+### Backend (ASP.NET Core)
+- `Controllers/`: Oda, rezervasyon, müşteri, ürün, satış, ödeme ve kimlik doğrulama API uç noktaları
+- `Models/`: Temel veri modelleri (Room, Reservation, Customer, Sale, Payment, Product, User)
+- `Services/`: İş mantığı ve yardımcı servisler (ör. raporlama, JWT, stok)
+- `DTOs/`: Veri transfer nesneleri
+- `Migrations/`: EF Core veritabanı şeması yönetimi
+
+### Frontend (React)
+- `src/pages/`: Ana sayfalar (Dashboard, Reservations, Customers, Products, Sales, Debug)
+- `src/components/`: Tekil arayüz bileşenleri (RoomPanel, ReservationList, CustomerList, ProductList, Modals)
+- `src/store/`: Redux durum yönetimi
+
+---
+
+## 🔌 API ve Entegrasyonlar
+
+- **RESTful API:** Tüm temel işlemler için uç noktalar (CRUD)
+- **Swagger:** Otomatik API dokümantasyonu için `/swagger` yolu
+- **Kimlik Doğrulama:** JWT ile korunan uç noktalar
+- **Frontend-Backend Bağlantısı:** Axios ile HTTP istekleri
+
+---
+
+## 🗺️ Yol Haritası
+
+Gelecekte eklenmesi planlanan özellikler ve iyileştirmeler için [Proje Yol Haritası](semantic_roadmap.md) belgesine göz atın. Topluluk tarafından istenen özellikler için [Issues](https://github.com/saffetcelik/pansiyon-yonetim-sistemi/issues) sayfasını takip edebilirsiniz.
+
+---
+
+## 🤝 Katkıda Bulunma
+
+Katkılarınızı memnuniyetle karşılıyoruz! Lütfen katkı rehberini ve kodlama standartlarını inceleyin. Hata raporları, yeni özellik önerileri veya doğrudan kod katkısı için [Issues](https://github.com/saffetcelik/pansiyon-yonetim-sistemi/issues) ve [Pull Requests](https://github.com/saffetcelik/pansiyon-yonetim-sistemi/pulls) bölümlerini kullanabilirsiniz.
+
+---
+
+## 📄 Lisans
+
+Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
+
+---
+
+## 📬 İletişim
+
+Her türlü soru, öneri veya destek için [issue açabilir](https://github.com/saffetcelik/pansiyon-yonetim-sistemi/issues) veya doğrudan proje sahibiyle iletişime geçebilirsiniz.
 
 ### ⚙️ Kurulum Adımları
 
@@ -88,7 +183,7 @@ Projeyi yerel makinenizde kurup çalıştırmak için aşağıdaki adımları iz
       dotnet run
       ```
     </details>
-    API, `https://localhost:5001` adresinde çalışmaya başlayacaktır.
+    API, `https://localhost:5000` adresinde çalışmaya başlayacaktır.
 
 4.  **Frontend'i Çalıştırın:**
     <details>
@@ -137,7 +232,6 @@ Katkılarınız, bu projeyi daha iyi bir hale getirmemize yardımcı olur. Fikir
 4.  Dalınızı push'layın (`git push origin feature/AmazingFeature`).
 5.  Bir Pull Request açın.
 
-Detaylı bilgi için lütfen `CONTRIBUTING.md` dosyasını inceleyin. (Bu dosya henüz oluşturulmadı)
 
 ---
 

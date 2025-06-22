@@ -45,6 +45,26 @@ namespace PansiyonYonetimSistemi.API.Data
 
             CreateMap<CreateSaleItemDto, SaleItem>();
 
+            // Payment Mappings
+            CreateMap<Payment, PaymentDto>()
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src =>
+                    src.Customer != null ? $"{src.Customer.FirstName} {src.Customer.LastName}" : null))
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src =>
+                    src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : null));
+
+            CreateMap<CreatePaymentDto, Payment>();
+            CreateMap<UpdatePaymentDto, Payment>();
+
+            // Expense Mappings
+            CreateMap<Expense, ExpenseDto>()
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src =>
+                    src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : null))
+                .ForMember(dest => dest.ApprovedByUserName, opt => opt.MapFrom(src =>
+                    src.ApprovedByUser != null ? $"{src.ApprovedByUser.FirstName} {src.ApprovedByUser.LastName}" : null));
+
+            CreateMap<CreateExpenseDto, Expense>();
+            CreateMap<UpdateExpenseDto, Expense>();
+
             // User Mappings
             CreateMap<User, UserDto>();
             CreateMap<CreateUserDto, User>();

@@ -5,6 +5,7 @@ using PansiyonYonetimSistemi.API.DTOs;
 using PansiyonYonetimSistemi.API.Models;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using PansiyonYonetimSistemi.API.Attributes;
 
 namespace PansiyonYonetimSistemi.API.Controllers
 {
@@ -142,7 +143,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [ManagerOrAbove]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto createReservationDto)
         {
             try
@@ -228,7 +229,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [ManagerOrAbove]
         public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationDto updateReservationDto)
         {
             try
@@ -306,7 +307,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [ManagerOrAbove]
         public async Task<IActionResult> DeleteReservation(int id)
         {
             try
@@ -339,6 +340,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost("{id}/checkin")]
+        [AllRoles]
         public async Task<IActionResult> CheckIn(int id, [FromBody] CheckInDto checkInDto)
         {
             try
@@ -384,6 +386,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost("{id}/checkout")]
+        [AllRoles]
         public async Task<IActionResult> CheckOut(int id, [FromBody] CheckOutDto checkOutDto)
         {
             try
