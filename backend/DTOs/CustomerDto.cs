@@ -58,4 +58,17 @@ namespace PansiyonYonetimSistemi.API.DTOs
     {
         public int Id { get; set; }
     }
+
+    public class CustomerSearchDto
+    {
+        public string? Name { get; set; }
+        public string? TCKimlikNo { get; set; }
+        public string? PassportNo { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? City { get; set; }
+        public string? Country { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
 }

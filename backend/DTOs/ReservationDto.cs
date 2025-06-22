@@ -17,7 +17,21 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public decimal PaidAmount { get; set; }
         public decimal RemainingAmount => TotalAmount - PaidAmount;
         public ReservationStatus Status { get; set; }
-        public string StatusName => Status.ToString();
+        public string StatusName => GetStatusName(Status);
+
+        private static string GetStatusName(ReservationStatus status)
+        {
+            return status switch
+            {
+                ReservationStatus.Pending => "Beklemede",
+                ReservationStatus.Confirmed => "Onaylandı",
+                ReservationStatus.CheckedIn => "Giriş Yapıldı",
+                ReservationStatus.CheckedOut => "Çıkış Yapıldı",
+                ReservationStatus.Cancelled => "İptal Edildi",
+                ReservationStatus.NoShow => "Gelmedi",
+                _ => status.ToString()
+            };
+        }
         public string? Notes { get; set; }
         public DateTime? ActualCheckInDate { get; set; }
         public DateTime? ActualCheckOutDate { get; set; }
