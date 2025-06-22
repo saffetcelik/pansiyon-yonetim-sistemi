@@ -47,7 +47,7 @@ namespace PansiyonYonetimSistemi.API.Models
         public DateTime? UpdatedAt { get; set; }
         
         // Navigation Properties
-        public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
+        public virtual ICollection<SaleItem> SaleItems { get; set; } = new List<SaleItem>();
         public virtual ICollection<StockTransaction> StockTransactions { get; set; } = new List<StockTransaction>();
     }
 }

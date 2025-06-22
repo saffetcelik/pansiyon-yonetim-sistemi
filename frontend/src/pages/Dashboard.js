@@ -4,6 +4,7 @@ import { logout } from '../store/authSlice';
 import RoomPanel from '../components/RoomPanel';
 import Reservations from './Reservations';
 import Customers from './Customers';
+import Products from './Products';
 import { reservationService, customerService, roomService } from '../services/api';
 
 const Dashboard = () => {
@@ -88,6 +89,8 @@ const Dashboard = () => {
         return <Reservations />;
       case 'customers':
         return <Customers />;
+      case 'products':
+        return <Products />;
       case 'dashboard':
       default:
         return (
@@ -185,7 +188,7 @@ const Dashboard = () => {
               )}
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
                 <button
                   onClick={() => setActiveTab('reservations')}
                   className="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg text-left transition-colors"
@@ -200,6 +203,14 @@ const Dashboard = () => {
                 >
                   <h4 className="font-semibold text-green-900 mb-1">👥 Müşteriler</h4>
                   <p className="text-sm text-green-700">Müşteri bilgilerini yönet</p>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg text-left transition-colors"
+                >
+                  <h4 className="font-semibold text-purple-900 mb-1">📦 Ürünler</h4>
+                  <p className="text-sm text-purple-700">Büfe ürünleri ve stok yönetimi</p>
                 </button>
 
                 {user?.roleName === 'Admin' && (
