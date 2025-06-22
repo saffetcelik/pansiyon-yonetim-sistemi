@@ -26,9 +26,13 @@ const CheckInOutModal = ({
 
   useEffect(() => {
     if (isOpen && reservation) {
+      // Get current time in Turkey timezone (UTC+3)
       const now = new Date();
+      const turkeyTime = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // Add 3 hours for Turkey timezone
+      const localISOTime = turkeyTime.toISOString().slice(0, 16); // datetime-local format
+
       setFormData({
-        actualDate: now.toISOString().slice(0, 16), // datetime-local format
+        actualDate: localISOTime,
         notes: '',
         additionalCharges: 0,
         paymentAmount: type === 'checkout' ? (reservation.totalAmount - reservation.paidAmount) : 0
@@ -136,11 +140,11 @@ const CheckInOutModal = ({
   if (!isOpen || !reservation) return null;
 
   const isCheckIn = type === 'checkin';
-  const title = isCheckIn ? 'Check-in İşlemi' : 'Check-out İşlemi';
+  const title = isCheckIn ? 'Giriş İşlemi' : 'Çıkış İşlemi';
   const actionColor = isCheckIn ? 'green' : 'orange';
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style={{ zIndex: 10000 }}>
       <div className="relative top-10 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
         <div className="mt-3">
           {/* Header */}
@@ -192,7 +196,11 @@ const CheckInOutModal = ({
                 type="datetime-local"
                 value={formData.actualDate}
                 onChange={(e) => handleInputChange('actualDate', e.target.value)}
-                max={new Date().toISOString().slice(0, 16)}
+                max={(() => {
+                  const now = new Date();
+                  const turkeyTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+                  return turkeyTime.toISOString().slice(0, 16);
+                })()}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-${actionColor}-500 ${
                   formErrors.actualDate ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -264,7 +272,7 @@ const CheckInOutModal = ({
                 onChange={(e) => handleInputChange('notes', e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder={`${isCheckIn ? 'Check-in' : 'Check-out'} ile ilgili notlar...`}
+                placeholder={`${isCheckIn ? 'Giriş' : 'Çıkış'} ile ilgili notlar...`}
               />
             </div>
 
@@ -282,7 +290,7 @@ const CheckInOutModal = ({
                 disabled={loading}
                 className={`px-4 py-2 bg-${actionColor}-600 text-white rounded-md hover:bg-${actionColor}-700 disabled:opacity-50`}
               >
-                {loading ? 'İşleniyor...' : (isCheckIn ? 'Check-in Yap' : 'Check-out Yap')}
+                {loading ? 'İşleniyor...' : (isCheckIn ? 'Giriş Yap' : 'Çıkış Yap')}
               </button>
             </div>
           </form>

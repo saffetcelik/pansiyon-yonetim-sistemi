@@ -531,35 +531,356 @@ namespace PansiyonYonetimSistemi.API.Services
 
         #endregion
 
-        public Task<RoomPerformanceDto> GetRoomPerformanceAsync(DateTime startDate, DateTime endDate)
+        #region Room Reports
+
+        public async Task<RoomPerformanceDto> GetRoomPerformanceAsync(DateTime startDate, DateTime endDate)
         {
-            throw new NotImplementedException();
+            var roomUtilization = await GetRoomUtilizationAsync(startDate, endDate);
+            var roomTypeAnalysis = await GetRoomTypeAnalysisAsync(startDate, endDate);
+
+            // Calculate average room rate and RevPAR
+            var totalRevenue = await _context.Payments
+                .Where(p => p.PaymentDate >= startDate && p.PaymentDate <= endDate &&
+                           p.Status == PaymentStatus.Completed && p.Type == PaymentType.Reservation)
+                .SumAsync(p => p.Amount);
+
+            var totalRoomNights = await _context.Reservations
+                .Where(r => r.CheckInDate >= startDate && r.CheckInDate <= endDate)
+                .SumAsync(r => (r.CheckOutDate - r.CheckInDate).Days);
+
+            var totalRooms = await _context.Rooms.CountAsync();
+            var totalDays = (endDate - startDate).Days + 1;
+            var totalAvailableRoomNights = totalRooms * totalDays;
+
+            var averageRoomRate = totalRoomNights > 0 ? totalRevenue / totalRoomNights : 0;
+            var revenuePAR = totalAvailableRoomNights > 0 ? totalRevenue / totalAvailableRoomNights : 0;
+
+            return new RoomPerformanceDto
+            {
+                RoomUtilization = roomUtilization,
+                RoomTypeAnalysis = roomTypeAnalysis,
+                AverageRoomRate = averageRoomRate,
+                RevenuePAR = revenuePAR
+            };
         }
 
-        public Task<List<RoomUtilizationDto>> GetRoomUtilizationAsync(DateTime startDate, DateTime endDate)
+        public async Task<List<RoomUtilizationDto>> GetRoomUtilizationAsync(DateTime startDate, DateTime endDate)
         {
-            throw new NotImplementedException();
+            var rooms = await _context.Rooms.ToListAsync();
+            var utilization = new List<RoomUtilizationDto>();
+
+            foreach (var room in rooms)
+            {
+                var totalDays = (endDate - startDate).Days + 1;
+
+                var occupiedNights = await _context.Reservations
+                    .Where(r => r.RoomId == room.Id &&
+                               r.CheckInDate <= endDate && r.CheckOutDate >= startDate &&
+                               (r.Status == ReservationStatus.CheckedIn || r.Status == ReservationStatus.CheckedOut))
+                    .SumAsync(r => Math.Min((r.CheckOutDate < endDate ? r.CheckOutDate : endDate).Subtract(
+                                          r.CheckInDate > startDate ? r.CheckInDate : startDate).Days, totalDays));
+
+                var revenue = await _context.Payments
+                    .Where(p => p.ReservationId.HasValue &&
+                               _context.Reservations.Any(r => r.Id == p.ReservationId && r.RoomId == room.Id) &&
+                               p.PaymentDate >= startDate && p.PaymentDate <= endDate &&
+                               p.Status == PaymentStatus.Completed && p.Type == PaymentType.Reservation)
+                    .SumAsync(p => p.Amount);
+
+                var utilizationRate = totalDays > 0 ? (decimal)occupiedNights / totalDays * 100 : 0;
+                var averageRate = occupiedNights > 0 ? revenue / occupiedNights : 0;
+
+                utilization.Add(new RoomUtilizationDto
+                {
+                    RoomId = room.Id,
+                    RoomNumber = room.RoomNumber,
+                    UtilizationRate = utilizationRate,
+                    TotalNights = totalDays,
+                    OccupiedNights = occupiedNights,
+                    Revenue = revenue,
+                    AverageRate = averageRate
+                });
+            }
+
+            return utilization.OrderByDescending(u => u.UtilizationRate).ToList();
         }
 
-        public Task<RoomTypeAnalysisDto> GetRoomTypeAnalysisAsync(DateTime startDate, DateTime endDate)
+        public async Task<RoomTypeAnalysisDto> GetRoomTypeAnalysisAsync(DateTime startDate, DateTime endDate)
         {
-            throw new NotImplementedException();
+            var roomTypes = await _context.Rooms
+                .GroupBy(r => new { r.Capacity, r.HasSeaView, r.HasBalcony })
+                .Select(g => new
+                {
+                    RoomType = $"{g.Key.Capacity} kişilik" +
+                              (g.Key.HasSeaView ? " - Deniz Manzaralı" : "") +
+                              (g.Key.HasBalcony ? " - Balkonlu" : ""),
+                    TotalRooms = g.Count(),
+                    RoomIds = g.Select(r => r.Id).ToList()
+                })
+                .ToListAsync();
+
+            var roomTypeStats = new Dictionary<string, RoomTypeStatsDto>();
+
+            foreach (var roomType in roomTypes)
+            {
+                var totalDays = (endDate - startDate).Days + 1;
+                var totalRoomNights = roomType.TotalRooms * totalDays;
+
+                var occupiedNights = await _context.Reservations
+                    .Where(r => roomType.RoomIds.Contains(r.RoomId) &&
+                               r.CheckInDate <= endDate && r.CheckOutDate >= startDate &&
+                               (r.Status == ReservationStatus.CheckedIn || r.Status == ReservationStatus.CheckedOut))
+                    .SumAsync(r => Math.Min((r.CheckOutDate < endDate ? r.CheckOutDate : endDate).Subtract(
+                                          r.CheckInDate > startDate ? r.CheckInDate : startDate).Days, totalDays));
+
+                var revenue = await _context.Payments
+                    .Where(p => p.ReservationId.HasValue &&
+                               _context.Reservations.Any(r => r.Id == p.ReservationId && roomType.RoomIds.Contains(r.RoomId)) &&
+                               p.PaymentDate >= startDate && p.PaymentDate <= endDate &&
+                               p.Status == PaymentStatus.Completed && p.Type == PaymentType.Reservation)
+                    .SumAsync(p => p.Amount);
+
+                var totalReservations = await _context.Reservations
+                    .Where(r => roomType.RoomIds.Contains(r.RoomId) &&
+                               r.CheckInDate >= startDate && r.CheckInDate <= endDate)
+                    .CountAsync();
+
+                var occupancyRate = totalRoomNights > 0 ? (decimal)occupiedNights / totalRoomNights * 100 : 0;
+                var averageRate = occupiedNights > 0 ? revenue / occupiedNights : 0;
+
+                roomTypeStats[roomType.RoomType] = new RoomTypeStatsDto
+                {
+                    TotalRooms = roomType.TotalRooms,
+                    OccupancyRate = occupancyRate,
+                    Revenue = revenue,
+                    AverageRate = averageRate,
+                    TotalReservations = totalReservations
+                };
+            }
+
+            return new RoomTypeAnalysisDto
+            {
+                RoomTypeStats = roomTypeStats
+            };
         }
 
-        public Task<DashboardSummaryDto> GetDashboardSummaryAsync(DateTime date)
+        #endregion
+
+        #region Dashboard and Business Reports
+
+        public async Task<DashboardSummaryDto> GetDashboardSummaryAsync(DateTime date)
         {
-            throw new NotImplementedException();
+            var startOfDay = date.Date;
+            var endOfDay = startOfDay.AddDays(1);
+            var startOfMonth = new DateTime(date.Year, date.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1);
+            var startOfYear = new DateTime(date.Year, 1, 1);
+            var endOfYear = startOfYear.AddYears(1);
+
+            // Today's revenue
+            var todayRevenue = await _context.Payments
+                .Where(p => p.PaymentDate >= startOfDay && p.PaymentDate < endOfDay && p.Status == PaymentStatus.Completed)
+                .SumAsync(p => p.Amount);
+
+            // Month revenue
+            var monthRevenue = await _context.Payments
+                .Where(p => p.PaymentDate >= startOfMonth && p.PaymentDate < endOfMonth && p.Status == PaymentStatus.Completed)
+                .SumAsync(p => p.Amount);
+
+            // Year revenue
+            var yearRevenue = await _context.Payments
+                .Where(p => p.PaymentDate >= startOfYear && p.PaymentDate < endOfYear && p.Status == PaymentStatus.Completed)
+                .SumAsync(p => p.Amount);
+
+            // Today's occupancy
+            var todayOccupancy = await GetOccupancyRateAsync(date);
+
+            // Month occupancy - calculate directly to avoid circular dependency
+            var monthStartDate = new DateTime(date.Year, date.Month, 1);
+            var monthEndDate = monthStartDate.AddMonths(1);
+            var totalRoomsForMonth = await _context.Rooms.CountAsync();
+            var totalDaysInMonth = (monthEndDate.AddDays(-1) - monthStartDate).Days + 1;
+            var totalRoomNightsInMonth = totalRoomsForMonth * totalDaysInMonth;
+
+            var occupiedRoomNightsInMonth = await _context.Reservations
+                .Where(r => r.CheckInDate <= monthEndDate.AddDays(-1) && r.CheckOutDate >= monthStartDate &&
+                           (r.Status == ReservationStatus.CheckedIn || r.Status == ReservationStatus.CheckedOut))
+                .SumAsync(r => Math.Min((r.CheckOutDate < monthEndDate ? r.CheckOutDate : monthEndDate).Subtract(
+                                      r.CheckInDate > monthStartDate ? r.CheckInDate : monthStartDate).Days, totalDaysInMonth));
+
+            var monthOccupancyRate = totalRoomNightsInMonth > 0 ? (decimal)occupiedRoomNightsInMonth / totalRoomNightsInMonth * 100 : 0;
+
+            // Available rooms
+            var totalRooms = await _context.Rooms.CountAsync();
+            var occupiedRooms = await _context.Reservations
+                .Where(r => r.CheckInDate <= date && r.CheckOutDate > date &&
+                           (r.Status == ReservationStatus.CheckedIn || r.Status == ReservationStatus.CheckedOut))
+                .CountAsync();
+            var availableRooms = totalRooms - occupiedRooms;
+
+            // Total reservations
+            var totalReservations = await _context.Reservations.CountAsync();
+
+            // Check-ins and check-outs today
+            var checkInsToday = await _context.Reservations
+                .Where(r => r.CheckInDate.Date == date.Date)
+                .CountAsync();
+
+            var checkOutsToday = await _context.Reservations
+                .Where(r => r.CheckOutDate.Date == date.Date)
+                .CountAsync();
+
+            // Recent activities (placeholder - would need a proper activity log)
+            var recentActivities = new List<RecentActivityDto>();
+
+            // Upcoming reservations
+            var upcomingReservations = await _context.Reservations
+                .Include(r => r.Customer)
+                .Include(r => r.Room)
+                .Where(r => r.CheckInDate >= date && r.CheckInDate <= date.AddDays(7))
+                .OrderBy(r => r.CheckInDate)
+                .Take(5)
+                .Select(r => new UpcomingReservationDto
+                {
+                    ReservationId = r.Id,
+                    CustomerName = $"{r.Customer.FirstName} {r.Customer.LastName}",
+                    RoomNumber = r.Room.RoomNumber,
+                    CheckInDate = r.CheckInDate,
+                    CheckOutDate = r.CheckOutDate,
+                    Nights = (r.CheckOutDate - r.CheckInDate).Days,
+                    TotalAmount = r.TotalAmount
+                })
+                .ToListAsync();
+
+            return new DashboardSummaryDto
+            {
+                Date = date,
+                TodayRevenue = todayRevenue,
+                MonthRevenue = monthRevenue,
+                YearRevenue = yearRevenue,
+                TodayOccupancy = todayOccupancy,
+                MonthOccupancy = monthOccupancyRate,
+                TotalReservations = totalReservations,
+                CheckInsToday = checkInsToday,
+                CheckOutsToday = checkOutsToday,
+                AvailableRooms = availableRooms,
+                RecentActivities = recentActivities,
+                UpcomingReservations = upcomingReservations
+            };
         }
 
-        public Task<MonthlyBusinessReportDto> GetMonthlyBusinessReportAsync(int year, int month)
+        public async Task<MonthlyBusinessReportDto> GetMonthlyBusinessReportAsync(int year, int month)
         {
-            throw new NotImplementedException();
+            var monthlyRevenue = await GetMonthlyRevenueAsync(year, month);
+            var monthlyOccupancy = await GetMonthlyOccupancyAsync(year, month);
+            var startDate = new DateTime(year, month, 1);
+            var endDate = startDate.AddMonths(1);
+            var customerStats = await GetCustomerStatisticsAsync(startDate, endDate.AddDays(-1));
+
+            // Get expenses for the month (placeholder - would need expense data)
+            var expenses = new ExpenseSummaryDto
+            {
+                TotalAmount = 0,
+                Date = startDate
+            };
+
+            var netProfit = monthlyRevenue.TotalRevenue - expenses.TotalAmount;
+            var profitMargin = monthlyRevenue.TotalRevenue > 0 ? netProfit / monthlyRevenue.TotalRevenue * 100 : 0;
+
+            return new MonthlyBusinessReportDto
+            {
+                Year = year,
+                Month = month,
+                MonthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                Revenue = monthlyRevenue,
+                Occupancy = monthlyOccupancy,
+                CustomerStats = customerStats,
+                Expenses = expenses,
+                NetProfit = netProfit,
+                ProfitMargin = profitMargin
+            };
         }
 
-        public Task<YearlyBusinessReportDto> GetYearlyBusinessReportAsync(int year)
+        public async Task<YearlyBusinessReportDto> GetYearlyBusinessReportAsync(int year)
         {
-            throw new NotImplementedException();
+            var startDate = new DateTime(year, 1, 1);
+            var endDate = startDate.AddYears(1);
+
+            var totalRevenue = await _context.Payments
+                .Where(p => p.PaymentDate >= startDate && p.PaymentDate < endDate && p.Status == PaymentStatus.Completed)
+                .SumAsync(p => p.Amount);
+
+            var totalExpenses = 0m; // Placeholder - would need expense data
+
+            var netProfit = totalRevenue - totalExpenses;
+
+            // Calculate average occupancy for the year
+            var monthlyOccupancies = new List<decimal>();
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthOccupancy = await GetMonthlyOccupancyAsync(year, month);
+                monthlyOccupancies.Add(monthOccupancy.AverageOccupancyRate);
+            }
+            var averageOccupancy = monthlyOccupancies.Average();
+
+            var totalReservations = await _context.Reservations
+                .Where(r => r.CheckInDate >= startDate && r.CheckInDate < endDate)
+                .CountAsync();
+
+            var totalCustomers = await _context.Customers
+                .Where(c => c.Reservations.Any(r => r.CheckInDate >= startDate && r.CheckInDate < endDate))
+                .CountAsync();
+
+            var monthlyTrends = await GetMonthlyTrendsAsync(year);
+            var yearlyCustomerStats = await GetCustomerStatisticsAsync(startDate, endDate.AddDays(-1));
+
+            return new YearlyBusinessReportDto
+            {
+                Year = year,
+                TotalRevenue = totalRevenue,
+                TotalExpenses = totalExpenses,
+                NetProfit = netProfit,
+                AverageOccupancy = averageOccupancy,
+                TotalReservations = totalReservations,
+                TotalCustomers = totalCustomers,
+                MonthlyTrends = monthlyTrends,
+                YearlyCustomerStats = yearlyCustomerStats
+            };
         }
+
+        private async Task<List<MonthlyBusinessTrendDto>> GetMonthlyTrendsAsync(int year)
+        {
+            var trends = new List<MonthlyBusinessTrendDto>();
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var startDate = new DateTime(year, month, 1);
+                var endDate = startDate.AddMonths(1);
+
+                var monthRevenue = await _context.Payments
+                    .Where(p => p.PaymentDate >= startDate && p.PaymentDate < endDate && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => p.Amount);
+
+                var monthOccupancy = await GetMonthlyOccupancyAsync(year, month);
+
+                var monthReservations = await _context.Reservations
+                    .Where(r => r.CheckInDate >= startDate && r.CheckInDate < endDate)
+                    .CountAsync();
+
+                trends.Add(new MonthlyBusinessTrendDto
+                {
+                    Month = month,
+                    MonthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                    Revenue = monthRevenue,
+                    OccupancyRate = monthOccupancy.AverageOccupancyRate,
+                    Reservations = monthReservations
+                });
+            }
+
+            return trends;
+        }
+
+        #endregion
 
         #region Export Functions
 

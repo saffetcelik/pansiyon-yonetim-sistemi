@@ -211,6 +211,20 @@ namespace PansiyonYonetimSistemi.API.Controllers
 
         #region Dashboard Reports
 
+        [HttpGet("test")]
+        [AllRoles]
+        public IActionResult TestAuth()
+        {
+            var user = HttpContext.User;
+            var claims = user.Claims.Select(c => new { c.Type, c.Value }).ToList();
+            return Ok(new {
+                message = "Authentication successful",
+                user = user.Identity?.Name,
+                isAuthenticated = user.Identity?.IsAuthenticated,
+                claims = claims
+            });
+        }
+
         [HttpGet("dashboard/summary")]
         [AllRoles]
         public async Task<IActionResult> GetDashboardSummary([FromQuery] DateTime? date)
@@ -223,7 +237,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Dashboard özeti alınırken hata oluştu", error = ex.Message });
+                return StatusCode(500, new { message = "Dashboard özeti alınırken hata oluştu", error = ex.Message, stackTrace = ex.StackTrace });
             }
         }
 

@@ -80,6 +80,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Seed test data for reporting - DISABLED
+// using (var scope = app.Services.CreateScope())
+// {
+//     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//     try
+//     {
+//         await PansiyonYonetimSistemi.API.SeedTestData.SeedReportingDataAsync(context);
+//     }
+//     catch (Exception ex)
+//     {
+//         Console.WriteLine($"Error seeding test data: {ex.Message}");
+//     }
+// }
+
 app.UseHttpsRedirection();
 
 // CORS Middleware

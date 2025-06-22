@@ -102,94 +102,12 @@ namespace PansiyonYonetimSistemi.API.Data
                 await context.SaveChangesAsync();
             }
 
-            // Seed Sample Customers
-            if (!await context.Customers.AnyAsync())
-            {
-                var customers = new List<Customer>
-                {
-                    new Customer
-                    {
-                        FirstName = "Ahmet",
-                        LastName = "Yılmaz",
-                        TCKimlikNo = "12345678901",
-                        Phone = "0532 123 45 67",
-                        Email = "ahmet.yilmaz@email.com",
-                        Address = "Atatürk Cad. No:15 Merkez",
-                        City = "Antalya",
-                        Country = "Türkiye",
-                        DateOfBirth = new DateTime(1985, 5, 15, 0, 0, 0, DateTimeKind.Utc),
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new Customer
-                    {
-                        FirstName = "Fatma",
-                        LastName = "Kaya",
-                        TCKimlikNo = "98765432109",
-                        Phone = "0533 987 65 43",
-                        Email = "fatma.kaya@email.com",
-                        Address = "İnönü Sok. No:8 Merkez",
-                        City = "İstanbul",
-                        Country = "Türkiye",
-                        DateOfBirth = new DateTime(1990, 8, 22, 0, 0, 0, DateTimeKind.Utc),
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new Customer
-                    {
-                        FirstName = "John",
-                        LastName = "Smith",
-                        PassportNo = "US123456789",
-                        Phone = "+1 555 123 4567",
-                        Email = "john.smith@email.com",
-                        Address = "123 Main Street",
-                        City = "New York",
-                        Country = "USA",
-                        DateOfBirth = new DateTime(1982, 12, 10, 0, 0, 0, DateTimeKind.Utc),
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new Customer
-                    {
-                        FirstName = "Maria",
-                        LastName = "Garcia",
-                        PassportNo = "ES987654321",
-                        Phone = "+34 666 123 456",
-                        Email = "maria.garcia@email.com",
-                        Address = "Calle Mayor 45",
-                        City = "Madrid",
-                        Country = "Spain",
-                        DateOfBirth = new DateTime(1988, 3, 18, 0, 0, 0, DateTimeKind.Utc),
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new Customer
-                    {
-                        FirstName = "Mehmet",
-                        LastName = "Demir",
-                        TCKimlikNo = "11223344556",
-                        Phone = "0534 111 22 33",
-                        Email = "mehmet.demir@email.com",
-                        Address = "Cumhuriyet Mah. 123. Sok. No:7",
-                        City = "Ankara",
-                        Country = "Türkiye",
-                        DateOfBirth = new DateTime(1975, 11, 5, 0, 0, 0, DateTimeKind.Utc),
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new Customer
-                    {
-                        FirstName = "Ayşe",
-                        LastName = "Özkan",
-                        TCKimlikNo = "55667788990",
-                        Phone = "0535 555 66 77",
-                        Email = "ayse.ozkan@email.com",
-                        Address = "Bahçelievler Mah. 456. Cad. No:12",
-                        City = "İzmir",
-                        Country = "Türkiye",
-                        DateOfBirth = new DateTime(1992, 7, 30, 0, 0, 0, DateTimeKind.Utc),
-                        CreatedAt = DateTime.UtcNow
-                    }
-                };
-
-                context.Customers.AddRange(customers);
-                await context.SaveChangesAsync();
-            }
+            // Seed Sample Customers - DISABLED FOR PRODUCTION
+            // Müşteriler gerçek kullanımda manuel olarak eklenecek
+            // if (!await context.Customers.AnyAsync())
+            // {
+            //     // Test müşterileri burada olacak
+            // }
 
             // Seed Sample Products
             if (!await context.Products.AnyAsync())
@@ -422,120 +340,12 @@ namespace PansiyonYonetimSistemi.API.Data
                 await context.SaveChangesAsync();
             }
 
-            // Seed Sample Reservations
-            if (!await context.Reservations.AnyAsync())
-            {
-                var customers = await context.Customers.ToListAsync();
-                var rooms = await context.Rooms.ToListAsync();
-
-                if (customers.Any() && rooms.Any())
-                {
-                    var random = new Random();
-                    var reservations = new List<Reservation>();
-
-                    // Geçmiş rezervasyonlar (tamamlanmış)
-                    for (int i = 0; i < 8; i++)
-                    {
-                        var customer = customers[random.Next(customers.Count)];
-                        var room = rooms[random.Next(rooms.Count)];
-                        var checkInDate = DateTime.UtcNow.Date.AddDays(-random.Next(30, 90));
-                        var nights = random.Next(2, 7);
-                        var checkOutDate = checkInDate.AddDays(nights);
-
-                        reservations.Add(new Reservation
-                        {
-                            CustomerId = customer.Id,
-                            RoomId = room.Id,
-                            CheckInDate = checkInDate,
-                            CheckOutDate = checkOutDate,
-                            NumberOfGuests = random.Next(1, room.Capacity + 1),
-                            TotalAmount = room.PricePerNight * nights,
-                            PaidAmount = room.PricePerNight * nights,
-                            Status = ReservationStatus.CheckedOut,
-                            ActualCheckInDate = DateTime.SpecifyKind(checkInDate.AddHours(14), DateTimeKind.Utc),
-                            ActualCheckOutDate = DateTime.SpecifyKind(checkOutDate.AddHours(11), DateTimeKind.Utc),
-                            Notes = "Tamamlanmış rezervasyon",
-                            CreatedAt = checkInDate.AddDays(-random.Next(1, 10))
-                        });
-                    }
-
-                    // Mevcut rezervasyonlar (giriş yapılmış)
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var customer = customers[random.Next(customers.Count)];
-                        var room = rooms[random.Next(rooms.Count)];
-                        var checkInDate = DateTime.UtcNow.Date.AddDays(-random.Next(0, 3));
-                        var nights = random.Next(3, 8);
-                        var checkOutDate = checkInDate.AddDays(nights);
-
-                        reservations.Add(new Reservation
-                        {
-                            CustomerId = customer.Id,
-                            RoomId = room.Id,
-                            CheckInDate = checkInDate,
-                            CheckOutDate = checkOutDate,
-                            NumberOfGuests = random.Next(1, room.Capacity + 1),
-                            TotalAmount = room.PricePerNight * nights,
-                            PaidAmount = room.PricePerNight * nights * 0.8m, // %80 ödendi
-                            Status = ReservationStatus.CheckedIn,
-                            ActualCheckInDate = DateTime.SpecifyKind(checkInDate.AddHours(14), DateTimeKind.Utc),
-                            Notes = "Mevcut misafir",
-                            CreatedAt = checkInDate.AddDays(-random.Next(5, 15))
-                        });
-                    }
-
-                    // Gelecek rezervasyonlar (onaylanmış)
-                    for (int i = 0; i < 5; i++)
-                    {
-                        var customer = customers[random.Next(customers.Count)];
-                        var room = rooms[random.Next(rooms.Count)];
-                        var checkInDate = DateTime.UtcNow.Date.AddDays(random.Next(1, 30));
-                        var nights = random.Next(2, 10);
-                        var checkOutDate = checkInDate.AddDays(nights);
-
-                        reservations.Add(new Reservation
-                        {
-                            CustomerId = customer.Id,
-                            RoomId = room.Id,
-                            CheckInDate = checkInDate,
-                            CheckOutDate = checkOutDate,
-                            NumberOfGuests = random.Next(1, room.Capacity + 1),
-                            TotalAmount = room.PricePerNight * nights,
-                            PaidAmount = room.PricePerNight * nights * 0.5m, // %50 kapora
-                            Status = ReservationStatus.Confirmed,
-                            Notes = "Gelecek rezervasyon",
-                            CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 20))
-                        });
-                    }
-
-                    // Bekleyen rezervasyonlar
-                    for (int i = 0; i < 2; i++)
-                    {
-                        var customer = customers[random.Next(customers.Count)];
-                        var room = rooms[random.Next(rooms.Count)];
-                        var checkInDate = DateTime.UtcNow.Date.AddDays(random.Next(5, 20));
-                        var nights = random.Next(2, 5);
-                        var checkOutDate = checkInDate.AddDays(nights);
-
-                        reservations.Add(new Reservation
-                        {
-                            CustomerId = customer.Id,
-                            RoomId = room.Id,
-                            CheckInDate = checkInDate,
-                            CheckOutDate = checkOutDate,
-                            NumberOfGuests = random.Next(1, room.Capacity + 1),
-                            TotalAmount = room.PricePerNight * nights,
-                            PaidAmount = 0,
-                            Status = ReservationStatus.Pending,
-                            Notes = "Onay bekleyen rezervasyon",
-                            CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 5))
-                        });
-                    }
-
-                    context.Reservations.AddRange(reservations);
-                    await context.SaveChangesAsync();
-                }
-            }
+            // Seed Sample Reservations - DISABLED FOR PRODUCTION
+            // Rezervasyonlar gerçek kullanımda manuel olarak eklenecek
+            // if (!await context.Reservations.AnyAsync())
+            // {
+            //     // Test rezervasyonları burada olacak
+            // }
         }
 
         private static string HashPassword(string password)

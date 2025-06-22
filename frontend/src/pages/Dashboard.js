@@ -6,6 +6,7 @@ import Reservations from './Reservations';
 import Customers from './Customers';
 import Products from './Products';
 import Sales from './Sales';
+import Reports from './Reports';
 import { reservationService, customerService, roomService } from '../services/api';
 
 const Dashboard = () => {
@@ -95,6 +96,8 @@ const Dashboard = () => {
         return <Products />;
       case 'sales':
         return <Sales />;
+      case 'reports':
+        return <Reports />;
       case 'dashboard':
       default:
         return (
@@ -225,15 +228,13 @@ const Dashboard = () => {
                   <p className="text-sm text-orange-700">Hızlı satış işlemleri</p>
                 </button>
 
-                {user?.roleName === 'Admin' && (
-                  <button
-                    onClick={() => setActiveTab('reports')}
-                    className="bg-red-50 hover:bg-red-100 p-4 rounded-lg text-left transition-colors"
-                  >
-                    <h4 className="font-semibold text-red-900 mb-1">📊 Raporlar</h4>
-                    <p className="text-sm text-red-700">Detaylı raporları görüntüle</p>
-                  </button>
-                )}
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg text-left transition-colors"
+                >
+                  <h4 className="font-semibold text-indigo-900 mb-1">📊 Raporlar</h4>
+                  <p className="text-sm text-indigo-700">Detaylı analiz ve raporlar</p>
+                </button>
               </div>
             </div>
 

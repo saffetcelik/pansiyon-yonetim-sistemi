@@ -16,11 +16,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<ReservationController> _logger;
 
-        public ReservationController(ApplicationDbContext context, IMapper mapper)
+        public ReservationController(ApplicationDbContext context, IMapper mapper, ILogger<ReservationController> logger)
         {
             _context = context;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -264,6 +266,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 }
 
                 _mapper.Map(updateReservationDto, reservation);
+
+                // Update status if provided
+                if (updateReservationDto.Status.HasValue)
+                {
+                    reservation.Status = updateReservationDto.Status.Value;
+                }
+
                 reservation.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
@@ -303,6 +312,32 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     Console.WriteLine($"InnerException: {ex.InnerException.Message}");
                 }
                 return StatusCode(500, new { message = "Rezervasyon güncellenirken hata oluştu", error = ex.Message, details = ex.StackTrace });
+            }
+        }
+
+        [HttpPatch("{id}/status")]
+        [AllRoles]
+        public async Task<IActionResult> UpdateReservationStatus(int id, [FromBody] UpdateStatusDto updateStatusDto)
+        {
+            try
+            {
+                var reservation = await _context.Reservations.FindAsync(id);
+                if (reservation == null)
+                {
+                    return NotFound(new { message = "Rezervasyon bulunamadı" });
+                }
+
+                reservation.Status = updateStatusDto.Status;
+                reservation.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Rezervasyon durumu güncellendi" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UpdateReservationStatus Error");
+                return StatusCode(500, new { message = "Rezervasyon durumu güncellenirken bir hata oluştu" });
             }
         }
 
@@ -355,11 +390,12 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return NotFound(new { message = "Rezervasyon bulunamadı" });
                 }
 
-                if (reservation.Status != ReservationStatus.Confirmed)
+                if (reservation.Status != ReservationStatus.Confirmed && reservation.Status != ReservationStatus.Pending)
                 {
-                    return BadRequest(new { message = "Sadece onaylanmış rezervasyonlar için check-in yapılabilir" });
+                    return BadRequest(new { message = "Sadece beklemede veya onaylanmış rezervasyonlar için check-in yapılabilir" });
                 }
 
+                // If reservation was pending, it's now automatically confirmed and checked in
                 reservation.Status = ReservationStatus.CheckedIn;
                 reservation.ActualCheckInDate = checkInDto.ActualCheckInDate;
                 reservation.UpdatedAt = DateTime.UtcNow;

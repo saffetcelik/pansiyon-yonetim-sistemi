@@ -69,6 +69,13 @@ namespace PansiyonYonetimSistemi.API.DTOs
     public class UpdateReservationDto : CreateReservationDto
     {
         public int Id { get; set; }
+        public ReservationStatus? Status { get; set; }
+    }
+
+    public class UpdateStatusDto
+    {
+        [Required(ErrorMessage = "Durum seçimi zorunludur")]
+        public ReservationStatus Status { get; set; }
     }
 
     public class CheckInDto

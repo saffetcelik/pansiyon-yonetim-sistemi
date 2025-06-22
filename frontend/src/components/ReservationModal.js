@@ -21,6 +21,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
     numberOfGuests: 1,
     totalAmount: 0,
     paidAmount: 0,
+    status: 0, // Default: Beklemede
     notes: ''
   });
 
@@ -44,6 +45,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         numberOfGuests: reservation.numberOfGuests,
         totalAmount: reservation.totalAmount,
         paidAmount: reservation.paidAmount,
+        status: reservation.status,
         notes: reservation.notes || ''
       });
       setSelectedCustomer({
@@ -60,6 +62,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         numberOfGuests: 1,
         totalAmount: 0,
         paidAmount: 0,
+        status: 0, // Default: Beklemede
         notes: ''
       });
       setSelectedCustomer(null);
@@ -404,6 +407,27 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 </p>
               )}
             </div>
+
+            {/* Status Selection (only for edit mode) */}
+            {isEdit && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rezervasyon Durumu
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={0}>Beklemede</option>
+                  <option value={1}>Onaylandı</option>
+                  <option value={2}>Giriş Yapıldı</option>
+                  <option value={3}>Çıkış Yapıldı</option>
+                  <option value={4}>İptal Edildi</option>
+                  <option value={5}>Gelmedi</option>
+                </select>
+              </div>
+            )}
 
             {/* Number of Guests and Amounts */}
             <div className="grid grid-cols-3 gap-4">

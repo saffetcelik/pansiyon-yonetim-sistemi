@@ -258,7 +258,18 @@ namespace PansiyonYonetimSistemi.API.Services
         public decimal AverageOccupancy { get; set; }
         public int TotalReservations { get; set; }
         public int TotalCustomers { get; set; }
-        public List<MonthlyTrendDto> MonthlyTrends { get; set; } = new();
+        public List<MonthlyBusinessTrendDto> MonthlyTrends { get; set; } = new();
         public CustomerStatisticsDto YearlyCustomerStats { get; set; } = new();
     }
+
+    public class MonthlyBusinessTrendDto
+    {
+        public int Month { get; set; }
+        public string MonthName { get; set; } = string.Empty;
+        public decimal Revenue { get; set; }
+        public decimal OccupancyRate { get; set; }
+        public int Reservations { get; set; }
+    }
+
+
 }
