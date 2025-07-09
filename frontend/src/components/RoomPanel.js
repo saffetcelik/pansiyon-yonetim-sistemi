@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchRooms, updateRoomStatus } from '../store/roomSlice';
+import { fetchRooms, updateRoomStatus, createRoom, updateRoom, deleteRoom } from '../store/roomSlice';
 import { ROOM_STATUS, ROOM_STATUS_NAMES, ROOM_STATUS_COLORS } from '../services/roomService';
+import RoomFormModal from './RoomFormModal';
 
 const RoomPanel = () => {
   const dispatch = useDispatch();
   const { rooms, loading, error } = useSelector((state) => state.rooms);
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedRoomForStatus, setSelectedRoomForStatus] = useState(null);
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState(null);
   const [hoveredRoom, setHoveredRoom] = useState(null);
 
   useEffect(() => {
@@ -14,15 +18,42 @@ const RoomPanel = () => {
   }, [dispatch]);
 
   const handleRoomClick = (room) => {
-    setSelectedRoom(room);
+    setSelectedRoomForStatus(room);
   };
 
   const handleStatusChange = async (roomId, newStatus) => {
     try {
       await dispatch(updateRoomStatus({ roomId, status: newStatus })).unwrap();
-      setSelectedRoom(null);
+      setSelectedRoomForStatus(null);
     } catch (error) {
       console.error('Oda durumu güncellenemedi:', error);
+    }
+  };
+
+  const handleSaveRoom = async (roomData) => {
+    try {
+      if (roomData.id) {
+        await dispatch(updateRoom({ roomId: roomData.id, roomData })).unwrap();
+      } else {
+        await dispatch(createRoom(roomData)).unwrap();
+      }
+      setEditingRoom(null);
+      setIsNewRoomModalOpen(false);
+    } catch (err) {
+      console.error('Oda kaydedilemedi:', err);
+      // Hata mesajını kullanıcıya gösterebiliriz.
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!roomToDelete) return;
+    try {
+      await dispatch(deleteRoom(roomToDelete.id)).unwrap();
+      setRoomToDelete(null);
+    } catch (err) {
+      console.error('Oda silinemedi:', err);
+      // Hata mesajını kullanıcıya gösterebiliriz.
+      setRoomToDelete(null); // Hata durumunda da dialogu kapat
     }
   };
 
@@ -76,9 +107,12 @@ const RoomPanel = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2 style={{ marginBottom: '20px', color: '#333' }}>
-        🏨 Oda Durumu Paneli ({rooms.length} Oda)
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ color: '#333', margin: 0 }}>
+          🏨 Oda Yönetimi ({rooms.length} Oda)
+        </h2>
+        <button onClick={() => setIsNewRoomModalOpen(true)} className="btn-primary">+ Yeni Oda Ekle</button>
+      </div>
 
       {/* Room Grid */}
       <div style={{
@@ -90,7 +124,6 @@ const RoomPanel = () => {
         {rooms.map((room) => (
           <div
             key={room.id}
-            onClick={() => handleRoomClick(room)}
             onMouseEnter={() => setHoveredRoom(room.id)}
             onMouseLeave={() => setHoveredRoom(null)}
             className="room-card"
@@ -98,15 +131,14 @@ const RoomPanel = () => {
               border: '2px solid #ddd',
               borderRadius: '12px',
               padding: '15px',
-              cursor: 'pointer',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              backgroundColor: selectedRoom?.id === room.id ? '#e3f2fd' :
+              backgroundColor: selectedRoomForStatus?.id === room.id ? '#e3f2fd' :
                              hoveredRoom === room.id ? '#f8f9fa' : 'white',
-              borderColor: selectedRoom?.id === room.id ? '#2196f3' :
+              borderColor: selectedRoomForStatus?.id === room.id ? '#2196f3' :
                           hoveredRoom === room.id ? getRoomStatusColor(room.status) : '#ddd',
-              boxShadow: selectedRoom?.id === room.id ? '0 8px 25px rgba(33, 150, 243, 0.4)' :
+              boxShadow: selectedRoomForStatus?.id === room.id ? '0 8px 25px rgba(33, 150, 243, 0.4)' :
                         hoveredRoom === room.id ? '0 6px 20px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.08)',
-              transform: selectedRoom?.id === room.id ? 'translateY(-4px) scale(1.02)' :
+              transform: selectedRoomForStatus?.id === room.id ? 'translateY(-4px) scale(1.02)' :
                         hoveredRoom === room.id ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
               position: 'relative',
               overflow: 'hidden'
@@ -127,6 +159,19 @@ const RoomPanel = () => {
               }} />
             )}
 
+            <div style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              zIndex: 2,
+              display: 'flex',
+              gap: '5px'
+            }}>
+              <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); }} className="btn-icon">✏️</button>
+              <button onClick={(e) => { e.stopPropagation(); setRoomToDelete(room); }} className="btn-icon btn-danger">🗑️</button>
+            </div>
+
+            <div onClick={() => handleRoomClick(room)} style={{ cursor: 'pointer' }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -235,37 +280,53 @@ const RoomPanel = () => {
                 </div>
               )}
             </div>
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Modals */}
+      {isNewRoomModalOpen && (
+        <RoomFormModal
+          room={null} // Explicitly pass null for a new room
+          rooms={rooms} // Pass all rooms for validation
+          onClose={() => setIsNewRoomModalOpen(false)}
+          onSave={handleSaveRoom}
+        />
+      )}
+
+      {editingRoom && (
+        <RoomFormModal
+          room={editingRoom}
+          rooms={rooms} // Pass all rooms for validation
+          onClose={() => setEditingRoom(null)}
+          onSave={handleSaveRoom}
+        />
+      )}
+
+      {roomToDelete && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <h2>Odayı Sil</h2>
+            <p><strong>Oda {roomToDelete.roomNumber}</strong>'i silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+            <div className="form-actions">
+              <button onClick={handleDeleteRoom} className="btn-danger">Evet, Sil</button>
+              <button onClick={() => setRoomToDelete(null)} className="btn-secondary">İptal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Status Change Modal */}
-      {selectedRoom && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            padding: '30px',
-            borderRadius: '12px',
-            minWidth: '400px',
-            maxWidth: '500px'
-          }}>
+      {selectedRoomForStatus && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ minWidth: '400px', maxWidth: '500px' }}>
             <h3 style={{ marginTop: 0, color: '#333' }}>
-              Oda {selectedRoom.roomNumber} - Durum Değiştir
+              Oda {selectedRoomForStatus.roomNumber} - Durum Değiştir
             </h3>
             
             <p style={{ color: '#666', marginBottom: '20px' }}>
-              Şu anki durum: <strong>{ROOM_STATUS_NAMES[selectedRoom.status]}</strong>
+              Şu anki durum: <strong>{ROOM_STATUS_NAMES[selectedRoomForStatus.status]}</strong>
             </p>
 
             <div style={{ marginBottom: '20px' }}>
@@ -273,73 +334,24 @@ const RoomPanel = () => {
               {Object.entries(ROOM_STATUS_NAMES).map(([status, name]) => (
                 <button
                   key={status}
-                  onClick={() => handleStatusChange(selectedRoom.id, parseInt(status))}
-                  disabled={parseInt(status) === selectedRoom.status}
-                  style={{
-                    display: 'block',
+                  onClick={() => handleStatusChange(selectedRoomForStatus.id, parseInt(status))}
+                  disabled={parseInt(status) === selectedRoomForStatus.status}
+                  className={`btn-status ${parseInt(status) === selectedRoomForStatus.status ? 'disabled' : ''}`}
+                  style={{ 
+                    '--status-color': getRoomStatusColor(parseInt(status)),
                     width: '100%',
-                    padding: '12px',
                     margin: '5px 0',
-                    border: 'none',
-                    borderRadius: '8px',
-                    backgroundColor: parseInt(status) === selectedRoom.status
-                      ? '#f5f5f5'
-                      : getRoomStatusColor(parseInt(status)),
-                    color: parseInt(status) === selectedRoom.status ? '#999' : 'white',
-                    cursor: parseInt(status) === selectedRoom.status ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    transform: 'scale(1)',
-                    boxShadow: parseInt(status) === selectedRoom.status ? 'none' : '0 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (parseInt(status) !== selectedRoom.status) {
-                      e.target.style.transform = 'scale(1.02) translateY(-1px)';
-                      e.target.style.boxShadow = `0 4px 12px ${getRoomStatusColor(parseInt(status))}40`;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (parseInt(status) !== selectedRoom.status) {
-                      e.target.style.transform = 'scale(1) translateY(0)';
-                      e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                    }
                   }}
                 >
-                  <span style={{
-                    display: 'inline-block',
-                    marginRight: '8px',
-                    transition: 'transform 0.3s ease'
-                  }}>
-                    {getRoomIcon(parseInt(status))}
-                  </span>
+                  <span style={{ marginRight: '8px' }}>{getRoomIcon(parseInt(status))}</span>
                   {name}
                 </button>
               ))}
             </div>
 
             <button
-              onClick={() => setSelectedRoom(null)}
-              style={{
-                padding: '10px 20px',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.3s ease',
-                transform: 'scale(1)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'scale(1.05)';
-                e.target.style.backgroundColor = '#f8f9fa';
-                e.target.style.borderColor = '#adb5bd';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.backgroundColor = 'white';
-                e.target.style.borderColor = '#ddd';
-              }}
+              onClick={() => setSelectedRoomForStatus(null)}
+              className="btn-secondary"
             >
               İptal
             </button>

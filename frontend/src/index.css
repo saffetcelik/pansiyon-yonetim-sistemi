@@ -125,6 +125,115 @@
   .badge-gray {
     @apply badge bg-gray-100 text-gray-800;
   }
+
+  /* Modal Styles */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 transition-opacity duration-300;
+  }
+
+  .modal-content {
+    @apply bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md m-4 transform transition-all duration-300 scale-95 opacity-0;
+  }
+
+  .modal-backdrop.active .modal-content {
+      @apply scale-100 opacity-100;
+  }
+
+  .modal-content h2 {
+    @apply text-2xl font-bold mb-6 text-gray-800;
+  }
+
+  /* Form Styles */
+  .form-group {
+    @apply mb-5;
+  }
+
+  .form-group label {
+    @apply block text-sm font-medium text-gray-600 mb-1;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="number"] {
+    @apply mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 sm:text-sm transition-shadow duration-200;
+  }
+
+  .form-group-checkbox {
+    @apply flex items-center mb-4;
+  }
+
+  .form-group-checkbox input {
+    @apply w-5 h-5 mr-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2;
+  }
+
+  .form-group-checkbox label {
+    @apply text-sm font-medium text-gray-700;
+  }
+
+  /* RoomFormModal specific styles for better layout */
+  .modal-content .form-group {
+      @apply mb-5;
+  }
+
+  .modal-content .form-group label {
+      @apply block mb-2 text-sm font-bold text-gray-700;
+  }
+
+  .modal-content .form-group input,
+  .modal-content .form-group .numeric-input {
+      @apply w-full px-4 py-2 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150 ease-in-out;
+  }
+
+  .modal-content .form-group-checkbox {
+      @apply flex items-center justify-start mb-5;
+  }
+
+  .modal-content .form-group-checkbox input {
+      @apply w-5 h-5 mr-3;
+  }
+
+  .modal-content .form-group-checkbox label {
+      @apply font-medium text-gray-800;
+  }
+
+  .form-actions {
+    @apply flex justify-end gap-3 mt-8;
+  }
+
+  /* Custom Buttons */
+  .btn-icon {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full h-8 w-8 flex items-center justify-center transition-all duration-200 ease-in-out shadow-sm hover:shadow-md;
+  }
+
+  .btn-icon.btn-danger {
+      @apply text-danger-500 hover:bg-danger-100 hover:text-danger-600;
+  }
+
+  .btn-status {
+      @apply w-full text-left p-3 rounded-lg font-semibold text-white transition-all duration-200 ease-in-out shadow-md;
+      background-color: var(--status-color);
+  }
+
+  .btn-status:hover:not(.disabled) {
+      @apply brightness-110;
+      transform: translateY(-2px);
+  }
+
+  .btn-status.disabled {
+      @apply bg-gray-200 text-gray-500 cursor-not-allowed shadow-inner;
+      background-color: #e5e7eb;
+  }
+
+  /* Room Card adjustments */
+  .room-card .btn-icon {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .room-card:hover .btn-icon {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @layer utilities {

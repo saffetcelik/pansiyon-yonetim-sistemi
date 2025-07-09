@@ -82,6 +82,22 @@ export const updateRoom = createAsyncThunk(
   }
 );
 
+export const deleteRoom = createAsyncThunk(
+  'rooms/deleteRoom',
+  async (roomId, { rejectWithValue }) => {
+    try {
+      const result = await roomService.deleteRoom(roomId);
+      if (result.success) {
+        return roomId; // Return the id of the deleted room on success
+      } else {
+        return rejectWithValue(result.error);
+      }
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const initialState = {
   rooms: [],
   statusSummary: [],
@@ -98,20 +114,8 @@ const roomSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    setSelectedRoom: (state, action) => {
+    selectRoom: (state, action) => {
       state.selectedRoom = action.payload;
-    },
-    clearSelectedRoom: (state) => {
-      state.selectedRoom = null;
-    },
-    // Optimistic update for room status
-    updateRoomStatusOptimistic: (state, action) => {
-      const { roomId, status } = action.payload;
-      const room = state.rooms.find(r => r.id === roomId);
-      if (room) {
-        room.status = status;
-        room.updatedAt = new Date().toISOString();
-      }
     },
   },
   extraReducers: (builder) => {
@@ -124,77 +128,39 @@ const roomSlice = createSlice({
       .addCase(fetchRooms.fulfilled, (state, action) => {
         state.loading = false;
         state.rooms = action.payload;
-        state.lastUpdated = new Date().toISOString();
-        state.error = null;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchRooms.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
       // Update room status cases
-      .addCase(updateRoomStatus.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(updateRoomStatus.fulfilled, (state, action) => {
-        state.loading = false;
-        const updatedRoom = action.payload;
-        const index = state.rooms.findIndex(r => r.id === updatedRoom.id);
+        const index = state.rooms.findIndex(room => room.id === action.payload.id);
         if (index !== -1) {
-          state.rooms[index] = updatedRoom;
+          state.rooms[index] = action.payload;
         }
-        state.lastUpdated = new Date().toISOString();
-        state.error = null;
-      })
-      .addCase(updateRoomStatus.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       })
       // Fetch status summary cases
-      .addCase(fetchRoomStatusSummary.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(fetchRoomStatusSummary.fulfilled, (state, action) => {
-        state.loading = false;
         state.statusSummary = action.payload;
-        state.error = null;
-      })
-      .addCase(fetchRoomStatusSummary.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       })
       // Create room cases
-      .addCase(createRoom.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(createRoom.fulfilled, (state, action) => {
-        state.loading = false;
         state.rooms.push(action.payload);
-        state.error = null;
-      })
-      .addCase(createRoom.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+        state.rooms.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true }));
       })
       // Update room cases
-      .addCase(updateRoom.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(updateRoom.fulfilled, (state, action) => {
-        state.loading = false;
-        const updatedRoom = action.payload;
-        const index = state.rooms.findIndex(r => r.id === updatedRoom.id);
+        const index = state.rooms.findIndex(room => room.id === action.payload.id);
         if (index !== -1) {
-          state.rooms[index] = updatedRoom;
+          state.rooms[index] = action.payload;
         }
-        state.error = null;
+        state.rooms.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true }));
       })
-      .addCase(updateRoom.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      // Delete room cases
+      .addCase(deleteRoom.fulfilled, (state, action) => {
+        state.rooms = state.rooms.filter(room => room.id !== action.payload);
       });
   },
 });
