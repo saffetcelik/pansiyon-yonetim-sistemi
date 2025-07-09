@@ -305,7 +305,7 @@ const RoomPanel = () => {
       )}
 
       {roomToDelete && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop active">
           <div className="modal-content">
             <h2>Odayı Sil</h2>
             <p><strong>Oda {roomToDelete.roomNumber}</strong>'i silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
@@ -319,7 +319,7 @@ const RoomPanel = () => {
 
       {/* Status Change Modal */}
       {selectedRoomForStatus && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop active">
           <div className="modal-content" style={{ minWidth: '400px', maxWidth: '500px' }}>
             <h3 style={{ marginTop: 0, color: '#333' }}>
               Oda {selectedRoomForStatus.roomNumber} - Durum Değiştir
