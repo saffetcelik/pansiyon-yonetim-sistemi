@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../store/authSlice';
-import RoomPanel from '../components/RoomPanel';
 import Reservations from './Reservations';
 import Customers from './Customers';
 import Products from './Products';
 import Sales from './Sales';
 import Reports from './Reports';
+import Rooms from './Rooms';
 import { reservationService, customerService, roomService } from '../services/api';
+import RoomPanel from '../components/RoomPanel';
+import RoomStatusList from '../components/RoomStatusList';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -98,6 +100,8 @@ const Dashboard = () => {
         return <Sales />;
       case 'reports':
         return <Reports />;
+      case 'rooms':
+        return <Rooms />;
       case 'dashboard':
       default:
         return (
@@ -193,53 +197,12 @@ const Dashboard = () => {
                   </div>
                 </div>
               )}
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                <button
-                  onClick={() => setActiveTab('reservations')}
-                  className="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-blue-900 mb-1">📅 Rezervasyonlar</h4>
-                  <p className="text-sm text-blue-700">Rezervasyonları görüntüle ve yönet</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('customers')}
-                  className="bg-green-50 hover:bg-green-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-green-900 mb-1">👥 Müşteriler</h4>
-                  <p className="text-sm text-green-700">Müşteri bilgilerini yönet</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('products')}
-                  className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-purple-900 mb-1">📦 Ürünler</h4>
-                  <p className="text-sm text-purple-700">Büfe ürünleri ve stok yönetimi</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('sales')}
-                  className="bg-orange-50 hover:bg-orange-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-orange-900 mb-1">🛒 Büfe Satış</h4>
-                  <p className="text-sm text-orange-700">Hızlı satış işlemleri</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('reports')}
-                  className="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-indigo-900 mb-1">📊 Raporlar</h4>
-                  <p className="text-sm text-indigo-700">Detaylı analiz ve raporlar</p>
-                </button>
-              </div>
             </div>
-
-            {/* Room Management Panel */}
-            <RoomPanel />
+            {/* RoomPanel (readonly) */}
+            <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+              <h3 className="text-xl font-bold mb-4">Oda Durumları</h3>
+              <RoomPanel readOnly />
+            </div>
           </div>
         );
     }

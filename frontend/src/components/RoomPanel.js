@@ -4,7 +4,7 @@ import { fetchRooms, updateRoomStatus, createRoom, updateRoom, deleteRoom } from
 import { ROOM_STATUS, ROOM_STATUS_NAMES, ROOM_STATUS_COLORS } from '../services/roomService';
 import RoomFormModal from './RoomFormModal';
 
-const RoomPanel = () => {
+const RoomPanel = ({ readOnly = false }) => {
   const dispatch = useDispatch();
   const { rooms, loading, error } = useSelector((state) => state.rooms);
   const [selectedRoomForStatus, setSelectedRoomForStatus] = useState(null);
@@ -111,7 +111,9 @@ const RoomPanel = () => {
         <h2 style={{ color: '#333', margin: 0 }}>
           🏨 Oda Yönetimi ({rooms.length} Oda)
         </h2>
-        <button onClick={() => setIsNewRoomModalOpen(true)} className="btn-primary">+ Yeni Oda Ekle</button>
+        {!readOnly && (
+          <button onClick={() => setIsNewRoomModalOpen(true)} className="btn-primary">+ Yeni Oda Ekle</button>
+        )}
       </div>
 
       {/* Room Grid */}
@@ -158,20 +160,20 @@ const RoomPanel = () => {
                 opacity: 0.3
               }} />
             )}
-
-            <div style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              zIndex: 2,
-              display: 'flex',
-              gap: '5px'
-            }}>
-              <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); }} className="btn-icon">✏️</button>
-              <button onClick={(e) => { e.stopPropagation(); setRoomToDelete(room); }} className="btn-icon btn-danger">🗑️</button>
-            </div>
-
-            <div onClick={() => handleRoomClick(room)} style={{ cursor: 'pointer' }}>
+            {!readOnly && (
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                zIndex: 2,
+                display: 'flex',
+                gap: '5px'
+              }}>
+                <button onClick={(e) => { e.stopPropagation(); setEditingRoom(room); }} className="btn-icon">✏️</button>
+                <button onClick={(e) => { e.stopPropagation(); setRoomToDelete(room); }} className="btn-icon btn-danger">🗑️</button>
+              </div>
+            )}
+            <div onClick={() => !readOnly && handleRoomClick(room)} style={{ cursor: readOnly ? 'default' : 'pointer' }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -286,7 +288,7 @@ const RoomPanel = () => {
       </div>
 
       {/* Modals */}
-      {isNewRoomModalOpen && (
+      {!readOnly && isNewRoomModalOpen && (
         <RoomFormModal
           room={null} // Explicitly pass null for a new room
           rooms={rooms} // Pass all rooms for validation
@@ -295,7 +297,7 @@ const RoomPanel = () => {
         />
       )}
 
-      {editingRoom && (
+      {!readOnly && editingRoom && (
         <RoomFormModal
           room={editingRoom}
           rooms={rooms} // Pass all rooms for validation
@@ -304,7 +306,7 @@ const RoomPanel = () => {
         />
       )}
 
-      {roomToDelete && (
+      {!readOnly && roomToDelete && (
         <div className="modal-backdrop active">
           <div className="modal-content">
             <h2>Odayı Sil</h2>
@@ -318,7 +320,7 @@ const RoomPanel = () => {
       )}
 
       {/* Status Change Modal */}
-      {selectedRoomForStatus && (
+      {!readOnly && selectedRoomForStatus && (
         <div className="modal-backdrop active">
           <div className="modal-content" style={{ minWidth: '400px', maxWidth: '500px' }}>
             <h3 style={{ marginTop: 0, color: '#333' }}>
@@ -361,7 +363,7 @@ const RoomPanel = () => {
 
       {/* Status Summary */}
       <div style={{
-        marginTop: '30px',
+        marginTop: '50px',
         padding: '20px',
         backgroundColor: '#f8f9fa',
         borderRadius: '8px'
@@ -370,7 +372,8 @@ const RoomPanel = () => {
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '15px'
+          gap: '15px',
+          marginTop: '24px' // Başlık ile kutular arasına ekstra boşluk eklendi
         }}>
           {Object.entries(ROOM_STATUS_NAMES).map(([status, name]) => {
             const count = rooms.filter(room => room.status === parseInt(status)).length;
