@@ -31,6 +31,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedCustomers, setSelectedCustomers] = useState([]); // Çoklu müşteri listesi
   const [formErrors, setFormErrors] = useState({});
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [selectedRoomOccupiedDates, setSelectedRoomOccupiedDates] = useState([]);
@@ -53,6 +54,23 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         id: reservation.customerId,
         fullName: reservation.customerName
       });
+
+      // Edit modunda rezervasyondaki müşterileri yükle
+      if (reservation.customers && reservation.customers.length > 0) {
+        const customers = reservation.customers.map(c => ({
+          id: c.customerId,
+          fullName: c.customerName,
+          tcKimlikNo: c.tcKimlikNo,
+          phone: c.phone
+        }));
+        setSelectedCustomers(customers);
+      } else {
+        // Eski rezervasyonlar için sadece ana müşteriyi ekle
+        setSelectedCustomers([{
+          id: reservation.customerId,
+          fullName: reservation.customerName
+        }]);
+      }
     } else {
       // Reset form for new reservation
       setFormData({
@@ -67,6 +85,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         notes: ''
       });
       setSelectedCustomer(null);
+      setSelectedCustomers([]); // Çoklu müşteri listesini temizle
+      setCustomerSearch('');
     }
   }, [isEdit, reservation]);
 
@@ -178,10 +198,52 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   };
 
   const handleCustomerSelect = (customer) => {
-    setSelectedCustomer(customer);
-    setFormData(prev => ({ ...prev, customerId: customer.id }));
-    setCustomerSearch(customer.fullName);
+    // Oda kapasitesi kontrolü
+    const selectedRoom = availableRooms.find(room => room.id == formData.roomId) ||
+                        rooms.find(room => room.id == formData.roomId);
+
+    if (selectedRoom && selectedCustomers.length >= selectedRoom.capacity) {
+      alert(`Bu oda maksimum ${selectedRoom.capacity} kişi kapasitesine sahiptir.`);
+      return;
+    }
+
+    // Müşteriyi listeye ekle (eğer zaten yoksa)
+    if (!selectedCustomers.find(c => c.id === customer.id)) {
+      const newCustomers = [...selectedCustomers, customer];
+      setSelectedCustomers(newCustomers);
+
+      // İlk müşteri ana müşteri olur
+      if (newCustomers.length === 1) {
+        setSelectedCustomer(customer);
+        setFormData(prev => ({ ...prev, customerId: customer.id }));
+      }
+
+      // Misafir sayısını güncelle
+      setFormData(prev => ({ ...prev, numberOfGuests: newCustomers.length }));
+    }
+
+    setCustomerSearch('');
     setShowCustomerDropdown(false);
+  };
+
+  // Müşteri kaldırma fonksiyonu
+  const handleRemoveCustomer = (customerId) => {
+    const newCustomers = selectedCustomers.filter(c => c.id !== customerId);
+    setSelectedCustomers(newCustomers);
+
+    // Eğer ana müşteri kaldırılıyorsa, yeni ana müşteri belirle
+    if (selectedCustomer?.id === customerId) {
+      const newPrimaryCustomer = newCustomers.length > 0 ? newCustomers[0] : null;
+      setSelectedCustomer(newPrimaryCustomer);
+      setFormData(prev => ({
+        ...prev,
+        customerId: newPrimaryCustomer?.id || '',
+        numberOfGuests: newCustomers.length || 1
+      }));
+    } else {
+      // Sadece misafir sayısını güncelle
+      setFormData(prev => ({ ...prev, numberOfGuests: newCustomers.length || 1 }));
+    }
   };
 
   // Otomatik fiyat hesaplama
@@ -342,8 +404,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.customerId) {
-      errors.customerId = 'Müşteri seçimi zorunludur';
+    if (!formData.customerId || selectedCustomers.length === 0) {
+      errors.customerId = 'En az bir müşteri seçimi zorunludur';
     }
 
     if (!formData.roomId) {
@@ -411,7 +473,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         checkOutDate: new Date(formData.checkOutDate).toISOString(),
         numberOfGuests: parseInt(formData.numberOfGuests),
         totalAmount: parseFloat(formData.totalAmount),
-        paidAmount: parseFloat(formData.paidAmount)
+        paidAmount: parseFloat(formData.paidAmount),
+        customerIds: selectedCustomers.map(c => c.id) // Çoklu müşteri ID'leri
       };
 
       if (isEdit) {
@@ -732,14 +795,47 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
             {/* Customer Selection */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Müşteri *
+                Müşteriler *
+                {formData.roomId && (
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({selectedCustomers.length}/{rooms.find(r => r.id == formData.roomId)?.capacity || availableRooms.find(r => r.id == formData.roomId)?.capacity || 0} kişi)
+                  </span>
+                )}
               </label>
+
+              {/* Selected Customers List */}
+              {selectedCustomers.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {selectedCustomers.map((customer, index) => (
+                    <div key={customer.id} className="flex items-center justify-between bg-blue-50 p-2 rounded-md">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                          {index === 0 ? 'Ana Müşteri' : `Misafir ${index}`}
+                        </span>
+                        <span className="font-medium text-blue-900">{customer.fullName}</span>
+                        {customer.tcKimlikNo && (
+                          <span className="text-xs text-blue-600">TC: {customer.tcKimlikNo}</span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomer(customer.id)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                        title="Müşteriyi kaldır"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <input
                 type="text"
                 value={customerSearch}
                 onChange={(e) => handleCustomerSearch(e.target.value)}
                 onFocus={() => setShowCustomerDropdown(true)}
-                placeholder="Müşteri adı, TC kimlik veya telefon ile ara..."
+                placeholder="Müşteri eklemek için ara..."
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   formErrors.customerId ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -751,7 +847,9 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
               {/* Customer Dropdown */}
               {showCustomerDropdown && customers.length > 0 && (
                 <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {customers.map((customer) => (
+                  {customers
+                    .filter(customer => !selectedCustomers.find(sc => sc.id === customer.id))
+                    .map((customer) => (
                     <div
                       key={customer.id}
                       onClick={() => handleCustomerSelect(customer)}
@@ -764,14 +862,11 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-
-              {selectedCustomer && (
-                <div className="mt-2 p-2 bg-blue-50 rounded-md">
-                  <span className="text-sm text-blue-700">
-                    Seçili: {selectedCustomer.fullName}
-                  </span>
+                  {customers.filter(customer => !selectedCustomers.find(sc => sc.id === customer.id)).length === 0 && (
+                    <div className="px-4 py-2 text-gray-500 text-sm">
+                      Tüm müşteriler zaten eklendi
+                    </div>
+                  )}
                 </div>
               )}
             </div>

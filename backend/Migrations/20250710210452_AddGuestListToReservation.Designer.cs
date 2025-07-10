@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PansiyonYonetimSistemi.API.Data;
@@ -11,9 +12,11 @@ using PansiyonYonetimSistemi.API.Data;
 namespace PansiyonYonetimSistemi.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250710210452_AddGuestListToReservation")]
+    partial class AddGuestListToReservation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -369,6 +372,10 @@ namespace PansiyonYonetimSistemi.API.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("GuestList")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -400,41 +407,6 @@ namespace PansiyonYonetimSistemi.API.Migrations
                     b.HasIndex("RoomId");
 
                     b.ToTable("Reservations");
-                });
-
-            modelBuilder.Entity("PansiyonYonetimSistemi.API.Models.ReservationCustomer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ReservationId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("ReservationId", "CustomerId")
-                        .IsUnique();
-
-                    b.ToTable("ReservationCustomers");
                 });
 
             modelBuilder.Entity("PansiyonYonetimSistemi.API.Models.Room", b =>
@@ -775,25 +747,6 @@ namespace PansiyonYonetimSistemi.API.Migrations
                     b.Navigation("Room");
                 });
 
-            modelBuilder.Entity("PansiyonYonetimSistemi.API.Models.ReservationCustomer", b =>
-                {
-                    b.HasOne("PansiyonYonetimSistemi.API.Models.Customer", "Customer")
-                        .WithMany("ReservationCustomers")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PansiyonYonetimSistemi.API.Models.Reservation", "Reservation")
-                        .WithMany("ReservationCustomers")
-                        .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Reservation");
-                });
-
             modelBuilder.Entity("PansiyonYonetimSistemi.API.Models.Sale", b =>
                 {
                     b.HasOne("PansiyonYonetimSistemi.API.Models.Customer", "Customer")
@@ -847,8 +800,6 @@ namespace PansiyonYonetimSistemi.API.Migrations
 
             modelBuilder.Entity("PansiyonYonetimSistemi.API.Models.Customer", b =>
                 {
-                    b.Navigation("ReservationCustomers");
-
                     b.Navigation("Reservations");
                 });
 
@@ -861,8 +812,6 @@ namespace PansiyonYonetimSistemi.API.Migrations
 
             modelBuilder.Entity("PansiyonYonetimSistemi.API.Models.Reservation", b =>
                 {
-                    b.Navigation("ReservationCustomers");
-
                     b.Navigation("Sales");
                 });
 

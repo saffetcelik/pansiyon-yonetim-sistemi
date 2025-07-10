@@ -13,6 +13,7 @@ namespace PansiyonYonetimSistemi.API.Data
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
+        public DbSet<ReservationCustomer> ReservationCustomers { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<Sale> Sales { get; set; }
         public DbSet<SaleItem> SaleItems { get; set; }
@@ -56,6 +57,23 @@ namespace PansiyonYonetimSistemi.API.Data
                       .WithMany(e => e.Reservations)
                       .HasForeignKey(e => e.RoomId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ReservationCustomer Configuration
+            modelBuilder.Entity<ReservationCustomer>(entity =>
+            {
+                entity.HasOne(e => e.Reservation)
+                      .WithMany(e => e.ReservationCustomers)
+                      .HasForeignKey(e => e.ReservationId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Customer)
+                      .WithMany(e => e.ReservationCustomers)
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Composite unique index: Bir rezervasyonda aynı müşteri sadece bir kez olabilir
+                entity.HasIndex(e => new { e.ReservationId, e.CustomerId }).IsUnique();
             });
 
             // Product Configuration

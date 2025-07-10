@@ -33,6 +33,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 var query = _context.Reservations
                     .Include(r => r.Customer)
                     .Include(r => r.Room)
+                    .Include(r => r.ReservationCustomers)
+                        .ThenInclude(rc => rc.Customer)
                     .AsQueryable();
 
                 // Apply filters
@@ -84,7 +86,19 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         Status = r.Status,
                         Notes = r.Notes,
                         ActualCheckInDate = r.ActualCheckInDate,
-                        ActualCheckOutDate = r.ActualCheckOutDate
+                        ActualCheckOutDate = r.ActualCheckOutDate,
+                        Customers = r.ReservationCustomers
+                            .OrderBy(rc => rc.OrderIndex)
+                            .Select(rc => new ReservationCustomerDto
+                            {
+                                Id = rc.Id,
+                                CustomerId = rc.CustomerId,
+                                CustomerName = rc.Customer.FirstName + " " + rc.Customer.LastName,
+                                TCKimlikNo = rc.Customer.TCKimlikNo,
+                                Phone = rc.Customer.Phone,
+                                Role = rc.Role,
+                                OrderIndex = rc.OrderIndex
+                            }).ToList()
                     })
                     .ToListAsync();
 
@@ -111,6 +125,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 var reservation = await _context.Reservations
                     .Include(r => r.Customer)
                     .Include(r => r.Room)
+                    .Include(r => r.ReservationCustomers)
+                        .ThenInclude(rc => rc.Customer)
                     .FirstOrDefaultAsync(r => r.Id == id);
 
                 if (reservation == null)
@@ -133,7 +149,19 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     Status = reservation.Status,
                     Notes = reservation.Notes,
                     ActualCheckInDate = reservation.ActualCheckInDate,
-                    ActualCheckOutDate = reservation.ActualCheckOutDate
+                    ActualCheckOutDate = reservation.ActualCheckOutDate,
+                    Customers = reservation.ReservationCustomers
+                        .OrderBy(rc => rc.OrderIndex)
+                        .Select(rc => new ReservationCustomerDto
+                        {
+                            Id = rc.Id,
+                            CustomerId = rc.CustomerId,
+                            CustomerName = rc.Customer.FirstName + " " + rc.Customer.LastName,
+                            TCKimlikNo = rc.Customer.TCKimlikNo,
+                            Phone = rc.Customer.Phone,
+                            Role = rc.Role,
+                            OrderIndex = rc.OrderIndex
+                        }).ToList()
                 };
 
                 return Ok(reservationDto);
@@ -184,18 +212,60 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return BadRequest(new { message = "Müşteri bulunamadı" });
                 }
 
-                // Check if room exists
-                var roomExists = await _context.Rooms.AnyAsync(r => r.Id == createReservationDto.RoomId);
-                if (!roomExists)
+                // Check if room exists and get capacity
+                var room = await _context.Rooms.FindAsync(createReservationDto.RoomId);
+                if (room == null)
                 {
                     return BadRequest(new { message = "Oda bulunamadı" });
+                }
+
+                // Validate customer list
+                var customerIds = createReservationDto.CustomerIds?.Any() == true
+                    ? createReservationDto.CustomerIds
+                    : new List<int> { createReservationDto.CustomerId };
+
+                // Remove duplicates and validate count
+                customerIds = customerIds.Distinct().ToList();
+
+                if (customerIds.Count > room.Capacity)
+                {
+                    return BadRequest(new { message = $"Müşteri sayısı ({customerIds.Count}) oda kapasitesini ({room.Capacity}) aşamaz" });
+                }
+
+                // Validate all customers exist
+                var existingCustomerIds = await _context.Customers
+                    .Where(c => customerIds.Contains(c.Id))
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                var missingCustomerIds = customerIds.Except(existingCustomerIds).ToList();
+                if (missingCustomerIds.Any())
+                {
+                    return BadRequest(new { message = $"Şu müşteriler bulunamadı: {string.Join(", ", missingCustomerIds)}" });
                 }
 
                 var reservation = _mapper.Map<Reservation>(createReservationDto);
                 reservation.CreatedAt = DateTime.UtcNow;
                 reservation.Status = ReservationStatus.Pending;
+                reservation.NumberOfGuests = customerIds.Count; // Müşteri sayısına göre güncelle
 
                 _context.Reservations.Add(reservation);
+                await _context.SaveChangesAsync();
+
+                // Add customers to reservation
+                for (int i = 0; i < customerIds.Count; i++)
+                {
+                    var reservationCustomer = new ReservationCustomer
+                    {
+                        ReservationId = reservation.Id,
+                        CustomerId = customerIds[i],
+                        Role = i == 0 ? "Primary" : "Guest", // İlk müşteri ana müşteri
+                        OrderIndex = i,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.ReservationCustomers.Add(reservationCustomer);
+                }
+
                 await _context.SaveChangesAsync();
 
                 // Get the created reservation with includes

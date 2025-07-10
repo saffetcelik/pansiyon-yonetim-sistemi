@@ -42,5 +42,10 @@ namespace PansiyonYonetimSistemi.API.Models
         
         // Navigation Properties
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
+
+        /// <summary>
+        /// Bu müşterinin dahil olduğu tüm rezervasyonlar (çoklu müşteri desteği)
+        /// </summary>
+        public virtual ICollection<ReservationCustomer> ReservationCustomers { get; set; } = new List<ReservationCustomer>();
     }
 }

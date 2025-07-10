@@ -19,6 +19,11 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public ReservationStatus Status { get; set; }
         public string StatusName => GetStatusName(Status);
 
+        /// <summary>
+        /// Rezervasyondaki tüm müşteriler
+        /// </summary>
+        public List<ReservationCustomerDto> Customers { get; set; } = new List<ReservationCustomerDto>();
+
         private static string GetStatusName(ReservationStatus status)
         {
             return status switch
@@ -64,6 +69,12 @@ namespace PansiyonYonetimSistemi.API.DTOs
 
         [StringLength(1000, ErrorMessage = "Notlar en fazla 1000 karakter olabilir")]
         public string? Notes { get; set; }
+
+        /// <summary>
+        /// Rezervasyona eklenecek müşteri ID'leri (çoklu müşteri desteği)
+        /// İlk müşteri ana müşteri olarak kabul edilir
+        /// </summary>
+        public List<int> CustomerIds { get; set; } = new List<int>();
     }
 
     public class UpdateReservationDto : CreateReservationDto
@@ -102,5 +113,16 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public ReservationStatus? Status { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
+    }
+
+    public class ReservationCustomerDto
+    {
+        public int Id { get; set; }
+        public int CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string? TCKimlikNo { get; set; }
+        public string? Phone { get; set; }
+        public string Role { get; set; } = "Guest"; // "Primary", "Guest"
+        public int OrderIndex { get; set; }
     }
 }
