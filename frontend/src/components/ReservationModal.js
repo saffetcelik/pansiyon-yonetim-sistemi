@@ -27,6 +27,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   });
 
   const [customers, setCustomers] = useState([]);
+  const [recentCustomers, setRecentCustomers] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -111,8 +112,18 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   useEffect(() => {
     if (isOpen) {
       loadRooms();
+      loadRecentCustomers();
     }
   }, [isOpen]);
+
+  const loadRecentCustomers = async () => {
+    try {
+      const response = await customerService.getRecent(8); // Son 8 müşteri
+      setRecentCustomers(response.data);
+    } catch (error) {
+      console.error('Error loading recent customers:', error);
+    }
+  };
 
   // Load available rooms when dates change
   useEffect(() => {
@@ -201,7 +212,9 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
     }
 
     try {
+      console.log('Searching customers with query:', query);
       const response = await customerService.search(query);
+      console.log('Search results:', response.data);
       setCustomers(response.data);
     } catch (error) {
       console.error('Error searching customers:', error);
@@ -212,7 +225,12 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const handleCustomerSearch = (value) => {
     setCustomerSearch(value);
     setShowCustomerDropdown(true);
-    searchCustomers(value);
+
+    if (value.length >= 2) {
+      searchCustomers(value);
+    } else {
+      setCustomers([]);
+    }
   };
 
   const handleCustomerSelect = (customer) => {
@@ -240,7 +258,9 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
       setFormData(prev => ({ ...prev, numberOfGuests: newCustomers.length }));
     }
 
+    // Arama kutusunu temizle ve dropdown'ı kapat
     setCustomerSearch('');
+    setCustomers([]);
     setShowCustomerDropdown(false);
   };
 
@@ -969,7 +989,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 value={customerSearch}
                 onChange={(e) => handleCustomerSearch(e.target.value)}
                 onFocus={() => setShowCustomerDropdown(true)}
-                placeholder="Müşteri eklemek için ara..."
+                placeholder="Müşteri adı yazın veya aşağıdan seçin..."
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   formErrors.customerId ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -978,29 +998,73 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 <p className="text-red-500 text-xs mt-1">{formErrors.customerId}</p>
               )}
 
-              {/* Customer Dropdown */}
-              {showCustomerDropdown && customers.length > 0 && (
-                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+              {/* Son Eklenen Müşteriler */}
+              {(!customerSearch || customerSearch.length < 2) && recentCustomers.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Son Eklenen Müşteriler</h4>
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    {recentCustomers
+                      .filter(customer => !selectedCustomers.find(sc => sc.id === customer.id))
+                      .map((customer) => (
+                      <div
+                        key={customer.id}
+                        onClick={() => handleCustomerSelect(customer)}
+                        className="p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">{customer.fullName}</div>
+                            <div className="text-sm text-gray-500">
+                              {customer.tcKimlikNo && `TC: ${customer.tcKimlikNo}`}
+                              {customer.phone && ` | Tel: ${customer.phone}`}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(customer.createdAt).toLocaleDateString('tr-TR')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Arama Sonuçları Dropdown */}
+              {showCustomerDropdown && customerSearch.length >= 2 && customers.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                  <div className="px-3 py-2 bg-gray-50 border-b text-sm font-medium text-gray-700">
+                    Arama Sonuçları
+                  </div>
                   {customers
                     .filter(customer => !selectedCustomers.find(sc => sc.id === customer.id))
                     .map((customer) => (
                     <div
                       key={customer.id}
                       onClick={() => handleCustomerSelect(customer)}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                     >
-                      <div className="font-medium">{customer.fullName}</div>
+                      <div className="font-medium text-gray-900">{customer.fullName}</div>
                       <div className="text-sm text-gray-500">
                         {customer.tcKimlikNo && `TC: ${customer.tcKimlikNo}`}
                         {customer.phone && ` | Tel: ${customer.phone}`}
+                        {customer.email && ` | ${customer.email}`}
                       </div>
                     </div>
                   ))}
                   {customers.filter(customer => !selectedCustomers.find(sc => sc.id === customer.id)).length === 0 && (
-                    <div className="px-4 py-2 text-gray-500 text-sm">
+                    <div className="px-4 py-3 text-gray-500 text-sm">
                       Tüm müşteriler zaten eklendi
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Arama Sonucu Bulunamadı */}
+              {showCustomerDropdown && customerSearch.length >= 2 && customers.length === 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1">
+                  <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                    "{customerSearch}" için müşteri bulunamadı
+                  </div>
                 </div>
               )}
             </div>

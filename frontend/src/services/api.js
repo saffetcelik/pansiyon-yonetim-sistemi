@@ -99,7 +99,8 @@ export const customerService = {
   create: (customerData) => api.post('/customers', customerData),
   update: (id, customerData) => api.put(`/customers/${id}`, customerData),
   delete: (id) => api.delete(`/customers/${id}`),
-  search: (query) => api.get(`/customers/search?query=${query}`)
+  search: (query) => api.get(`/customers/search?query=${encodeURIComponent(query)}`),
+  getRecent: (count = 10) => api.get(`/customers/recent?count=${count}`)
 };
 
 export const productService = {
