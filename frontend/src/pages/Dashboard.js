@@ -6,7 +6,6 @@ import Reservations from './Reservations';
 import Customers from './Customers';
 import Products from './Products';
 import Sales from './Sales';
-import Reports from './Reports';
 import Rooms from './Rooms';
 import { reservationService, customerService, roomService } from '../services/api';
 import RoomPanel from '../components/RoomPanel';
@@ -140,7 +139,6 @@ const Dashboard = () => {
     { id: 'rooms', label: 'Odalar', icon: '🏨' },
     { id: 'products', label: 'Ürünler', icon: '📦' },
     { id: 'sales', label: 'Büfe Satış', icon: '🛒' },
-    { id: 'reports', label: 'Raporlar', icon: '📊' },
   ];
 
   const renderContent = () => {
@@ -153,8 +151,6 @@ const Dashboard = () => {
         return <Products />;
       case 'sales':
         return <Sales />;
-      case 'reports':
-        return <Reports />;
       case 'rooms':
         return <Rooms />;
       case 'dashboard':
