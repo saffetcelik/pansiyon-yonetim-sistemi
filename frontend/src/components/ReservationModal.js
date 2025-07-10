@@ -39,6 +39,20 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const [showRoomCards, setShowRoomCards] = useState(false); // Modern oda seçimi için
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false); // Yeni müşteri modal'ı
 
+  // Modal açılırken body scroll'unu engelle
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   // Initialize form data when editing
   useEffect(() => {
     if (isEdit && reservation) {
@@ -548,8 +562,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 transition-opacity duration-200">
+      <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white transform transition-transform duration-200">
         <div className="mt-3">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
