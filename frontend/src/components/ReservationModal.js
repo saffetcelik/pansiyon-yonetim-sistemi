@@ -8,6 +8,7 @@ import {
 import { fetchCustomers } from '../store/slices/customerSlice';
 import { customerService, roomService } from '../services/api';
 import Swal from 'sweetalert2';
+import CustomerModal from './CustomerModal';
 
 const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false }) => {
   const dispatch = useDispatch();
@@ -37,14 +38,6 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const [selectedRoomOccupiedDates, setSelectedRoomOccupiedDates] = useState([]);
   const [showRoomCards, setShowRoomCards] = useState(false); // Modern oda seçimi için
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false); // Yeni müşteri modal'ı
-  const [newCustomerData, setNewCustomerData] = useState({
-    firstName: '',
-    lastName: '',
-    tcKimlikNo: '',
-    phone: '',
-    email: '',
-    address: ''
-  });
 
   // Initialize form data when editing
   useEffect(() => {
@@ -256,52 +249,27 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
     }
   };
 
-  // Yeni müşteri kaydetme fonksiyonu
-  const handleCreateNewCustomer = async () => {
-    try {
-      // Basit validasyon
-      if (!newCustomerData.firstName || !newCustomerData.lastName) {
-        alert('Ad ve soyad zorunludur');
-        return;
-      }
+  // Yeni müşteri kaydedildiğinde çağrılacak fonksiyon
+  const handleCustomerCreated = (newCustomer) => {
+    // Yeni müşteriyi otomatik olarak seç
+    const customerForSelection = {
+      id: newCustomer.id,
+      fullName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+      tcKimlikNo: newCustomer.tcKimlikNo,
+      phone: newCustomer.phone
+    };
 
-      const response = await api.post('/customers', newCustomerData);
-      const newCustomer = {
-        id: response.data.id,
-        fullName: `${response.data.firstName} ${response.data.lastName}`,
-        tcKimlikNo: response.data.tcKimlikNo,
-        phone: response.data.phone
-      };
+    handleCustomerSelect(customerForSelection);
 
-      // Yeni müşteriyi otomatik olarak seç
-      handleCustomerSelect(newCustomer);
+    // Modal'ı kapat
+    setShowNewCustomerModal(false);
 
-      // Modal'ı kapat ve formu temizle
-      setShowNewCustomerModal(false);
-      setNewCustomerData({
-        firstName: '',
-        lastName: '',
-        tcKimlikNo: '',
-        phone: '',
-        email: '',
-        address: ''
-      });
-
-      Swal.fire({
-        title: 'Başarılı!',
-        text: 'Yeni müşteri kaydedildi ve rezervasyona eklendi.',
-        icon: 'success',
-        timer: 2000
-      });
-
-    } catch (error) {
-      console.error('Error creating customer:', error);
-      Swal.fire({
-        title: 'Hata!',
-        text: error.response?.data?.message || 'Müşteri kaydedilirken hata oluştu',
-        icon: 'error'
-      });
-    }
+    Swal.fire({
+      title: 'Başarılı!',
+      text: 'Yeni müşteri kaydedildi ve rezervasyona eklendi.',
+      icon: 'success',
+      timer: 2000
+    });
   };
 
   // Otomatik fiyat hesaplama
@@ -1056,121 +1024,13 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
           </form>
         </div>
 
-        {/* Yeni Müşteri Modal'ı */}
-        {showNewCustomerModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Yeni Müşteri Kaydı</h3>
-                <button
-                  onClick={() => setShowNewCustomerModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ad *
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustomerData.firstName}
-                      onChange={(e) => setNewCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ad"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Soyad *
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustomerData.lastName}
-                      onChange={(e) => setNewCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Soyad"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    TC Kimlik No
-                  </label>
-                  <input
-                    type="text"
-                    value={newCustomerData.tcKimlikNo}
-                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, tcKimlikNo: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="TC Kimlik No"
-                    maxLength="11"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Telefon
-                  </label>
-                  <input
-                    type="tel"
-                    value={newCustomerData.phone}
-                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Telefon"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    E-posta
-                  </label>
-                  <input
-                    type="email"
-                    value={newCustomerData.email}
-                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="E-posta"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Adres
-                  </label>
-                  <textarea
-                    value={newCustomerData.address}
-                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, address: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Adres"
-                    rows="2"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowNewCustomerModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  İptal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateNewCustomer}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Müşteri Kaydet
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Orijinal CustomerModal'ı Kullan */}
+        <CustomerModal
+          isOpen={showNewCustomerModal}
+          onClose={() => setShowNewCustomerModal(false)}
+          onCustomerCreated={handleCustomerCreated}
+          isEdit={false}
+        />
       </div>
     </div>
   );

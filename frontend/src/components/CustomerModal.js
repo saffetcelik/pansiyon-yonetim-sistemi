@@ -4,7 +4,7 @@ import { createCustomer, fetchCustomers } from '../store/slices/customerSlice';
 import { customerService } from '../services/api';
 import Swal from 'sweetalert2';
 
-const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => {
+const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false, onCustomerCreated = null }) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.customers);
   
@@ -166,10 +166,11 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
 
       console.log('Sending customer data:', customerData);
 
+      let response;
       if (isEdit) {
-        await customerService.update(customer.id, customerData);
+        response = await customerService.update(customer.id, customerData);
       } else {
-        await dispatch(createCustomer(customerData)).unwrap();
+        response = await dispatch(createCustomer(customerData)).unwrap();
       }
 
       // Show success message
@@ -183,6 +184,12 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false }) => 
 
       // Refresh customers list
       dispatch(fetchCustomers({}));
+
+      // Eğer yeni müşteri oluşturuldu ve callback varsa çağır
+      if (!isEdit && onCustomerCreated && response) {
+        onCustomerCreated(response);
+      }
+
       onClose();
     } catch (error) {
       console.error('Error saving customer:', error);
