@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
 import Sales from './pages/Sales';
+import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const theme = createTheme({
@@ -45,6 +46,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Sales />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />

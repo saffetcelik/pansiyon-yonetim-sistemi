@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../store/authSlice';
+import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../store/slices/authSlice';
 import Reservations from './Reservations';
 import Customers from './Customers';
 import Products from './Products';
@@ -13,6 +14,7 @@ import RoomStatusList from '../components/RoomStatusList';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardStats, setDashboardStats] = useState({
@@ -26,7 +28,7 @@ const Dashboard = () => {
   const [loadingStats, setLoadingStats] = useState(false);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
   };
 
   useEffect(() => {
@@ -220,12 +222,20 @@ const Dashboard = () => {
                 Hoş geldiniz, {user?.fullName || user?.firstName || 'Kullanıcı'}!
               </p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium"
-            >
-              Çıkış Yap
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => navigate('/settings')}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium"
+              >
+                ⚙️ Ayarlar
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium"
+              >
+                Çıkış Yap
+              </button>
+            </div>
           </div>
         </div>
       </div>

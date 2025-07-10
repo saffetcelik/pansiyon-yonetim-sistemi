@@ -361,3 +361,4 @@ $RECYCLE.BIN/
 build-and-push.ps1
 build-and-push.sh
 Dockerfile
+backend/appsettings.json

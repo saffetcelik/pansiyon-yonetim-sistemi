@@ -51,8 +51,24 @@ namespace PansiyonYonetimSistemi.API.Data
                 await context.SaveChangesAsync();
             }
 
-            // Seed Rooms
-            if (!await context.Rooms.AnyAsync())
+            // Seed Rooms - Force recreate
+            // Delete existing reservations first (foreign key constraint)
+            var existingReservations = await context.Reservations.ToListAsync();
+            if (existingReservations.Any())
+            {
+                context.Reservations.RemoveRange(existingReservations);
+                await context.SaveChangesAsync();
+            }
+
+            // Delete existing rooms
+            var existingRooms = await context.Rooms.ToListAsync();
+            if (existingRooms.Any())
+            {
+                context.Rooms.RemoveRange(existingRooms);
+                await context.SaveChangesAsync();
+            }
+
+            // Always create rooms
             {
                 var rooms = new List<Room>();
                 
@@ -109,8 +125,16 @@ namespace PansiyonYonetimSistemi.API.Data
             //     // Test müşterileri burada olacak
             // }
 
-            // Seed Sample Products
-            if (!await context.Products.AnyAsync())
+            // Seed Sample Products - Force recreate
+            // Delete existing products first
+            var existingProducts = await context.Products.ToListAsync();
+            if (existingProducts.Any())
+            {
+                context.Products.RemoveRange(existingProducts);
+                await context.SaveChangesAsync();
+            }
+
+            // Always create products
             {
                 var products = new List<Product>
                 {

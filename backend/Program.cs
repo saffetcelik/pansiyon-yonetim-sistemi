@@ -53,6 +53,29 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+
+    // Cookie'den token okuma desteği
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            // Önce Authorization header'ı kontrol et
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            // Eğer header'da token yoksa cookie'den al
+            if (string.IsNullOrEmpty(token))
+            {
+                token = context.Request.Cookies["authToken"];
+            }
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                context.Token = token;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // CORS Configuration
