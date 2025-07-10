@@ -722,10 +722,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
 
         private async Task<bool> IsRoomAvailable(int roomId, DateTime checkInDate, DateTime checkOutDate, int? excludeReservationId = null)
         {
+            Console.WriteLine($"Checking room {roomId} availability from {checkInDate:yyyy-MM-dd} to {checkOutDate:yyyy-MM-dd}");
+
             var query = _context.Reservations
                 .Where(r => r.RoomId == roomId &&
                            r.Status != ReservationStatus.Cancelled &&
                            r.Status != ReservationStatus.NoShow &&
+                           r.Status != ReservationStatus.CheckedOut && // Çıkış yapılmış rezervasyonları hariç tut
                            ((r.CheckInDate < checkOutDate && r.CheckOutDate > checkInDate)));
 
             if (excludeReservationId.HasValue)
@@ -733,7 +736,15 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 query = query.Where(r => r.Id != excludeReservationId.Value);
             }
 
-            return !await query.AnyAsync();
+            var conflictingReservations = await query.ToListAsync();
+            Console.WriteLine($"Found {conflictingReservations.Count} conflicting reservations for room {roomId}");
+
+            foreach (var res in conflictingReservations)
+            {
+                Console.WriteLine($"  - Reservation {res.Id}: {res.CheckInDate:yyyy-MM-dd} to {res.CheckOutDate:yyyy-MM-dd}, Status: {res.Status}");
+            }
+
+            return !conflictingReservations.Any();
         }
     }
 }

@@ -265,11 +265,12 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return BadRequest(new { message = "Çıkış tarihi giriş tarihinden sonra olmalıdır" });
                 }
 
-                // Önce tüm rezervasyonları kontrol edelim
+                // Önce tüm rezervasyonları kontrol edelim (çıkış yapılmış olanları hariç)
                 var conflictingReservations = await _context.Reservations
                     .Where(res =>
                         res.Status != ReservationStatus.Cancelled &&
                         res.Status != ReservationStatus.NoShow &&
+                        res.Status != ReservationStatus.CheckedOut && // Çıkış yapılmış rezervasyonları hariç tut
                         (excludeReservationId == null || res.Id != excludeReservationId) &&
                         res.CheckInDate < checkOutDate &&
                         res.CheckOutDate > checkInDate)
@@ -286,6 +287,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         res.RoomId == r.Id &&
                         res.Status != ReservationStatus.Cancelled &&
                         res.Status != ReservationStatus.NoShow &&
+                        res.Status != ReservationStatus.CheckedOut && // Çıkış yapılmış rezervasyonları hariç tut
                         (excludeReservationId == null || res.Id != excludeReservationId) && // Edit durumunda mevcut rezervasyonu hariç tut
                         res.CheckInDate < checkOutDate &&
                         res.CheckOutDate > checkInDate))
@@ -325,12 +327,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return NotFound(new { message = "Oda bulunamadı" });
                 }
 
-                // Bu oda için dolu tarihleri al
+                // Bu oda için dolu tarihleri al (çıkış yapılmış olanları hariç)
                 var occupiedPeriods = await _context.Reservations
                     .Where(res =>
                         res.RoomId == roomId &&
                         res.Status != ReservationStatus.Cancelled &&
                         res.Status != ReservationStatus.NoShow &&
+                        res.Status != ReservationStatus.CheckedOut && // Çıkış yapılmış rezervasyonları hariç tut
                         (excludeReservationId == null || res.Id != excludeReservationId) &&
                         res.CheckInDate < end &&
                         res.CheckOutDate > start)
