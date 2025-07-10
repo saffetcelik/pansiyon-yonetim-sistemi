@@ -12,17 +12,12 @@ namespace PansiyonYonetimSistemi.API.Data
             // Ensure database is created
             await context.Database.EnsureCreatedAsync();
 
-            // Seed Users - Force recreate for password fix
-            // Delete existing users first
-            var existingUsers = await context.Users.ToListAsync();
-            if (existingUsers.Any())
+            // Seed Users - Only if no users exist (SAFE APPROACH)
+            if (!await context.Users.AnyAsync())
             {
-                context.Users.RemoveRange(existingUsers);
-                await context.SaveChangesAsync();
-            }
+                Console.WriteLine("No users found. Creating default users...");
 
-            // Always create users with correct password hash
-            {
+                // Create default users only if database is empty
                 var adminUser = new User
                 {
                     Username = "admin",
@@ -49,27 +44,19 @@ namespace PansiyonYonetimSistemi.API.Data
 
                 context.Users.AddRange(adminUser, managerUser);
                 await context.SaveChangesAsync();
+                Console.WriteLine("Default users created successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Users already exist. Skipping user creation.");
             }
 
-            // Seed Rooms - Force recreate
-            // Delete existing reservations first (foreign key constraint)
-            var existingReservations = await context.Reservations.ToListAsync();
-            if (existingReservations.Any())
+            // Seed Rooms - Only if no rooms exist (SAFE APPROACH)
+            if (!await context.Rooms.AnyAsync())
             {
-                context.Reservations.RemoveRange(existingReservations);
-                await context.SaveChangesAsync();
-            }
+                Console.WriteLine("No rooms found. Creating default rooms...");
 
-            // Delete existing rooms
-            var existingRooms = await context.Rooms.ToListAsync();
-            if (existingRooms.Any())
-            {
-                context.Rooms.RemoveRange(existingRooms);
-                await context.SaveChangesAsync();
-            }
-
-            // Always create rooms
-            {
+                // Create default rooms only if database is empty
                 var rooms = new List<Room>();
                 
                 // 15 oda oluştur
@@ -116,6 +103,11 @@ namespace PansiyonYonetimSistemi.API.Data
 
                 context.Rooms.AddRange(rooms);
                 await context.SaveChangesAsync();
+                Console.WriteLine("Default rooms created successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Rooms already exist. Skipping room creation.");
             }
 
             // Seed Sample Customers - DISABLED FOR PRODUCTION
@@ -125,17 +117,12 @@ namespace PansiyonYonetimSistemi.API.Data
             //     // Test müşterileri burada olacak
             // }
 
-            // Seed Sample Products - Force recreate
-            // Delete existing products first
-            var existingProducts = await context.Products.ToListAsync();
-            if (existingProducts.Any())
+            // Seed Sample Products - Only if no products exist (SAFE APPROACH)
+            if (!await context.Products.AnyAsync())
             {
-                context.Products.RemoveRange(existingProducts);
-                await context.SaveChangesAsync();
-            }
+                Console.WriteLine("No products found. Creating default products...");
 
-            // Always create products
-            {
+                // Create default products only if database is empty
                 var products = new List<Product>
                 {
                     // İçecekler
@@ -362,6 +349,11 @@ namespace PansiyonYonetimSistemi.API.Data
 
                 context.Products.AddRange(products);
                 await context.SaveChangesAsync();
+                Console.WriteLine("Default products created successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Products already exist. Skipping product creation.");
             }
 
             // Seed Sample Reservations for testing
