@@ -28,7 +28,28 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const [selectedReservationForAction, setSelectedReservationForAction] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
 
+  // Redux store'daki filters değiştiğinde localFilters'ı güncelle
   useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
+  // Component ilk yüklendiğinde varsayılan filtreleri uygula
+  useEffect(() => {
+    console.log('Component mounted, current filters:', filters);
+    // Varsayılan filtreleri zorla uygula
+    if (filters.status !== 'exclude-checked-out') {
+      console.log('Setting default filter to exclude-checked-out');
+      dispatch(setFilters({ ...filters, status: 'exclude-checked-out' }));
+    } else {
+      // Filtre zaten doğruysa direkt fetch yap
+      console.log('Filter already correct, fetching reservations');
+      dispatch(fetchReservations({ ...filters, ...pagination }));
+    }
+  }, []);
+
+  // Filters değiştiğinde rezervasyonları getir
+  useEffect(() => {
+    console.log('Fetching reservations with filters:', filters);
     dispatch(fetchReservations({ ...filters, ...pagination }));
   }, [dispatch, filters, pagination]);
 

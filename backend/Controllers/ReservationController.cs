@@ -30,6 +30,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         {
             try
             {
+                Console.WriteLine($"GetReservations called with: Status={searchDto.Status}, ExcludeCheckedOut={searchDto.ExcludeCheckedOut}");
                 var query = _context.Reservations
                     .Include(r => r.Customer)
                     .Include(r => r.Room)
@@ -68,7 +69,12 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 // Çıkış yapılanları hariç tut
                 if (searchDto.ExcludeCheckedOut)
                 {
+                    Console.WriteLine("Excluding checked-out reservations");
                     query = query.Where(r => r.Status != ReservationStatus.CheckedOut);
+                }
+                else
+                {
+                    Console.WriteLine("Including all reservation statuses");
                 }
 
                 var totalCount = await query.CountAsync();
