@@ -56,77 +56,78 @@ const Dashboard = () => {
   const loadDashboardStats = async () => {
     setLoadingStats(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      console.log('Loading dashboard stats for date:', today);
+      console.log('Loading dashboard stats from new API...');
 
-      // Load various statistics
-      const [allReservationsRes, customersRes, roomsRes] = await Promise.all([
-        reservationService.getAll({ pageSize: 1000 }), // Tüm rezervasyonları çek
-        customerService.getAll({ pageSize: 1 }),
-        roomService.getAll()
+      // Yeni dashboard stats API'sini kullan
+      const [dashboardRes, customersRes] = await Promise.all([
+        reservationService.getDashboardStats(),
+        customerService.getAll({ pageSize: 1 })
       ]);
 
-      const allReservations = allReservationsRes.data?.reservations || allReservationsRes.data || [];
-      const rooms = roomsRes.data || [];
-
-      // Ensure arrays are valid before using filter
-      const reservationsArray = Array.isArray(allReservations) ? allReservations : [];
-      const roomsArray = Array.isArray(rooms) ? rooms : [];
-
-      console.log('All reservations:', reservationsArray);
-      console.log('All rooms:', roomsArray);
-
-      // Bugünkü check-in'ler (giriş tarihi bugün olan rezervasyonlar)
-      const todayCheckIns = reservationsArray.filter(r => {
-        const checkInDate = new Date(r.checkInDate).toDateString();
-        const todayDate = new Date().toDateString();
-        return checkInDate === todayDate;
-      });
-
-      // Bugünkü check-out'lar (çıkış tarihi bugün olan rezervasyonlar)
-      const todayCheckOuts = reservationsArray.filter(r => {
-        const checkOutDate = new Date(r.checkOutDate).toDateString();
-        const todayDate = new Date().toDateString();
-        return checkOutDate === todayDate;
-      });
-
-      // Şu anda dolu olan odalar (hem rezervasyon durumu hem oda durumu)
-      const currentDate = new Date();
-      const occupiedRoomIds = new Set();
-
-      // 1. Rezervasyon durumuna göre dolu odalar
-      reservationsArray.forEach(r => {
-        const checkIn = new Date(r.checkInDate);
-        const checkOut = new Date(r.checkOutDate);
-
-        // Rezervasyon aktif mi? (bugün check-in ile check-out arasında ve giriş yapılmış)
-        if (checkIn <= currentDate && currentDate < checkOut &&
-            r.status === 2) { // Sadece Giriş Yapıldı (CheckedIn) durumu
-          occupiedRoomIds.add(r.roomId);
-        }
-      });
-
-      // 2. Oda durumuna göre dolu odalar (fiziksel durum)
-      roomsArray.forEach(room => {
-        if (room.status === 1) { // Occupied
-          occupiedRoomIds.add(room.id);
-        }
-      });
-
-      console.log('Today check-ins:', todayCheckIns);
-      console.log('Today check-outs:', todayCheckOuts);
-      console.log('Occupied room IDs:', Array.from(occupiedRoomIds));
+      const stats = dashboardRes.data;
+      console.log('Dashboard stats from API:', stats);
 
       setDashboardStats({
-        totalReservations: reservationsArray.length,
-        todayCheckIns: todayCheckIns.length,
-        todayCheckOuts: todayCheckOuts.length,
-        totalCustomers: customersRes.data?.pagination?.total || 0,
-        occupiedRooms: occupiedRoomIds.size,
-        totalRooms: roomsArray.length
+        totalReservations: stats.totalActiveReservations || 0,
+        todayCheckIns: stats.todayCheckIns || 0,
+        todayCheckOuts: stats.todayCheckOuts || 0,
+        totalCustomers: customersRes.data?.pagination?.total || stats.totalCustomers || 0,
+        occupiedRooms: stats.occupiedRooms || 0,
+        totalRooms: stats.totalRooms || 0
       });
+
+      console.log('Dashboard stats updated:', {
+        todayCheckIns: stats.todayCheckIns,
+        todayCheckOuts: stats.todayCheckOuts,
+        occupiedRooms: stats.occupiedRooms,
+        totalRooms: stats.totalRooms
+      });
+
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
+
+      // Fallback: Eski yöntem
+      console.log('Falling back to old method...');
+      try {
+        const [allReservationsRes, customersRes, roomsRes] = await Promise.all([
+          reservationService.getAll({ pageSize: 1000 }),
+          customerService.getAll({ pageSize: 1 }),
+          roomService.getAll()
+        ]);
+
+        const allReservations = allReservationsRes.data?.data || allReservationsRes.data || [];
+        const rooms = roomsRes.data || [];
+        const reservationsArray = Array.isArray(allReservations) ? allReservations : [];
+        const roomsArray = Array.isArray(rooms) ? rooms : [];
+
+        // Basit hesaplama
+        const todayCheckIns = reservationsArray.filter(r => {
+          if (!r.actualCheckInDate) return false;
+          const checkInDate = new Date(r.actualCheckInDate).toDateString();
+          const todayDate = new Date().toDateString();
+          return checkInDate === todayDate;
+        });
+
+        const todayCheckOuts = reservationsArray.filter(r => {
+          if (!r.actualCheckOutDate) return false;
+          const checkOutDate = new Date(r.actualCheckOutDate).toDateString();
+          const todayDate = new Date().toDateString();
+          return checkOutDate === todayDate;
+        });
+
+        const occupiedRooms = reservationsArray.filter(r => r.status === 2).length; // CheckedIn
+
+        setDashboardStats({
+          totalReservations: reservationsArray.length,
+          todayCheckIns: todayCheckIns.length,
+          todayCheckOuts: todayCheckOuts.length,
+          totalCustomers: customersRes.data?.pagination?.total || 0,
+          occupiedRooms: occupiedRooms,
+          totalRooms: roomsArray.length
+        });
+      } catch (fallbackError) {
+        console.error('Fallback method also failed:', fallbackError);
+      }
     } finally {
       setLoadingStats(false);
     }

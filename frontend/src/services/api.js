@@ -132,7 +132,8 @@ export const reservationService = {
   delete: (id) => api.delete(`/reservations/${id}`),
   checkIn: (id, checkInData) => api.post(`/reservations/${id}/checkin`, checkInData),
   checkOut: (id, checkOutData) => api.post(`/reservations/${id}/checkout`, checkOutData),
-  getCalendar: (month, year) => api.get(`/reservations/calendar?month=${month}&year=${year}`)
+  getCalendar: (month, year) => api.get(`/reservations/calendar?month=${month}&year=${year}`),
+  getDashboardStats: () => api.get('/reservations/dashboard-stats')
 };
 
 

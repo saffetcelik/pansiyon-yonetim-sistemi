@@ -603,6 +603,72 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
         }
 
+        [HttpGet("dashboard-stats")]
+        [AllRoles]
+        public async Task<IActionResult> GetDashboardStats()
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var tomorrow = today.AddDays(1);
+
+                Console.WriteLine($"Dashboard stats for date: {today:yyyy-MM-dd}");
+
+                // Bugünkü gerçek check-in'ler (ActualCheckInDate bugün olan)
+                var todayCheckIns = await _context.Reservations
+                    .Where(r => r.ActualCheckInDate.HasValue &&
+                               r.ActualCheckInDate.Value.Date == today)
+                    .CountAsync();
+
+                // Bugünkü gerçek check-out'lar (ActualCheckOutDate bugün olan)
+                var todayCheckOuts = await _context.Reservations
+                    .Where(r => r.ActualCheckOutDate.HasValue &&
+                               r.ActualCheckOutDate.Value.Date == today)
+                    .CountAsync();
+
+                // Şu anda dolu olan odalar (CheckedIn durumunda olan rezervasyonlar)
+                var occupiedRooms = await _context.Reservations
+                    .Where(r => r.Status == ReservationStatus.CheckedIn)
+                    .Select(r => r.RoomId)
+                    .Distinct()
+                    .CountAsync();
+
+                // Toplam oda sayısı
+                var totalRooms = await _context.Rooms.CountAsync();
+
+                // Toplam müşteri sayısı
+                var totalCustomers = await _context.Customers.CountAsync();
+
+                // Toplam aktif rezervasyon sayısı
+                var totalActiveReservations = await _context.Reservations
+                    .Where(r => r.Status != ReservationStatus.Cancelled &&
+                               r.Status != ReservationStatus.NoShow)
+                    .CountAsync();
+
+                Console.WriteLine($"Dashboard stats calculated:");
+                Console.WriteLine($"- Today check-ins: {todayCheckIns}");
+                Console.WriteLine($"- Today check-outs: {todayCheckOuts}");
+                Console.WriteLine($"- Occupied rooms: {occupiedRooms}");
+                Console.WriteLine($"- Total rooms: {totalRooms}");
+
+                return Ok(new
+                {
+                    todayCheckIns,
+                    todayCheckOuts,
+                    occupiedRooms,
+                    totalRooms,
+                    totalCustomers,
+                    totalActiveReservations,
+                    date = today.ToString("yyyy-MM-dd")
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetDashboardStats Error");
+                return StatusCode(500, new { message = "Dashboard istatistikleri alınırken hata oluştu" });
+            }
+        }
+
         [HttpGet("calendar")]
         public async Task<IActionResult> GetReservationCalendar([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
