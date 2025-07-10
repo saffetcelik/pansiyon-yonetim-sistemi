@@ -123,7 +123,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
   const loadRooms = async () => {
     try {
-      const response = await roomService.getAll();
+      // Rezervasyon için uygun odaları çek (Available + Cleaning)
+      const response = await roomService.getAll(true); // forReservation = true
       setRooms(response.data);
     } catch (error) {
       console.error('Error loading rooms:', error);

@@ -61,7 +61,10 @@ export const authService = {
 };
 
 export const roomService = {
-  getAll: () => api.get('/rooms'),
+  getAll: (forReservation = false) => {
+    const url = forReservation ? '/rooms?forReservation=true' : '/rooms';
+    return api.get(url);
+  },
   getById: (id) => api.get(`/rooms/${id}`),
   create: (roomData) => api.post('/rooms', roomData),
   update: (id, roomData) => api.put(`/rooms/${id}`, roomData),

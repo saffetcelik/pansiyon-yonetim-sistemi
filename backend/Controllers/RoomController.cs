@@ -23,11 +23,20 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetRooms()
+        public async Task<IActionResult> GetRooms([FromQuery] bool? forReservation = null)
         {
             try
             {
-                var rooms = await _context.Rooms
+                var query = _context.Rooms.AsQueryable();
+
+                // Eğer rezervasyon için isteniyorsa, sadece rezerve edilebilir odaları döndür
+                if (forReservation == true)
+                {
+                    query = query.Where(r => r.Status == RoomStatus.Available ||
+                                           r.Status == RoomStatus.Cleaning);
+                }
+
+                var rooms = await query
                     .OrderBy(r => r.RoomNumber)
                     .ToListAsync();
 
@@ -202,8 +211,11 @@ namespace PansiyonYonetimSistemi.API.Controllers
         {
             try
             {
+                // Rezervasyon için müsait odalar: Available, Cleaning durumundaki odalar
+                // Sadece Maintenance ve OutOfOrder hariç
                 var availableRooms = await _context.Rooms
-                    .Where(r => r.Status == RoomStatus.Available)
+                    .Where(r => r.Status == RoomStatus.Available ||
+                               r.Status == RoomStatus.Cleaning)
                     .OrderBy(r => r.RoomNumber)
                     .ToListAsync();
 
