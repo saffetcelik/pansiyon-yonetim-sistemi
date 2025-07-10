@@ -90,18 +90,26 @@ const Dashboard = () => {
         return checkOutDate === todayDate;
       });
 
-      // Şu anda dolu olan odalar (aktif rezervasyonlar)
+      // Şu anda dolu olan odalar (hem rezervasyon durumu hem oda durumu)
       const currentDate = new Date();
       const occupiedRoomIds = new Set();
 
+      // 1. Rezervasyon durumuna göre dolu odalar
       reservationsArray.forEach(r => {
         const checkIn = new Date(r.checkInDate);
         const checkOut = new Date(r.checkOutDate);
 
-        // Rezervasyon aktif mi? (bugün check-in ile check-out arasında)
+        // Rezervasyon aktif mi? (bugün check-in ile check-out arasında ve giriş yapılmış)
         if (checkIn <= currentDate && currentDate < checkOut &&
-            (r.status === 1 || r.status === 2)) { // Onaylandı veya Giriş Yapıldı
+            r.status === 2) { // Sadece Giriş Yapıldı (CheckedIn) durumu
           occupiedRoomIds.add(r.roomId);
+        }
+      });
+
+      // 2. Oda durumuna göre dolu odalar (fiziksel durum)
+      roomsArray.forEach(room => {
+        if (room.status === 1) { // Occupied
+          occupiedRoomIds.add(room.id);
         }
       });
 

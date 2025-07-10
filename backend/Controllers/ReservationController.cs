@@ -340,7 +340,38 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 // Update status if provided
                 if (updateReservationDto.Status.HasValue)
                 {
+                    var oldStatus = reservation.Status;
                     reservation.Status = updateReservationDto.Status.Value;
+
+                    // Rezervasyon durumuna göre oda durumunu güncelle
+                    var room = await _context.Rooms.FindAsync(reservation.RoomId);
+                    if (room != null)
+                    {
+                        switch (updateReservationDto.Status.Value)
+                        {
+                            case ReservationStatus.CheckedIn:
+                                room.Status = RoomStatus.Occupied;
+                                if (reservation.ActualCheckInDate == null)
+                                {
+                                    reservation.ActualCheckInDate = DateTime.UtcNow;
+                                }
+                                break;
+
+                            case ReservationStatus.CheckedOut:
+                                room.Status = RoomStatus.Cleaning;
+                                if (reservation.ActualCheckOutDate == null)
+                                {
+                                    reservation.ActualCheckOutDate = DateTime.UtcNow;
+                                }
+                                break;
+
+                            case ReservationStatus.Cancelled:
+                            case ReservationStatus.NoShow:
+                                room.Status = RoomStatus.Available;
+                                break;
+                        }
+                        room.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
 
                 reservation.UpdatedAt = DateTime.UtcNow;
@@ -391,15 +422,50 @@ namespace PansiyonYonetimSistemi.API.Controllers
         {
             try
             {
-                var reservation = await _context.Reservations.FindAsync(id);
+                var reservation = await _context.Reservations
+                    .Include(r => r.Room)
+                    .FirstOrDefaultAsync(r => r.Id == id);
+
                 if (reservation == null)
                 {
                     return NotFound(new { message = "Rezervasyon bulunamadı" });
                 }
 
+                var oldStatus = reservation.Status;
                 reservation.Status = updateStatusDto.Status;
                 reservation.UpdatedAt = DateTime.UtcNow;
 
+                // Rezervasyon durumuna göre oda durumunu güncelle
+                switch (updateStatusDto.Status)
+                {
+                    case ReservationStatus.CheckedIn:
+                        reservation.Room.Status = RoomStatus.Occupied;
+                        if (reservation.ActualCheckInDate == null)
+                        {
+                            reservation.ActualCheckInDate = DateTime.UtcNow;
+                        }
+                        break;
+
+                    case ReservationStatus.CheckedOut:
+                        reservation.Room.Status = RoomStatus.Cleaning;
+                        if (reservation.ActualCheckOutDate == null)
+                        {
+                            reservation.ActualCheckOutDate = DateTime.UtcNow;
+                        }
+                        break;
+
+                    case ReservationStatus.Cancelled:
+                    case ReservationStatus.NoShow:
+                        // İptal veya gelmedi durumunda oda müsait olur
+                        reservation.Room.Status = RoomStatus.Available;
+                        break;
+
+                    default:
+                        // Pending, Confirmed durumlarında oda durumu değişmez
+                        break;
+                }
+
+                reservation.Room.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
                 return Ok(new { message = "Rezervasyon durumu güncellendi" });
@@ -477,9 +543,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         : reservation.Notes + "\n" + checkInDto.Notes;
                 }
 
-                // Oda durumunu değiştirme - rezervasyon durumu tarih bazlı kontrol edilir
-                // Oda durumu sadece fiziksel durum için (temizlik, bakım, arızalı)
-                // reservation.Room.Status = RoomStatus.Occupied; // Bu satırı kaldırıyoruz
+                // Check-in yapıldığında oda dolu durumuna geçer
+                reservation.Room.Status = RoomStatus.Occupied;
                 reservation.Room.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
