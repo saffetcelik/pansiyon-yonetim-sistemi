@@ -45,7 +45,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
 
   const handleClearFilters = () => {
     setLocalFilters({
-      status: '',
+      status: 'exclude-checked-out', // Varsayılan olarak çıkış yapılanları hariç tut
       customerName: '',
       roomNumber: '',
       checkInDate: '',
@@ -238,6 +238,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tümü</option>
+              <option value="exclude-checked-out">Çıkış Yapılanlar Hariç</option>
               <option value="0">Beklemede</option>
               <option value="1">Onaylandı</option>
               <option value="2">Giriş Yapıldı</option>

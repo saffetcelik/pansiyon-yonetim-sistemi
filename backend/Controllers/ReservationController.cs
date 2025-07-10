@@ -65,6 +65,12 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     query = query.Where(r => r.Status == searchDto.Status.Value);
                 }
 
+                // Çıkış yapılanları hariç tut
+                if (searchDto.ExcludeCheckedOut)
+                {
+                    query = query.Where(r => r.Status != ReservationStatus.CheckedOut);
+                }
+
                 var totalCount = await query.CountAsync();
                 
                 var reservations = await query

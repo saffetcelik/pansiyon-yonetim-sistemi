@@ -111,6 +111,7 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public DateTime? CheckInDate { get; set; }
         public DateTime? CheckOutDate { get; set; }
         public ReservationStatus? Status { get; set; }
+        public bool ExcludeCheckedOut { get; set; } = false;
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }

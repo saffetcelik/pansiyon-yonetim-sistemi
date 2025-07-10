@@ -5,7 +5,16 @@ export const fetchReservations = createAsyncThunk(
   'reservations/fetchReservations',
   async (params, { rejectWithValue }) => {
     try {
-      const response = await reservationService.getAll(params);
+      // Status filtresini işle
+      const processedParams = { ...params };
+
+      if (processedParams.status === 'exclude-checked-out') {
+        processedParams.excludeCheckedOut = true;
+        delete processedParams.status; // Status parametresini kaldır
+      }
+
+      console.log('Fetching reservations with params:', processedParams);
+      const response = await reservationService.getAll(processedParams);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Rezervasyonlar yüklenemedi');
@@ -80,7 +89,7 @@ const initialState = {
   error: null,
   calendarData: [],
   filters: {
-    status: '',
+    status: 'exclude-checked-out', // Varsayılan olarak çıkış yapılanları hariç tut
     customerName: '',
     roomNumber: '',
     checkInDate: '',
@@ -108,7 +117,7 @@ const reservationSlice = createSlice({
     },
     clearFilters: (state) => {
       state.filters = {
-        status: '',
+        status: 'exclude-checked-out', // Varsayılan olarak çıkış yapılanları hariç tut
         customerName: '',
         roomNumber: '',
         checkInDate: '',
