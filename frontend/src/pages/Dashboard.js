@@ -37,40 +37,84 @@ const Dashboard = () => {
     }
   }, [activeTab]);
 
+  // Sayfa yüklendiğinde stats'ları yükle
+  useEffect(() => {
+    loadDashboardStats();
+  }, []);
+
+  // Her 30 saniyede bir stats'ları yenile (opsiyonel)
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      const interval = setInterval(() => {
+        loadDashboardStats();
+      }, 30000); // 30 saniye
+
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
   const loadDashboardStats = async () => {
     setLoadingStats(true);
     try {
       const today = new Date().toISOString().split('T')[0];
+      console.log('Loading dashboard stats for date:', today);
 
       // Load various statistics
-      const [reservationsRes, customersRes, roomsRes] = await Promise.all([
-        reservationService.getAll({
-          checkInDate: today,
-          checkOutDate: today
-        }),
+      const [allReservationsRes, customersRes, roomsRes] = await Promise.all([
+        reservationService.getAll({ pageSize: 1000 }), // Tüm rezervasyonları çek
         customerService.getAll({ pageSize: 1 }),
         roomService.getAll()
       ]);
 
-      const todayReservations = reservationsRes.data || [];
+      const allReservations = allReservationsRes.data?.reservations || allReservationsRes.data || [];
       const rooms = roomsRes.data || [];
 
       // Ensure arrays are valid before using filter
-      const reservationsArray = Array.isArray(todayReservations) ? todayReservations : [];
+      const reservationsArray = Array.isArray(allReservations) ? allReservations : [];
       const roomsArray = Array.isArray(rooms) ? rooms : [];
+
+      console.log('All reservations:', reservationsArray);
+      console.log('All rooms:', roomsArray);
+
+      // Bugünkü check-in'ler (giriş tarihi bugün olan rezervasyonlar)
+      const todayCheckIns = reservationsArray.filter(r => {
+        const checkInDate = new Date(r.checkInDate).toDateString();
+        const todayDate = new Date().toDateString();
+        return checkInDate === todayDate;
+      });
+
+      // Bugünkü check-out'lar (çıkış tarihi bugün olan rezervasyonlar)
+      const todayCheckOuts = reservationsArray.filter(r => {
+        const checkOutDate = new Date(r.checkOutDate).toDateString();
+        const todayDate = new Date().toDateString();
+        return checkOutDate === todayDate;
+      });
+
+      // Şu anda dolu olan odalar (aktif rezervasyonlar)
+      const currentDate = new Date();
+      const occupiedRoomIds = new Set();
+
+      reservationsArray.forEach(r => {
+        const checkIn = new Date(r.checkInDate);
+        const checkOut = new Date(r.checkOutDate);
+
+        // Rezervasyon aktif mi? (bugün check-in ile check-out arasında)
+        if (checkIn <= currentDate && currentDate < checkOut &&
+            (r.status === 1 || r.status === 2)) { // Onaylandı veya Giriş Yapıldı
+          occupiedRoomIds.add(r.roomId);
+        }
+      });
+
+      console.log('Today check-ins:', todayCheckIns);
+      console.log('Today check-outs:', todayCheckOuts);
+      console.log('Occupied room IDs:', Array.from(occupiedRoomIds));
 
       setDashboardStats({
         totalReservations: reservationsArray.length,
-        todayCheckIns: reservationsArray.filter(r =>
-          new Date(r.checkInDate).toDateString() === new Date().toDateString() &&
-          r.status === 1
-        ).length,
-        todayCheckOuts: reservationsArray.filter(r =>
-          new Date(r.checkOutDate).toDateString() === new Date().toDateString() &&
-          r.status === 2
-        ).length,
+        todayCheckIns: todayCheckIns.length,
+        todayCheckOuts: todayCheckOuts.length,
         totalCustomers: customersRes.data?.pagination?.total || 0,
-        occupiedRooms: roomsArray.filter(r => r.status === 1).length, // Occupied
+        occupiedRooms: occupiedRoomIds.size,
         totalRooms: roomsArray.length
       });
     } catch (error) {
@@ -134,12 +178,26 @@ const Dashboard = () => {
               </div>
 
               {/* Dashboard Statistics */}
+              <div className="flex justify-between items-center mt-6 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">📊 Güncel İstatistikler</h3>
+                <button
+                  onClick={loadDashboardStats}
+                  disabled={loadingStats}
+                  className="flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 disabled:opacity-50"
+                >
+                  <svg className={`w-4 h-4 mr-1 ${loadingStats ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {loadingStats ? 'Yenileniyor...' : 'Yenile'}
+                </button>
+              </div>
+
               {loadingStats ? (
                 <div className="flex justify-center items-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="p-2 bg-blue-100 rounded-lg">
