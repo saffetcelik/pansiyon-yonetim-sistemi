@@ -8,15 +8,9 @@ namespace PansiyonYonetimSistemi.API
     {
         public static async Task SeedReportingDataAsync(ApplicationDbContext context)
         {
-            // Check if Payments table exists and has data
-            var hasPayments = await context.Payments.AnyAsync();
-            if (hasPayments)
-            {
-                Console.WriteLine("Test data already exists. Skipping seed.");
-                return;
-            }
-
-            Console.WriteLine("Seeding test data for reporting...");
+            // Test verileri üretim ortamında oluşturulmayacak
+            Console.WriteLine("Test data seeding disabled for production.");
+            return;
 
             // Add sample reservations
             var reservations = new List<Reservation>
