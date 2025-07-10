@@ -323,7 +323,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Müşteri
+                Müşteriler
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Oda
@@ -349,8 +349,51 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             {reservations.map((reservation) => (
               <tr key={reservation.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {reservation.customerName}
+                  <div className="flex items-center space-x-2">
+                    {/* Ana müşteri avatarı */}
+                    <div className="flex-shrink-0 h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                      {reservation.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </div>
+
+                    {/* Müşteri bilgileri */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {reservation.customerName}
+                        {reservation.customers && reservation.customers.length > 1 && (
+                          <span className="ml-1 text-xs text-gray-500">
+                            (Ana müşteri)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Çoklu müşteri gösterimi */}
+                      {reservation.customers && reservation.customers.length > 1 && (
+                        <div className="flex items-center mt-1 space-x-1">
+                          {/* Diğer müşteri avatarları (maksimum 3 göster) */}
+                          {reservation.customers.slice(1, 4).map((customer, index) => (
+                            <div
+                              key={customer.customerId}
+                              className="h-6 w-6 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                              title={customer.customerName}
+                            >
+                              {customer.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                          ))}
+
+                          {/* Fazla müşteri sayısı */}
+                          {reservation.customers.length > 4 && (
+                            <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-medium">
+                              +{reservation.customers.length - 4}
+                            </div>
+                          )}
+
+                          {/* Toplam müşteri sayısı */}
+                          <span className="text-xs text-gray-500 ml-2">
+                            {reservation.customers.length} kişi
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
