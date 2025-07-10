@@ -35,6 +35,16 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const [formErrors, setFormErrors] = useState({});
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [selectedRoomOccupiedDates, setSelectedRoomOccupiedDates] = useState([]);
+  const [showRoomCards, setShowRoomCards] = useState(false); // Modern oda seçimi için
+  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false); // Yeni müşteri modal'ı
+  const [newCustomerData, setNewCustomerData] = useState({
+    firstName: '',
+    lastName: '',
+    tcKimlikNo: '',
+    phone: '',
+    email: '',
+    address: ''
+  });
 
   // Initialize form data when editing
   useEffect(() => {
@@ -243,6 +253,54 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
     } else {
       // Sadece misafir sayısını güncelle
       setFormData(prev => ({ ...prev, numberOfGuests: newCustomers.length || 1 }));
+    }
+  };
+
+  // Yeni müşteri kaydetme fonksiyonu
+  const handleCreateNewCustomer = async () => {
+    try {
+      // Basit validasyon
+      if (!newCustomerData.firstName || !newCustomerData.lastName) {
+        alert('Ad ve soyad zorunludur');
+        return;
+      }
+
+      const response = await api.post('/customers', newCustomerData);
+      const newCustomer = {
+        id: response.data.id,
+        fullName: `${response.data.firstName} ${response.data.lastName}`,
+        tcKimlikNo: response.data.tcKimlikNo,
+        phone: response.data.phone
+      };
+
+      // Yeni müşteriyi otomatik olarak seç
+      handleCustomerSelect(newCustomer);
+
+      // Modal'ı kapat ve formu temizle
+      setShowNewCustomerModal(false);
+      setNewCustomerData({
+        firstName: '',
+        lastName: '',
+        tcKimlikNo: '',
+        phone: '',
+        email: '',
+        address: ''
+      });
+
+      Swal.fire({
+        title: 'Başarılı!',
+        text: 'Yeni müşteri kaydedildi ve rezervasyona eklendi.',
+        icon: 'success',
+        timer: 2000
+      });
+
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      Swal.fire({
+        title: 'Hata!',
+        text: error.response?.data?.message || 'Müşteri kaydedilirken hata oluştu',
+        icon: 'error'
+      });
     }
   };
 
@@ -625,12 +683,95 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
             {/* Room Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Oda *
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Oda *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowRoomCards(!showRoomCards)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  {showRoomCards ? '📋 Liste Görünümü' : '🏠 Detaylı Görünüm'}
+                </button>
+              </div>
+
               {isLoadingRooms ? (
                 <div className="text-sm text-gray-500">Müsait odalar yükleniyor...</div>
+              ) : showRoomCards ? (
+                // Modern Card Görünümü
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {(availableRooms.length > 0 ? availableRooms : rooms).map((room) => (
+                    <div
+                      key={room.id}
+                      onClick={() => handleInputChange('roomId', room.id)}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        formData.roomId == room.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-lg font-semibold text-gray-900">
+                              Oda {room.roomNumber}
+                            </span>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                              {room.roomType || room.type}
+                            </span>
+                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                              👥 {room.capacity} kişi
+                            </span>
+                          </div>
+
+                          <div className="text-sm text-gray-600 mb-2">
+                            {room.description && (
+                              <p className="mb-1">{room.description}</p>
+                            )}
+                          </div>
+
+                          {/* Oda Özellikleri */}
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {room.hasWiFi && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">📶 WiFi</span>
+                            )}
+                            {room.hasTV && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">📺 TV</span>
+                            )}
+                            {room.hasAirConditioning && (
+                              <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded">❄️ Klima</span>
+                            )}
+                            {room.hasMinibar && (
+                              <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">🍷 Minibar</span>
+                            )}
+                            {room.hasBalcony && (
+                              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">🏡 Balkon</span>
+                            )}
+                            {room.hasSeaView && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">🌊 Deniz Manzarası</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-green-600">
+                            {room.pricePerNight} TL
+                          </div>
+                          <div className="text-xs text-gray-500">/ gece</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {(availableRooms.length > 0 ? availableRooms : rooms).length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>Müsait oda bulunamadı</p>
+                    </div>
+                  )}
+                </div>
               ) : (
+                // Klasik Select Görünümü
                 <select
                   value={formData.roomId}
                   onChange={(e) => handleInputChange('roomId', e.target.value)}
@@ -641,11 +782,12 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                   <option value="">Oda seçin</option>
                   {(availableRooms.length > 0 ? availableRooms : rooms).map((room) => (
                     <option key={room.id} value={room.id}>
-                      {room.roomNumber} - {room.roomType} ({room.pricePerNight} TL/gece)
+                      {room.roomNumber} - {room.roomType || room.type} - {room.capacity} kişi ({room.pricePerNight} TL/gece)
                     </option>
                   ))}
                 </select>
               )}
+
               {formErrors.roomId && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.roomId}</p>
               )}
@@ -794,14 +936,23 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
             {/* Customer Selection */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Müşteriler *
-                {formData.roomId && (
-                  <span className="text-xs text-gray-500 ml-2">
-                    ({selectedCustomers.length}/{rooms.find(r => r.id == formData.roomId)?.capacity || availableRooms.find(r => r.id == formData.roomId)?.capacity || 0} kişi)
-                  </span>
-                )}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Müşteriler *
+                  {formData.roomId && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      ({selectedCustomers.length}/{rooms.find(r => r.id == formData.roomId)?.capacity || availableRooms.find(r => r.id == formData.roomId)?.capacity || 0} kişi)
+                    </span>
+                  )}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCustomerModal(true)}
+                  className="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600 transition-colors"
+                >
+                  ➕ Yeni Müşteri
+                </button>
+              </div>
 
               {/* Selected Customers List */}
               {selectedCustomers.length > 0 && (
@@ -904,6 +1055,122 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
             </div>
           </form>
         </div>
+
+        {/* Yeni Müşteri Modal'ı */}
+        {showNewCustomerModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Yeni Müşteri Kaydı</h3>
+                <button
+                  onClick={() => setShowNewCustomerModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ad *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomerData.firstName}
+                      onChange={(e) => setNewCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ad"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Soyad *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomerData.lastName}
+                      onChange={(e) => setNewCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Soyad"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    TC Kimlik No
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerData.tcKimlikNo}
+                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, tcKimlikNo: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="TC Kimlik No"
+                    maxLength="11"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Telefon
+                  </label>
+                  <input
+                    type="tel"
+                    value={newCustomerData.phone}
+                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Telefon"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    E-posta
+                  </label>
+                  <input
+                    type="email"
+                    value={newCustomerData.email}
+                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="E-posta"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Adres
+                  </label>
+                  <textarea
+                    value={newCustomerData.address}
+                    onChange={(e) => setNewCustomerData(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Adres"
+                    rows="2"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowNewCustomerModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  İptal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateNewCustomer}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Müşteri Kaydet
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
