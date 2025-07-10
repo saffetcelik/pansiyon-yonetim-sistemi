@@ -407,8 +407,9 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         : reservation.Notes + "\n" + checkInDto.Notes;
                 }
 
-                // Update room status to occupied
-                reservation.Room.Status = RoomStatus.Occupied;
+                // Oda durumunu değiştirme - rezervasyon durumu tarih bazlı kontrol edilir
+                // Oda durumu sadece fiziksel durum için (temizlik, bakım, arızalı)
+                // reservation.Room.Status = RoomStatus.Occupied; // Bu satırı kaldırıyoruz
                 reservation.Room.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
@@ -453,7 +454,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         : reservation.Notes + "\n" + checkOutDto.Notes;
                 }
 
-                // Update room status to cleaning
+                // Check-out sonrası oda temizlik durumuna geçer (bu mantıklı)
                 reservation.Room.Status = RoomStatus.Cleaning;
                 reservation.Room.UpdatedAt = DateTime.UtcNow;
 

@@ -239,25 +239,48 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("availability")]
-        public async Task<IActionResult> GetRoomAvailability([FromQuery] DateTime checkInDate, [FromQuery] DateTime checkOutDate)
+        public async Task<IActionResult> GetRoomAvailability(
+            [FromQuery] DateTime checkInDate,
+            [FromQuery] DateTime checkOutDate,
+            [FromQuery] int? excludeReservationId = null)
         {
             try
             {
+                Console.WriteLine($"Room availability request: CheckIn={checkInDate}, CheckOut={checkOutDate}, ExcludeReservation={excludeReservationId}");
+
                 if (checkInDate >= checkOutDate)
                 {
                     return BadRequest(new { message = "Çıkış tarihi giriş tarihinden sonra olmalıdır" });
                 }
 
+                // Önce tüm rezervasyonları kontrol edelim
+                var conflictingReservations = await _context.Reservations
+                    .Where(res =>
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.NoShow &&
+                        (excludeReservationId == null || res.Id != excludeReservationId) &&
+                        res.CheckInDate < checkOutDate &&
+                        res.CheckOutDate > checkInDate)
+                    .Select(res => new { res.Id, res.RoomId, res.CheckInDate, res.CheckOutDate, res.Status })
+                    .ToListAsync();
+
+                Console.WriteLine($"Conflicting reservations: {string.Join(", ", conflictingReservations.Select(r => $"ID:{r.Id}, Room:{r.RoomId}, {r.CheckInDate:yyyy-MM-dd} to {r.CheckOutDate:yyyy-MM-dd}"))}");
+
+                // Oda durumu sadece fiziksel durum için (temizlik, bakım, arızalı)
+                // Rezervasyon durumu tarih bazlı kontrol edilmeli
                 var availableRooms = await _context.Rooms
-                    .Where(r => r.Status == RoomStatus.Available)
+                    .Where(r => r.Status != RoomStatus.OutOfOrder && r.Status != RoomStatus.Maintenance) // Sadece arızalı ve bakımdaki odaları hariç tut
                     .Where(r => !_context.Reservations.Any(res =>
                         res.RoomId == r.Id &&
                         res.Status != ReservationStatus.Cancelled &&
                         res.Status != ReservationStatus.NoShow &&
+                        (excludeReservationId == null || res.Id != excludeReservationId) && // Edit durumunda mevcut rezervasyonu hariç tut
                         res.CheckInDate < checkOutDate &&
                         res.CheckOutDate > checkInDate))
                     .OrderBy(r => r.RoomNumber)
                     .ToListAsync();
+
+                Console.WriteLine($"Available rooms: {string.Join(", ", availableRooms.Select(r => $"Room {r.RoomNumber} (ID:{r.Id})"))}");
 
                 var roomDtos = _mapper.Map<List<RoomDto>>(availableRooms);
                 return Ok(roomDtos);
@@ -265,6 +288,62 @@ namespace PansiyonYonetimSistemi.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Müsait odalar getirilirken hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpGet("{roomId}/occupied-dates")]
+        public async Task<IActionResult> GetRoomOccupiedDates(
+            [FromRoute] int roomId,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? excludeReservationId = null)
+        {
+            try
+            {
+                // Varsayılan tarih aralığı: bugünden 1 yıl sonraya kadar
+                var start = startDate ?? DateTime.Today;
+                var end = endDate ?? DateTime.Today.AddYears(1);
+
+                Console.WriteLine($"Getting occupied dates for room {roomId} from {start:yyyy-MM-dd} to {end:yyyy-MM-dd}, excluding reservation {excludeReservationId}");
+
+                // Odanın var olup olmadığını kontrol et
+                var room = await _context.Rooms.FindAsync(roomId);
+                if (room == null)
+                {
+                    return NotFound(new { message = "Oda bulunamadı" });
+                }
+
+                // Bu oda için dolu tarihleri al
+                var occupiedPeriods = await _context.Reservations
+                    .Where(res =>
+                        res.RoomId == roomId &&
+                        res.Status != ReservationStatus.Cancelled &&
+                        res.Status != ReservationStatus.NoShow &&
+                        (excludeReservationId == null || res.Id != excludeReservationId) &&
+                        res.CheckInDate < end &&
+                        res.CheckOutDate > start)
+                    .Select(res => new
+                    {
+                        CheckInDate = res.CheckInDate,
+                        CheckOutDate = res.CheckOutDate,
+                        ReservationId = res.Id,
+                        Status = res.Status
+                    })
+                    .OrderBy(res => res.CheckInDate)
+                    .ToListAsync();
+
+                Console.WriteLine($"Found {occupiedPeriods.Count} occupied periods for room {roomId}");
+
+                return Ok(new
+                {
+                    roomId = roomId,
+                    roomNumber = room.RoomNumber,
+                    occupiedPeriods = occupiedPeriods
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Oda dolu tarihleri getirilirken hata oluştu", error = ex.Message });
             }
         }
     }

@@ -67,7 +67,27 @@ export const roomService = {
   update: (id, roomData) => api.put(`/rooms/${id}`, roomData),
   delete: (id) => api.delete(`/rooms/${id}`),
   updateStatus: (id, status) => api.patch(`/rooms/${id}/status`, { status }),
-  getAvailability: (checkInDate, checkOutDate) => api.get(`/rooms/availability?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}`)
+  getAvailability: (checkInDate, checkOutDate, excludeReservationId = null) => {
+    let url = `/rooms/availability?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}`;
+    if (excludeReservationId) {
+      url += `&excludeReservationId=${excludeReservationId}`;
+    }
+    return api.get(url);
+  },
+  getOccupiedDates: (roomId, startDate = null, endDate = null, excludeReservationId = null) => {
+    let url = `/rooms/${roomId}/occupied-dates`;
+    const params = new URLSearchParams();
+
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (excludeReservationId) params.append('excludeReservationId', excludeReservationId);
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    return api.get(url);
+  }
 };
 
 export const customerService = {

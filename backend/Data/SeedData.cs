@@ -364,12 +364,61 @@ namespace PansiyonYonetimSistemi.API.Data
                 await context.SaveChangesAsync();
             }
 
-            // Seed Sample Reservations - DISABLED FOR PRODUCTION
-            // Rezervasyonlar gerçek kullanımda manuel olarak eklenecek
-            // if (!await context.Reservations.AnyAsync())
-            // {
-            //     // Test rezervasyonları burada olacak
-            // }
+            // Seed Sample Reservations for testing
+            if (!await context.Reservations.AnyAsync())
+            {
+                var sampleCustomer = await context.Customers.FirstOrDefaultAsync();
+                var room1 = await context.Rooms.FirstOrDefaultAsync(r => r.RoomNumber == "101");
+                var room2 = await context.Rooms.FirstOrDefaultAsync(r => r.RoomNumber == "102");
+
+                if (sampleCustomer == null || room1 == null || room2 == null)
+                {
+                    Console.WriteLine("Cannot create sample reservations: Missing customer or rooms");
+                    return;
+                }
+
+                var sampleReservations = new[]
+                {
+                    new Reservation
+                    {
+                        CustomerId = sampleCustomer.Id,
+                        RoomId = room1.Id,
+                        CheckInDate = DateTime.Today.AddDays(1), // Yarın
+                        CheckOutDate = DateTime.Today.AddDays(4), // 3 gün sonra
+                        NumberOfGuests = 1,
+                        TotalAmount = 450, // 3 gece × 150 TL
+                        PaidAmount = 450,
+                        Status = ReservationStatus.Confirmed,
+                        Notes = "Test rezervasyonu - Oda 101",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    new Reservation
+                    {
+                        CustomerId = sampleCustomer.Id,
+                        RoomId = room2.Id,
+                        CheckInDate = DateTime.Today.AddDays(5), // 5 gün sonra
+                        CheckOutDate = DateTime.Today.AddDays(8), // 8 gün sonra
+                        NumberOfGuests = 2,
+                        TotalAmount = 600, // 3 gece × 200 TL
+                        PaidAmount = 300,
+                        Status = ReservationStatus.Confirmed,
+                        Notes = "Test rezervasyonu - Oda 102",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    }
+                };
+
+                context.Reservations.AddRange(sampleReservations);
+                await context.SaveChangesAsync();
+
+                Console.WriteLine($"Sample reservations created:");
+                foreach (var res in sampleReservations)
+                {
+                    var room = await context.Rooms.FindAsync(res.RoomId);
+                    Console.WriteLine($"  - Room {room.RoomNumber}: {res.CheckInDate:yyyy-MM-dd} to {res.CheckOutDate:yyyy-MM-dd}");
+                }
+            }
         }
 
         private static string HashPassword(string password)

@@ -33,6 +33,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [selectedRoomOccupiedDates, setSelectedRoomOccupiedDates] = useState([]);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -94,19 +95,64 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
   const loadAvailableRooms = async () => {
     if (!formData.checkInDate || !formData.checkOutDate) return;
-    
+
+    // Tarih doğrulaması - CheckOut tarihi CheckIn tarihinden sonra olmalı
+    const checkIn = new Date(formData.checkInDate);
+    const checkOut = new Date(formData.checkOutDate);
+
+    if (checkOut <= checkIn) {
+      console.log('Invalid date range, skipping room availability check');
+      setAvailableRooms([]);
+      return;
+    }
+
     setIsLoadingRooms(true);
     try {
+      console.log('Loading available rooms for:', {
+        checkInDate: formData.checkInDate,
+        checkOutDate: formData.checkOutDate,
+        excludeReservationId: isEdit ? reservation?.id : null
+      });
+
       const response = await roomService.getAvailability(
-        formData.checkInDate, 
-        formData.checkOutDate
+        formData.checkInDate,
+        formData.checkOutDate,
+        isEdit ? reservation?.id : null // Edit durumunda mevcut rezervasyonu hariç tut
       );
+
+      console.log('Available rooms response:', response.data);
       setAvailableRooms(response.data);
     } catch (error) {
       console.error('Error loading available rooms:', error);
       setAvailableRooms([]);
     } finally {
       setIsLoadingRooms(false);
+    }
+  };
+
+  // Seçilen oda için dolu tarihleri yükle
+  const loadSelectedRoomOccupiedDates = async (roomId) => {
+    if (!roomId) {
+      setSelectedRoomOccupiedDates([]);
+      return;
+    }
+
+    try {
+      console.log('Loading occupied dates for room:', roomId);
+
+      const response = await roomService.getOccupiedDates(
+        roomId,
+        null, // startDate - varsayılan olarak bugün
+        null, // endDate - varsayılan olarak 1 yıl sonra
+        isEdit ? reservation?.id : null // Edit durumunda mevcut rezervasyonu hariç tut
+      );
+
+      console.log('Room occupied dates response:', response.data);
+      console.log('Occupied periods:', response.data.occupiedPeriods);
+      setSelectedRoomOccupiedDates(response.data.occupiedPeriods || []);
+    } catch (error) {
+      console.error('Error loading room occupied dates:', error);
+      setSelectedRoomOccupiedDates([]);
     }
   };
 
@@ -138,13 +184,159 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
     setShowCustomerDropdown(false);
   };
 
+  // Otomatik fiyat hesaplama
+  const calculateTotalAmount = () => {
+    if (!formData.checkInDate || !formData.checkOutDate || !formData.roomId) {
+      return 0;
+    }
+
+    const selectedRoom = availableRooms.find(room => room.id == formData.roomId) ||
+                        rooms.find(room => room.id == formData.roomId);
+
+    if (!selectedRoom) return 0;
+
+    const checkIn = new Date(formData.checkInDate);
+    const checkOut = new Date(formData.checkOutDate);
+    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+
+    return nights * selectedRoom.pricePerNight;
+  };
+
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+
+      // Oda, tarih değiştiğinde otomatik fiyat hesapla
+      if (field === 'roomId' || field === 'checkInDate' || field === 'checkOutDate') {
+        if (newData.checkInDate && newData.checkOutDate && newData.roomId) {
+          const selectedRoom = availableRooms.find(room => room.id == newData.roomId) ||
+                              rooms.find(room => room.id == newData.roomId);
+
+          if (selectedRoom) {
+            const checkIn = new Date(newData.checkInDate);
+            const checkOut = new Date(newData.checkOutDate);
+            const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+
+            if (nights > 0) {
+              newData.totalAmount = nights * selectedRoom.pricePerNight;
+            }
+          }
+        }
+      }
+
+      // Oda değiştiğinde misafir sayısını kontrol et ve dolu tarihleri yükle
+      if (field === 'roomId' && value) {
+        const selectedRoom = availableRooms.find(room => room.id == value) ||
+                            rooms.find(room => room.id == value);
+        if (selectedRoom && newData.numberOfGuests > selectedRoom.capacity) {
+          newData.numberOfGuests = selectedRoom.capacity;
+        }
+
+        // Seçilen oda için dolu tarihleri yükle
+        loadSelectedRoomOccupiedDates(value);
+      } else if (field === 'roomId' && !value) {
+        // Oda seçimi temizlendiğinde dolu tarihleri de temizle
+        setSelectedRoomOccupiedDates([]);
+      }
+
+      return newData;
+    });
+
     // Clear specific field error when user starts typing
     if (formErrors[field]) {
       setFormErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  // Tarih seçiminde dolu tarihleri kontrol et
+  const isDateDisabled = (date, isCheckOut = false) => {
+    if (!formData.roomId || selectedRoomOccupiedDates.length === 0) {
+      return false; // Oda seçilmemişse veya dolu tarih yoksa tüm tarihler müsait
+    }
+
+    const selectedDate = new Date(date);
+
+    for (const period of selectedRoomOccupiedDates) {
+      // Tarih formatını düzelt - ISO string'i parse et
+      const checkIn = new Date(period.checkInDate || period.CheckInDate);
+      const checkOut = new Date(period.checkOutDate || period.CheckOutDate);
+
+      // Geçersiz tarih kontrolü
+      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+        console.warn('Invalid date in occupied period:', period);
+        continue;
+      }
+
+      if (isCheckOut) {
+        // Check-out tarihi için: dolu periyodun içinde olmamalı
+        if (selectedDate > checkIn && selectedDate <= checkOut) {
+          return true;
+        }
+      } else {
+        // Check-in tarihi için: dolu periyodun içinde olmamalı
+        if (selectedDate >= checkIn && selectedDate < checkOut) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // Müsait tarih aralıklarını bul
+  const getAvailableDateRanges = () => {
+    if (!formData.roomId || selectedRoomOccupiedDates.length === 0) {
+      return []; // Oda seçilmemişse veya dolu tarih yoksa kısıtlama yok
+    }
+
+    const ranges = [];
+    const today = new Date();
+    const oneYearLater = new Date();
+    oneYearLater.setFullYear(today.getFullYear() + 1);
+
+    // Dolu periyodları tarihe göre sırala
+    const sortedPeriods = [...selectedRoomOccupiedDates].sort((a, b) => {
+      const dateA = new Date(a.checkInDate || a.CheckInDate);
+      const dateB = new Date(b.checkInDate || b.CheckInDate);
+      return dateA - dateB;
+    });
+
+    let currentDate = today;
+
+    for (const period of sortedPeriods) {
+      const periodStart = new Date(period.checkInDate || period.CheckInDate);
+      const periodEnd = new Date(period.checkOutDate || period.CheckOutDate);
+
+      // Geçersiz tarih kontrolü
+      if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+        console.warn('Invalid date in period:', period);
+        continue;
+      }
+
+      // Mevcut tarih ile dolu periyod başlangıcı arasında müsait aralık varsa ekle
+      if (currentDate < periodStart) {
+        ranges.push({
+          start: new Date(currentDate),
+          end: new Date(periodStart.getTime() - 24 * 60 * 60 * 1000) // 1 gün öncesi
+        });
+      }
+
+      // Sonraki müsait tarih dolu periyodun bitiminden sonra
+      currentDate = new Date(periodEnd.getTime());
+    }
+
+    // Son dolu periyoddan sonra müsait aralık varsa ekle
+    if (currentDate < oneYearLater) {
+      ranges.push({
+        start: new Date(currentDate),
+        end: oneYearLater
+      });
+    }
+
+    return ranges;
   };
 
   const validateForm = () => {
@@ -176,8 +368,17 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
       }
     }
 
-    if (formData.numberOfGuests < 1 || formData.numberOfGuests > 10) {
-      errors.numberOfGuests = 'Misafir sayısı 1-10 arasında olmalıdır';
+    if (formData.numberOfGuests < 1) {
+      errors.numberOfGuests = 'Misafir sayısı en az 1 olmalıdır';
+    }
+
+    // Oda kapasitesi kontrolü
+    if (formData.roomId && formData.numberOfGuests) {
+      const selectedRoom = availableRooms.find(room => room.id == formData.roomId) ||
+                          rooms.find(room => room.id == formData.roomId);
+      if (selectedRoom && formData.numberOfGuests > selectedRoom.capacity) {
+        errors.numberOfGuests = `Bu oda maksimum ${selectedRoom.capacity} kişiliktir`;
+      }
     }
 
     if (formData.totalAmount < 0) {
@@ -289,53 +490,6 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Customer Selection */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Müşteri *
-              </label>
-              <input
-                type="text"
-                value={customerSearch}
-                onChange={(e) => handleCustomerSearch(e.target.value)}
-                onFocus={() => setShowCustomerDropdown(true)}
-                placeholder="Müşteri adı, TC kimlik veya telefon ile ara..."
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors.customerId ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {formErrors.customerId && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.customerId}</p>
-              )}
-              
-              {/* Customer Dropdown */}
-              {showCustomerDropdown && customers.length > 0 && (
-                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {customers.map((customer) => (
-                    <div
-                      key={customer.id}
-                      onClick={() => handleCustomerSelect(customer)}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      <div className="font-medium">{customer.fullName}</div>
-                      <div className="text-sm text-gray-500">
-                        {customer.tcKimlikNo && `TC: ${customer.tcKimlikNo}`}
-                        {customer.phone && ` | Tel: ${customer.phone}`}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {selectedCustomer && (
-                <div className="mt-2 p-2 bg-blue-50 rounded-md">
-                  <span className="text-sm text-blue-700">
-                    Seçili: {selectedCustomer.fullName}
-                  </span>
-                </div>
-              )}
-            </div>
-
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -345,7 +499,20 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 <input
                   type="date"
                   value={formData.checkInDate}
-                  onChange={(e) => handleInputChange('checkInDate', e.target.value)}
+                  onChange={(e) => {
+                    const selectedDate = e.target.value;
+                    if (formData.roomId && isDateDisabled(selectedDate, false)) {
+                      // Dolu tarih seçilmeye çalışılıyorsa uyarı ver
+                      Swal.fire({
+                        title: 'Uyarı!',
+                        text: 'Seçilen tarih bu oda için dolu. Lütfen başka bir tarih seçin.',
+                        icon: 'warning',
+                        confirmButtonText: 'Tamam'
+                      });
+                      return;
+                    }
+                    handleInputChange('checkInDate', selectedDate);
+                  }}
                   min={new Date().toISOString().split('T')[0]}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     formErrors.checkInDate ? 'border-red-500' : 'border-gray-300'
@@ -353,6 +520,11 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 />
                 {formErrors.checkInDate && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.checkInDate}</p>
+                )}
+                {formData.roomId && selectedRoomOccupiedDates.length > 0 && (
+                  <p className="text-blue-500 text-xs mt-1">
+                    ⚠️ Bu oda için bazı tarihler dolu. Dolu tarihleri seçemezsiniz.
+                  </p>
                 )}
               </div>
               
@@ -363,7 +535,20 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 <input
                   type="date"
                   value={formData.checkOutDate}
-                  onChange={(e) => handleInputChange('checkOutDate', e.target.value)}
+                  onChange={(e) => {
+                    const selectedDate = e.target.value;
+                    if (formData.roomId && isDateDisabled(selectedDate, true)) {
+                      // Dolu tarih seçilmeye çalışılıyorsa uyarı ver
+                      Swal.fire({
+                        title: 'Uyarı!',
+                        text: 'Seçilen tarih bu oda için dolu. Lütfen başka bir tarih seçin.',
+                        icon: 'warning',
+                        confirmButtonText: 'Tamam'
+                      });
+                      return;
+                    }
+                    handleInputChange('checkOutDate', selectedDate);
+                  }}
                   min={formData.checkInDate || new Date().toISOString().split('T')[0]}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     formErrors.checkOutDate ? 'border-red-500' : 'border-gray-300'
@@ -406,6 +591,65 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                   Seçilen tarihler için müsait oda bulunamadı
                 </p>
               )}
+              {formData.roomId && selectedRoomOccupiedDates.length > 0 && (
+                <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                  <p className="text-blue-700 text-xs font-medium mb-1">Bu oda için dolu tarihler:</p>
+                  <div className="text-blue-600 text-xs">
+                    {selectedRoomOccupiedDates.map((period, index) => {
+                      const checkIn = new Date(period.checkInDate || period.CheckInDate);
+                      const checkOut = new Date(period.checkOutDate || period.CheckOutDate);
+
+                      // Geçersiz tarih kontrolü
+                      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+                        return (
+                          <div key={index}>
+                            • Geçersiz tarih
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={index}>
+                          • {checkIn.toLocaleDateString('tr-TR')} - {checkOut.toLocaleDateString('tr-TR')}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Number of Guests */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Misafir Sayısı *
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={(() => {
+                  const selectedRoom = availableRooms.find(room => room.id == formData.roomId) ||
+                                      rooms.find(room => room.id == formData.roomId);
+                  return selectedRoom ? selectedRoom.capacity : 10;
+                })()}
+                value={formData.numberOfGuests}
+                onChange={(e) => handleInputChange('numberOfGuests', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors.numberOfGuests ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {formErrors.numberOfGuests && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.numberOfGuests}</p>
+              )}
+              {formData.roomId && (() => {
+                const selectedRoom = availableRooms.find(room => room.id == formData.roomId) ||
+                                    rooms.find(room => room.id == formData.roomId);
+                return selectedRoom ? (
+                  <p className="text-gray-500 text-xs mt-1">
+                    Bu oda maksimum {selectedRoom.capacity} kişiliktir
+                  </p>
+                ) : null;
+              })()}
             </div>
 
             {/* Status Selection (only for edit mode) */}
@@ -429,30 +673,11 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
               </div>
             )}
 
-            {/* Number of Guests and Amounts */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Amounts */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Misafir Sayısı *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.numberOfGuests}
-                  onChange={(e) => handleInputChange('numberOfGuests', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.numberOfGuests ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {formErrors.numberOfGuests && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.numberOfGuests}</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Toplam Tutar (TL)
+                  Toplam Tutar (TL) *
                 </label>
                 <input
                   type="number"
@@ -467,8 +692,23 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 {formErrors.totalAmount && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.totalAmount}</p>
                 )}
+                {formData.checkInDate && formData.checkOutDate && formData.roomId && (() => {
+                  const selectedRoom = availableRooms.find(room => room.id == formData.roomId) ||
+                                      rooms.find(room => room.id == formData.roomId);
+                  if (selectedRoom) {
+                    const checkIn = new Date(formData.checkInDate);
+                    const checkOut = new Date(formData.checkOutDate);
+                    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                    return (
+                      <p className="text-gray-500 text-xs mt-1">
+                        {nights} gece × {selectedRoom.pricePerNight} TL = {nights * selectedRoom.pricePerNight} TL
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Ödenen Tutar (TL)
@@ -487,6 +727,53 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                   <p className="text-red-500 text-xs mt-1">{formErrors.paidAmount}</p>
                 )}
               </div>
+            </div>
+
+            {/* Customer Selection */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Müşteri *
+              </label>
+              <input
+                type="text"
+                value={customerSearch}
+                onChange={(e) => handleCustomerSearch(e.target.value)}
+                onFocus={() => setShowCustomerDropdown(true)}
+                placeholder="Müşteri adı, TC kimlik veya telefon ile ara..."
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors.customerId ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {formErrors.customerId && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.customerId}</p>
+              )}
+
+              {/* Customer Dropdown */}
+              {showCustomerDropdown && customers.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {customers.map((customer) => (
+                    <div
+                      key={customer.id}
+                      onClick={() => handleCustomerSelect(customer)}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    >
+                      <div className="font-medium">{customer.fullName}</div>
+                      <div className="text-sm text-gray-500">
+                        {customer.tcKimlikNo && `TC: ${customer.tcKimlikNo}`}
+                        {customer.phone && ` | Tel: ${customer.phone}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selectedCustomer && (
+                <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                  <span className="text-sm text-blue-700">
+                    Seçili: {selectedCustomer.fullName}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Notes */}
