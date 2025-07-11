@@ -198,7 +198,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       0: { label: 'Beklemede', color: 'bg-yellow-100 text-yellow-800' },
-      1: { label: 'Onaylandı', color: 'bg-blue-100 text-blue-800' },
       2: { label: 'Giriş Yapıldı', color: 'bg-green-100 text-green-800' },
       3: { label: 'Çıkış Yapıldı', color: 'bg-gray-100 text-gray-800' },
       4: { label: 'İptal Edildi', color: 'bg-red-100 text-red-800' },
@@ -261,7 +260,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               <option value="">Tümü</option>
               <option value="exclude-checked-out">Çıkış Yapılanlar Hariç</option>
               <option value="0">Beklemede</option>
-              <option value="1">Onaylandı</option>
               <option value="2">Giriş Yapıldı</option>
               <option value="3">Çıkış Yapıldı</option>
               <option value="4">İptal Edildi</option>
@@ -517,14 +515,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                               >
                                 🟡 Beklemede
-                              </button>
-                            )}
-                            {reservation.status !== 1 && (
-                              <button
-                                onClick={() => handleQuickStatusChange(reservation.id, 1)}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                              >
-                                🔵 Onaylandı
                               </button>
                             )}
                             {reservation.status !== 4 && (

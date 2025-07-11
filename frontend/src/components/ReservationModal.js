@@ -872,11 +872,10 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={0}>Beklemede</option>
-                  <option value={1}>Onaylandı</option>
-                  <option value={2}>Giriş Yapıldı</option>
-                  <option value={3}>Çıkış Yapıldı</option>
-                  <option value={4}>İptal Edildi</option>
-                  <option value={5}>Gelmedi</option>
+                  <option value={1}>Giriş Yapıldı</option>
+                  <option value={2}>Çıkış Yapıldı</option>
+                  <option value={3}>İptal Edildi</option>
+                  <option value={4}>Gelmedi</option>
                 </select>
               </div>
             )}
