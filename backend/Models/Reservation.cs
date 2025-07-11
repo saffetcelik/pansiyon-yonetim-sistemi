@@ -51,10 +51,15 @@ namespace PansiyonYonetimSistemi.API.Models
         // Navigation Properties
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; } = null!;
-        
+
         [ForeignKey("RoomId")]
         public virtual Room Room { get; set; } = null!;
-        
+
         public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
+
+        /// <summary>
+        /// Rezervasyondaki tüm müşteriler (çoklu müşteri desteği)
+        /// </summary>
+        public virtual ICollection<ReservationCustomer> ReservationCustomers { get; set; } = new List<ReservationCustomer>();
     }
 }

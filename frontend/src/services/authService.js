@@ -2,6 +2,29 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5297/api';
 
+// Cookie yardımcı fonksiyonları
+const cookieUtils = {
+  // Cookie'den değer oku
+  getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  },
+
+  // Cookie ayarla
+  setCookie(name, value, days = 30) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  },
+
+  // Cookie sil
+  deleteCookie(name) {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+  }
+};
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,7 +36,14 @@ const api = axios.create({
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    // Önce localStorage'dan token al
+    let token = localStorage.getItem('authToken');
+
+    // Eğer localStorage'da yoksa cookie'den al
+    if (!token) {
+      token = cookieUtils.getCookie('authToken');
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -42,14 +72,18 @@ export const authService = {
   // Login user
   async login(credentials) {
     try {
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('/auth/login', credentials, {
+        withCredentials: true // Cookie'leri dahil et
+      });
       const { token, user, expiresAt } = response.data;
-      
-      // Store token and user info
+
+      // Store token and user info in localStorage (backup)
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('tokenExpiresAt', expiresAt);
-      
+
+      // Cookie'ler backend tarafından otomatik olarak ayarlanacak
+
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -109,38 +143,82 @@ export const authService = {
   },
 
   // Logout user
-  logout() {
+  async logout() {
+    try {
+      // Backend'e logout isteği gönder (cookie'leri temizlemek için)
+      await api.post('/auth/logout', {}, { withCredentials: true });
+    } catch (error) {
+      console.error('Logout API error:', error);
+    }
+
+    // LocalStorage'ı temizle
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('tokenExpiresAt');
+
+    // Cookie'leri manuel olarak da temizle
+    cookieUtils.deleteCookie('authToken');
+    cookieUtils.deleteCookie('userInfo');
+
     window.location.href = '/login';
   },
 
   // Check if user is authenticated
   isAuthenticated() {
-    const token = localStorage.getItem('authToken');
-    const expiresAt = localStorage.getItem('tokenExpiresAt');
-    
-    if (!token || !expiresAt) {
+    // Önce localStorage'dan kontrol et
+    let token = localStorage.getItem('authToken');
+    let expiresAt = localStorage.getItem('tokenExpiresAt');
+
+    // Eğer localStorage'da yoksa cookie'den kontrol et
+    if (!token) {
+      token = cookieUtils.getCookie('authToken');
+    }
+
+    if (!token) {
       return false;
     }
-    
-    // Check if token is expired
-    const now = new Date();
-    const expiry = new Date(expiresAt);
-    
-    if (now >= expiry) {
-      this.logout();
-      return false;
+
+    // Token expiry kontrolü - 30 gün boyunca geçerli
+    if (expiresAt) {
+      const now = new Date();
+      const expiry = new Date(expiresAt);
+
+      // Sadece gerçekten süresi dolmuşsa çıkış yap (30 gün)
+      if (now >= expiry) {
+        this.logout();
+        return false;
+      }
     }
-    
+
     return true;
   },
 
   // Get current user
   getCurrentUser() {
-    const userStr = localStorage.getItem('user');
+    // Önce localStorage'dan al
+    let userStr = localStorage.getItem('user');
+
+    // Eğer localStorage'da yoksa cookie'den al
+    if (!userStr) {
+      userStr = cookieUtils.getCookie('userInfo');
+    }
+
     return userStr ? JSON.parse(userStr) : null;
+  },
+
+  // Şifre değiştirme
+  async changePassword(passwordData) {
+    try {
+      const response = await api.post('/auth/change-password', passwordData, {
+        withCredentials: true
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Şifre değiştirme başarısız'
+      };
+    }
   },
 
   // Get auth token

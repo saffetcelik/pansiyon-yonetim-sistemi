@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using PansiyonYonetimSistemi.API.Data;
 using PansiyonYonetimSistemi.API.DTOs;
 using PansiyonYonetimSistemi.API.Models;
@@ -63,11 +64,25 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 var token = _jwtService.GenerateToken(user);
                 var userDto = _mapper.Map<UserDto>(user);
 
+                // Cookie ayarları - 1 ay boyunca geçerli
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = true, // XSS saldırılarına karşı koruma
+                    Secure = false, // Development için false, production'da true olmalı
+                    SameSite = SameSiteMode.Lax, // CSRF koruması
+                    Expires = DateTime.UtcNow.AddDays(30), // 1 ay
+                    Path = "/"
+                };
+
+                // Cookie'ye token'ı ekle
+                Response.Cookies.Append("authToken", token, cookieOptions);
+                Response.Cookies.Append("userInfo", System.Text.Json.JsonSerializer.Serialize(userDto), cookieOptions);
+
                 var response = new LoginResponseDto
                 {
                     Token = token,
                     User = userDto,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(60) // Should match JWT expiry
+                    ExpiresAt = DateTime.UtcNow.AddDays(30) // 30 gün - JWT ve Cookie aynı süre
                 };
 
                 return Ok(response);
@@ -124,39 +139,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
         }
 
-        [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
 
-                var user = await _context.Users.FindAsync(changePasswordDto.UserId);
-                if (user == null)
-                {
-                    return NotFound(new { message = "Kullanıcı bulunamadı" });
-                }
-
-                if (!_passwordService.VerifyPassword(changePasswordDto.CurrentPassword, user.PasswordHash))
-                {
-                    return BadRequest(new { message = "Mevcut şifre hatalı" });
-                }
-
-                user.PasswordHash = _passwordService.HashPassword(changePasswordDto.NewPassword);
-                user.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new { message = "Şifre başarıyla değiştirildi" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Şifre değiştirme işlemi sırasında bir hata oluştu", error = ex.Message });
-            }
-        }
 
         [HttpPost("refresh-token")]
         public IActionResult RefreshToken([FromBody] string token)
@@ -187,6 +170,78 @@ namespace PansiyonYonetimSistemi.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Token yenileme işlemi sırasında bir hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            try
+            {
+                // Cookie'leri temizle
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false, // Development için false
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTime.UtcNow.AddDays(-1), // Geçmişe tarih vererek sil
+                    Path = "/"
+                };
+
+                Response.Cookies.Append("authToken", "", cookieOptions);
+                Response.Cookies.Append("userInfo", "", cookieOptions);
+
+                return Ok(new { message = "Başarıyla çıkış yapıldı" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Çıkış işlemi sırasında bir hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                // Mevcut kullanıcıyı al
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    return Unauthorized(new { message = "Kullanıcı kimliği bulunamadı" });
+                }
+
+                var userId = int.Parse(userIdClaim.Value);
+                var user = await _context.Users.FindAsync(userId);
+
+                if (user == null)
+                {
+                    return NotFound(new { message = "Kullanıcı bulunamadı" });
+                }
+
+                // Mevcut şifreyi doğrula
+                if (!_passwordService.VerifyPassword(changePasswordDto.CurrentPassword, user.PasswordHash))
+                {
+                    return BadRequest(new { message = "Mevcut şifre yanlış" });
+                }
+
+                // Yeni şifreyi hash'le ve kaydet
+                user.PasswordHash = _passwordService.HashPassword(changePasswordDto.NewPassword);
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Şifre başarıyla değiştirildi" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Şifre değiştirme işlemi sırasında bir hata oluştu", error = ex.Message });
             }
         }
 

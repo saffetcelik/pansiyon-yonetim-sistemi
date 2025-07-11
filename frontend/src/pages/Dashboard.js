@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../store/authSlice';
-import RoomPanel from '../components/RoomPanel';
+import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../store/slices/authSlice';
 import Reservations from './Reservations';
 import Customers from './Customers';
 import Products from './Products';
 import Sales from './Sales';
-import Reports from './Reports';
+import Rooms from './Rooms';
 import { reservationService, customerService, roomService } from '../services/api';
+import RoomPanel from '../components/RoomPanel';
+import RoomStatusList from '../components/RoomStatusList';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardStats, setDashboardStats] = useState({
@@ -24,7 +27,7 @@ const Dashboard = () => {
   const [loadingStats, setLoadingStats] = useState(false);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
   };
 
   useEffect(() => {
@@ -33,44 +36,97 @@ const Dashboard = () => {
     }
   }, [activeTab]);
 
+  // Sayfa yüklendiğinde stats'ları yükle
+  useEffect(() => {
+    loadDashboardStats();
+  }, []);
+
+  // Her 30 saniyede bir stats'ları yenile (opsiyonel)
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      const interval = setInterval(() => {
+        loadDashboardStats();
+      }, 30000); // 30 saniye
+
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
   const loadDashboardStats = async () => {
     setLoadingStats(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      console.log('Loading dashboard stats from new API...');
 
-      // Load various statistics
-      const [reservationsRes, customersRes, roomsRes] = await Promise.all([
-        reservationService.getAll({
-          checkInDate: today,
-          checkOutDate: today
-        }),
-        customerService.getAll({ pageSize: 1 }),
-        roomService.getAll()
+      // Yeni dashboard stats API'sini kullan
+      const [dashboardRes, customersRes] = await Promise.all([
+        reservationService.getDashboardStats(),
+        customerService.getAll({ pageSize: 1 })
       ]);
 
-      const todayReservations = reservationsRes.data || [];
-      const rooms = roomsRes.data || [];
-
-      // Ensure arrays are valid before using filter
-      const reservationsArray = Array.isArray(todayReservations) ? todayReservations : [];
-      const roomsArray = Array.isArray(rooms) ? rooms : [];
+      const stats = dashboardRes.data;
+      console.log('Dashboard stats from API:', stats);
 
       setDashboardStats({
-        totalReservations: reservationsArray.length,
-        todayCheckIns: reservationsArray.filter(r =>
-          new Date(r.checkInDate).toDateString() === new Date().toDateString() &&
-          r.status === 1
-        ).length,
-        todayCheckOuts: reservationsArray.filter(r =>
-          new Date(r.checkOutDate).toDateString() === new Date().toDateString() &&
-          r.status === 2
-        ).length,
-        totalCustomers: customersRes.data?.pagination?.total || 0,
-        occupiedRooms: roomsArray.filter(r => r.status === 1).length, // Occupied
-        totalRooms: roomsArray.length
+        totalReservations: stats.totalActiveReservations || 0,
+        todayCheckIns: stats.todayCheckIns || 0,
+        todayCheckOuts: stats.todayCheckOuts || 0,
+        totalCustomers: customersRes.data?.pagination?.total || stats.totalCustomers || 0,
+        occupiedRooms: stats.occupiedRooms || 0,
+        totalRooms: stats.totalRooms || 0
       });
+
+      console.log('Dashboard stats updated:', {
+        todayCheckIns: stats.todayCheckIns,
+        todayCheckOuts: stats.todayCheckOuts,
+        occupiedRooms: stats.occupiedRooms,
+        totalRooms: stats.totalRooms
+      });
+
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
+
+      // Fallback: Eski yöntem
+      console.log('Falling back to old method...');
+      try {
+        const [allReservationsRes, customersRes, roomsRes] = await Promise.all([
+          reservationService.getAll({ pageSize: 1000 }),
+          customerService.getAll({ pageSize: 1 }),
+          roomService.getAll()
+        ]);
+
+        const allReservations = allReservationsRes.data?.data || allReservationsRes.data || [];
+        const rooms = roomsRes.data || [];
+        const reservationsArray = Array.isArray(allReservations) ? allReservations : [];
+        const roomsArray = Array.isArray(rooms) ? rooms : [];
+
+        // Basit hesaplama
+        const todayCheckIns = reservationsArray.filter(r => {
+          if (!r.actualCheckInDate) return false;
+          const checkInDate = new Date(r.actualCheckInDate).toDateString();
+          const todayDate = new Date().toDateString();
+          return checkInDate === todayDate;
+        });
+
+        const todayCheckOuts = reservationsArray.filter(r => {
+          if (!r.actualCheckOutDate) return false;
+          const checkOutDate = new Date(r.actualCheckOutDate).toDateString();
+          const todayDate = new Date().toDateString();
+          return checkOutDate === todayDate;
+        });
+
+        const occupiedRooms = reservationsArray.filter(r => r.status === 2).length; // CheckedIn
+
+        setDashboardStats({
+          totalReservations: reservationsArray.length,
+          todayCheckIns: todayCheckIns.length,
+          todayCheckOuts: todayCheckOuts.length,
+          totalCustomers: customersRes.data?.pagination?.total || 0,
+          occupiedRooms: occupiedRooms,
+          totalRooms: roomsArray.length
+        });
+      } catch (fallbackError) {
+        console.error('Fallback method also failed:', fallbackError);
+      }
     } finally {
       setLoadingStats(false);
     }
@@ -83,7 +139,6 @@ const Dashboard = () => {
     { id: 'rooms', label: 'Odalar', icon: '🏨' },
     { id: 'products', label: 'Ürünler', icon: '📦' },
     { id: 'sales', label: 'Büfe Satış', icon: '🛒' },
-    { id: 'reports', label: 'Raporlar', icon: '📊' },
   ];
 
   const renderContent = () => {
@@ -96,8 +151,8 @@ const Dashboard = () => {
         return <Products />;
       case 'sales':
         return <Sales />;
-      case 'reports':
-        return <Reports />;
+      case 'rooms':
+        return <Rooms />;
       case 'dashboard':
       default:
         return (
@@ -128,12 +183,26 @@ const Dashboard = () => {
               </div>
 
               {/* Dashboard Statistics */}
+              <div className="flex justify-between items-center mt-6 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">📊 Güncel İstatistikler</h3>
+                <button
+                  onClick={loadDashboardStats}
+                  disabled={loadingStats}
+                  className="flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 disabled:opacity-50"
+                >
+                  <svg className={`w-4 h-4 mr-1 ${loadingStats ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {loadingStats ? 'Yenileniyor...' : 'Yenile'}
+                </button>
+              </div>
+
               {loadingStats ? (
                 <div className="flex justify-center items-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="p-2 bg-blue-100 rounded-lg">
@@ -193,53 +262,12 @@ const Dashboard = () => {
                   </div>
                 </div>
               )}
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                <button
-                  onClick={() => setActiveTab('reservations')}
-                  className="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-blue-900 mb-1">📅 Rezervasyonlar</h4>
-                  <p className="text-sm text-blue-700">Rezervasyonları görüntüle ve yönet</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('customers')}
-                  className="bg-green-50 hover:bg-green-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-green-900 mb-1">👥 Müşteriler</h4>
-                  <p className="text-sm text-green-700">Müşteri bilgilerini yönet</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('products')}
-                  className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-purple-900 mb-1">📦 Ürünler</h4>
-                  <p className="text-sm text-purple-700">Büfe ürünleri ve stok yönetimi</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('sales')}
-                  className="bg-orange-50 hover:bg-orange-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-orange-900 mb-1">🛒 Büfe Satış</h4>
-                  <p className="text-sm text-orange-700">Hızlı satış işlemleri</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('reports')}
-                  className="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg text-left transition-colors"
-                >
-                  <h4 className="font-semibold text-indigo-900 mb-1">📊 Raporlar</h4>
-                  <p className="text-sm text-indigo-700">Detaylı analiz ve raporlar</p>
-                </button>
-              </div>
             </div>
-
-            {/* Room Management Panel */}
-            <RoomPanel />
+            {/* RoomPanel (readonly) */}
+            <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+              <h3 className="text-xl font-bold mb-4">Oda Durumları</h3>
+              <RoomPanel readOnly />
+            </div>
           </div>
         );
     }
@@ -257,12 +285,20 @@ const Dashboard = () => {
                 Hoş geldiniz, {user?.fullName || user?.firstName || 'Kullanıcı'}!
               </p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium"
-            >
-              Çıkış Yap
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => navigate('/settings')}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium"
+              >
+                ⚙️ Ayarlar
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium"
+              >
+                Çıkış Yap
+              </button>
+            </div>
           </div>
         </div>
       </div>

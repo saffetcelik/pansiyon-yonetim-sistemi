@@ -288,14 +288,19 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return Ok(new List<CustomerDto>());
                 }
 
+                // Büyük/küçük harf duyarsız arama için ToLower kullan
+                var lowerQuery = query.ToLower();
+
                 var customers = await _context.Customers
-                    .Where(c => 
-                        c.FirstName.Contains(query) ||
-                        c.LastName.Contains(query) ||
+                    .Where(c =>
+                        c.FirstName.ToLower().Contains(lowerQuery) ||
+                        c.LastName.ToLower().Contains(lowerQuery) ||
                         (c.TCKimlikNo != null && c.TCKimlikNo.Contains(query)) ||
-                        (c.PassportNo != null && c.PassportNo.Contains(query)) ||
+                        (c.PassportNo != null && c.PassportNo.ToLower().Contains(lowerQuery)) ||
                         (c.Phone != null && c.Phone.Contains(query)) ||
-                        (c.Email != null && c.Email.Contains(query)))
+                        (c.Email != null && c.Email.ToLower().Contains(lowerQuery)))
+                    .OrderBy(c => c.FirstName)
+                    .ThenBy(c => c.LastName)
                     .Take(10)
                     .ToListAsync();
 
@@ -305,6 +310,25 @@ namespace PansiyonYonetimSistemi.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Müşteri arama sırasında hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpGet("recent")]
+        public async Task<IActionResult> GetRecentCustomers([FromQuery] int count = 10)
+        {
+            try
+            {
+                var customers = await _context.Customers
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Take(count)
+                    .ToListAsync();
+
+                var customerDtos = _mapper.Map<List<CustomerDto>>(customers);
+                return Ok(customerDtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Son müşteriler getirilirken hata oluştu", error = ex.Message });
             }
         }
     }

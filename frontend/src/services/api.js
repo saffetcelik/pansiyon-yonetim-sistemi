@@ -61,13 +61,36 @@ export const authService = {
 };
 
 export const roomService = {
-  getAll: () => api.get('/rooms'),
+  getAll: (forReservation = false) => {
+    const url = forReservation ? '/rooms?forReservation=true' : '/rooms';
+    return api.get(url);
+  },
   getById: (id) => api.get(`/rooms/${id}`),
   create: (roomData) => api.post('/rooms', roomData),
   update: (id, roomData) => api.put(`/rooms/${id}`, roomData),
   delete: (id) => api.delete(`/rooms/${id}`),
   updateStatus: (id, status) => api.patch(`/rooms/${id}/status`, { status }),
-  getAvailability: (checkInDate, checkOutDate) => api.get(`/rooms/availability?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}`)
+  getAvailability: (checkInDate, checkOutDate, excludeReservationId = null) => {
+    let url = `/rooms/availability?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}`;
+    if (excludeReservationId) {
+      url += `&excludeReservationId=${excludeReservationId}`;
+    }
+    return api.get(url);
+  },
+  getOccupiedDates: (roomId, startDate = null, endDate = null, excludeReservationId = null) => {
+    let url = `/rooms/${roomId}/occupied-dates`;
+    const params = new URLSearchParams();
+
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (excludeReservationId) params.append('excludeReservationId', excludeReservationId);
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    return api.get(url);
+  }
 };
 
 export const customerService = {
@@ -76,7 +99,8 @@ export const customerService = {
   create: (customerData) => api.post('/customers', customerData),
   update: (id, customerData) => api.put(`/customers/${id}`, customerData),
   delete: (id) => api.delete(`/customers/${id}`),
-  search: (query) => api.get(`/customers/search?query=${query}`)
+  search: (query) => api.get(`/customers/search?query=${encodeURIComponent(query)}`),
+  getRecent: (count = 10) => api.get(`/customers/recent?count=${count}`)
 };
 
 export const productService = {
@@ -109,7 +133,8 @@ export const reservationService = {
   delete: (id) => api.delete(`/reservations/${id}`),
   checkIn: (id, checkInData) => api.post(`/reservations/${id}/checkin`, checkInData),
   checkOut: (id, checkOutData) => api.post(`/reservations/${id}/checkout`, checkOutData),
-  getCalendar: (month, year) => api.get(`/reservations/calendar?month=${month}&year=${year}`)
+  getCalendar: (month, year) => api.get(`/reservations/calendar?month=${month}&year=${year}`),
+  getDashboardStats: () => api.get('/reservations/dashboard-stats')
 };
 
 
