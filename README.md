@@ -82,6 +82,7 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları takip 
    ```bash
    cd backend
    dotnet restore
+   dotnet tool install --global dotnet-ef # İlk kez çalıştırırken
    dotnet ef database update  # İlk kez çalıştırırken
    dotnet run
    ```
