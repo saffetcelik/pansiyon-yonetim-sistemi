@@ -100,10 +100,7 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false, onCus
       errors.lastName = 'Soyad alanı zorunludur';
     }
 
-    // At least one identification required
-    if (!formData.tcKimlikNo && !formData.passportNo) {
-      errors.identification = 'TC Kimlik No veya Pasaport No\'dan en az biri zorunludur';
-    }
+    // TC Kimlik No ve Pasaport No artık opsiyonel
 
     // TC Kimlik validation
     if (formData.tcKimlikNo && !validateTCKimlik(formData.tcKimlikNo)) {
@@ -179,7 +176,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false, onCus
         text: `Müşteri başarıyla ${isEdit ? 'güncellendi' : 'oluşturuldu'}.`,
         icon: 'success',
         timer: 2000,
-        showConfirmButton: false
+        showConfirmButton: false,
+        background: '#ffffff',
+        color: '#1f2937'
       });
 
       // Refresh customers list
@@ -238,7 +237,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, isEdit = false, onCus
         title: alertTitle,
         text: errorMessage,
         icon: alertType,
-        confirmButtonText: 'Tamam'
+        confirmButtonText: 'Tamam',
+        background: '#ffffff',
+        color: '#1f2937',
+        confirmButtonColor: '#dc2626'
       });
 
       console.log('SweetAlert completed');

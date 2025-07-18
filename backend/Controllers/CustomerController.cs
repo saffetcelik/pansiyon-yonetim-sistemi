@@ -29,12 +29,13 @@ namespace PansiyonYonetimSistemi.API.Controllers
             {
                 var query = _context.Customers.AsQueryable();
 
-                // Apply filters
+                // Apply filters (case-insensitive)
                 if (!string.IsNullOrEmpty(searchDto.Name))
                 {
-                    query = query.Where(c => 
-                        c.FirstName.Contains(searchDto.Name) ||
-                        c.LastName.Contains(searchDto.Name));
+                    var lowerName = searchDto.Name.ToLower();
+                    query = query.Where(c =>
+                        c.FirstName.ToLower().Contains(lowerName) ||
+                        c.LastName.ToLower().Contains(lowerName));
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.TCKimlikNo))
@@ -44,7 +45,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
 
                 if (!string.IsNullOrEmpty(searchDto.PassportNo))
                 {
-                    query = query.Where(c => c.PassportNo != null && c.PassportNo.Contains(searchDto.PassportNo));
+                    var lowerPassport = searchDto.PassportNo.ToLower();
+                    query = query.Where(c => c.PassportNo != null && c.PassportNo.ToLower().Contains(lowerPassport));
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.Phone))
@@ -54,17 +56,20 @@ namespace PansiyonYonetimSistemi.API.Controllers
 
                 if (!string.IsNullOrEmpty(searchDto.Email))
                 {
-                    query = query.Where(c => c.Email != null && c.Email.Contains(searchDto.Email));
+                    var lowerEmail = searchDto.Email.ToLower();
+                    query = query.Where(c => c.Email != null && c.Email.ToLower().Contains(lowerEmail));
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.City))
                 {
-                    query = query.Where(c => c.City != null && c.City.Contains(searchDto.City));
+                    var lowerCity = searchDto.City.ToLower();
+                    query = query.Where(c => c.City != null && c.City.ToLower().Contains(lowerCity));
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.Country))
                 {
-                    query = query.Where(c => c.Country != null && c.Country.Contains(searchDto.Country));
+                    var lowerCountry = searchDto.Country.ToLower();
+                    query = query.Where(c => c.Country != null && c.Country.ToLower().Contains(lowerCountry));
                 }
 
                 var totalCount = await query.CountAsync();
@@ -249,6 +254,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
             {
                 var customer = await _context.Customers
                     .Include(c => c.Reservations)
+                    .Include(c => c.ReservationCustomers)
+                        .ThenInclude(rc => rc.Reservation)
                     .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (customer == null)
@@ -256,17 +263,30 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return NotFound(new { message = "Müşteri bulunamadı" });
                 }
 
-                // Check if customer has any active reservations
-                var hasActiveReservations = customer.Reservations.Any(r => 
-                    r.Status == ReservationStatus.Confirmed || 
+                // Check if customer has any active reservations (as primary customer)
+                var hasActiveReservations = customer.Reservations.Any(r =>
+                    r.Status == ReservationStatus.Confirmed ||
                     r.Status == ReservationStatus.CheckedIn ||
                     r.Status == ReservationStatus.Pending);
 
-                if (hasActiveReservations)
+                // Check if customer is part of any active reservations (as additional customer)
+                var hasActiveReservationCustomers = customer.ReservationCustomers.Any(rc =>
+                    rc.Reservation.Status == ReservationStatus.Confirmed ||
+                    rc.Reservation.Status == ReservationStatus.CheckedIn ||
+                    rc.Reservation.Status == ReservationStatus.Pending);
+
+                if (hasActiveReservations || hasActiveReservationCustomers)
                 {
                     return BadRequest(new { message = "Bu müşterinin aktif rezervasyonları bulunduğu için silinemez" });
                 }
 
+                // First remove all ReservationCustomer entries
+                if (customer.ReservationCustomers.Any())
+                {
+                    _context.ReservationCustomers.RemoveRange(customer.ReservationCustomers);
+                }
+
+                // Then remove the customer
                 _context.Customers.Remove(customer);
                 await _context.SaveChangesAsync();
 

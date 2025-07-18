@@ -10,6 +10,7 @@ import Debug from './pages/Debug';
 import Sales from './pages/Sales';
 import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
+import Swal from 'sweetalert2';
 
 const theme = createTheme({
   palette: {
@@ -23,8 +24,24 @@ const theme = createTheme({
 });
 
 function App() {
-  // ResizeObserver hatalarını bastır
+  // ResizeObserver hatalarını bastır ve SweetAlert global ayarları
   useEffect(() => {
+    // SweetAlert global konfigürasyonu
+    Swal.mixin({
+      customClass: {
+        popup: 'swal2-popup',
+        title: 'swal2-title',
+        content: 'swal2-content',
+        confirmButton: 'swal2-confirm',
+        cancelButton: 'swal2-cancel'
+      },
+      background: '#ffffff',
+      color: '#1f2937',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      showDenyButton: false
+    });
+
     const handleError = (event) => {
       if (event.message && event.message.includes('ResizeObserver loop completed with undelivered notifications')) {
         event.stopImmediatePropagation();

@@ -11,7 +11,8 @@ namespace PansiyonYonetimSistemi.API.Data
             // Customer Mappings
             CreateMap<Customer, CustomerDto>();
             CreateMap<CreateCustomerDto, Customer>();
-            CreateMap<UpdateCustomerDto, Customer>();
+            CreateMap<UpdateCustomerDto, Customer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore()); // Ignore Id to prevent EF key modification error
 
             // Room Mappings
             CreateMap<Room, RoomDto>();

@@ -28,14 +28,13 @@ namespace PansiyonYonetimSistemi.API.DTOs
         [StringLength(100, ErrorMessage = "Soyad en fazla 100 karakter olabilir")]
         public string LastName { get; set; } = string.Empty;
 
-        [StringLength(11, MinimumLength = 11, ErrorMessage = "TC Kimlik No 11 haneli olmalıdır")]
+        [StringLength(11, ErrorMessage = "TC Kimlik No en fazla 11 haneli olabilir")]
         public string? TCKimlikNo { get; set; }
 
         [StringLength(50, ErrorMessage = "Pasaport No en fazla 50 karakter olabilir")]
         public string? PassportNo { get; set; }
 
         [StringLength(15, ErrorMessage = "Telefon en fazla 15 karakter olabilir")]
-        [RegularExpression(@"^5[0-9]{9}$", ErrorMessage = "Telefon numarası 5XXXXXXXXX formatında olmalıdır (örn: 55512345678)")]
         public string? Phone { get; set; }
 
         [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
