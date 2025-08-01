@@ -4,7 +4,6 @@ import {
   fetchReservations,
   setFilters,
   clearFilters,
-  setPagination,
   deleteReservation
 } from '../store/slices/reservationSlice';
 import CheckInOutModal from './CheckInOutModal';
@@ -18,8 +17,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
     reservations, 
     loading, 
     error, 
-    filters, 
-    pagination 
+    filters
   } = useSelector((state) => state.reservations);
 
   const [localFilters, setLocalFilters] = useState(filters);
@@ -43,15 +41,14 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
     } else {
       // Filtre zaten doğruysa direkt fetch yap
       console.log('Filter already correct, fetching reservations');
-      dispatch(fetchReservations({ ...filters, ...pagination }));
+      dispatch(fetchReservations({ ...filters }));
     }
   }, []);
 
   // Filters değiştiğinde rezervasyonları getir
   useEffect(() => {
-    console.log('Fetching reservations with filters:', filters);
-    dispatch(fetchReservations({ ...filters, ...pagination }));
-  }, [dispatch, filters, pagination]);
+    console.log('Fetching reservations with filters:', filters);      dispatch(fetchReservations({ ...filters }));
+  }, [dispatch, filters]);
 
 
 
@@ -61,7 +58,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
 
   const handleApplyFilters = () => {
     dispatch(setFilters(localFilters));
-    dispatch(setPagination({ page: 1 }));
   };
 
   const handleClearFilters = () => {
@@ -73,11 +69,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       checkOutDate: '',
     });
     dispatch(clearFilters());
-    dispatch(setPagination({ page: 1 }));
-  };
-
-  const handlePageChange = (newPage) => {
-    dispatch(setPagination({ page: newPage }));
   };
 
   const handleDelete = async (id) => {
@@ -102,7 +93,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
           timer: 2000,
           showConfirmButton: false
         });
-        dispatch(fetchReservations({ ...filters, ...pagination }));
+        dispatch(fetchReservations({ ...filters }));
       } catch (error) {
         console.error('Error deleting reservation:', error);
         await Swal.fire({
@@ -177,7 +168,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       });
 
       // Refresh the list
-      dispatch(fetchReservations({ ...filters, ...pagination }));
+      dispatch(fetchReservations({ ...filters }));
       setOpenDropdownId(null);
     } catch (error) {
       console.error('Error updating reservation status:', error);
@@ -343,6 +334,9 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Müşteriler
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -366,8 +360,11 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {reservations.map((reservation) => (
+            {reservations.map((reservation, index) => (
               <tr key={reservation.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {index + 1}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     {/* Ana müşteri avatarı */}
@@ -563,57 +560,11 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         </table>
       </div>
 
-      {/* Pagination */}
-      {pagination.total > pagination.pageSize && (
+      {/* Total count display */}
+      {reservations.length > 0 && (
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="flex-1 flex justify-between sm:hidden">
-            <button
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page <= 1}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Önceki
-            </button>
-            <button
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Sonraki
-            </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Toplam <span className="font-medium">{pagination.total}</span> kayıttan{' '}
-                <span className="font-medium">
-                  {(pagination.page - 1) * pagination.pageSize + 1}
-                </span>{' '}
-                -{' '}
-                <span className="font-medium">
-                  {Math.min(pagination.page * pagination.pageSize, pagination.total)}
-                </span>{' '}
-                arası gösteriliyor
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Önceki
-                </button>
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Sonraki
-                </button>
-              </nav>
-            </div>
+          <div className="text-sm text-gray-700">
+            Toplam <span className="font-medium">{reservations.length}</span> kayıt gösteriliyor
           </div>
         </div>
       )}

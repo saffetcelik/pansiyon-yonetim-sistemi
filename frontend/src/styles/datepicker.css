@@ -1,0 +1,20 @@
+.date-picker-normal .react-datepicker__input-container {
+    position: relative;
+    width: 100%;
+}
+
+.date-picker-normal .react-datepicker__input-container input {
+    border-color: #D1D5DB;
+}
+
+.date-picker-error .react-datepicker__input-container input {
+    border-color: #EF4444;
+}
+
+.react-datepicker-wrapper {
+    width: 100%;
+}
+
+.react-datepicker__input-container {
+    width: 100%;
+}

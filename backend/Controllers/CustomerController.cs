@@ -27,6 +27,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         {
             try
             {
+                Console.WriteLine($"GetCustomers called with searchDto: {System.Text.Json.JsonSerializer.Serialize(searchDto)}");
                 var query = _context.Customers.AsQueryable();
 
                 // Apply filters (case-insensitive)
@@ -72,25 +73,18 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     query = query.Where(c => c.Country != null && c.Country.ToLower().Contains(lowerCountry));
                 }
 
-                var totalCount = await query.CountAsync();
-                
                 var customers = await query
                     .OrderBy(c => c.FirstName)
                     .ThenBy(c => c.LastName)
-                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
-                    .Take(searchDto.PageSize)
                     .ToListAsync();
+
+                Console.WriteLine($"Found {customers.Count} customers");
 
                 var customerDtos = _mapper.Map<List<CustomerDto>>(customers);
 
-                return Ok(new
-                {
-                    data = customerDtos,
-                    totalCount,
-                    page = searchDto.Page,
-                    pageSize = searchDto.PageSize,
-                    totalPages = (int)Math.Ceiling((double)totalCount / searchDto.PageSize)
-                });
+                Console.WriteLine($"Mapped to {customerDtos.Count} DTOs");
+
+                return Ok(customerDtos);
             }
             catch (Exception ex)
             {

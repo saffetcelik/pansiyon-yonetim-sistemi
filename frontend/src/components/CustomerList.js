@@ -7,16 +7,17 @@ import { customerService } from '../services/api';
 
 const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   const dispatch = useDispatch();
-  const { customers, loading, error, pagination } = useSelector((state) => state.customers);
+  const { customers, loading, error } = useSelector((state) => {
+    console.log('Current state:', state.customers);
+    return state.customers;
+  });
   
   const [filters, setFilters] = useState({
     name: '',
     tcKimlikNo: '',
     phone: '',
     email: '',
-    city: '',
-    page: 1,
-    pageSize: 10
+    city: ''
   });
 
   const [localFilters, setLocalFilters] = useState(filters);
@@ -42,13 +43,14 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   const debouncedFilters = useDebounce(localFilters, 500);
 
   useEffect(() => {
+    console.log('Fetching customers with filters:', filters);
     dispatch(fetchCustomers(filters));
   }, [dispatch, filters]);
 
   // Auto-search effect
   useEffect(() => {
     if (JSON.stringify(debouncedFilters) !== JSON.stringify(filters)) {
-      setFilters({ ...debouncedFilters, page: 1 });
+      setFilters(debouncedFilters);
     }
   }, [debouncedFilters, filters]);
 
@@ -64,16 +66,10 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
       tcKimlikNo: '',
       phone: '',
       email: '',
-      city: '',
-      page: 1,
-      pageSize: 10
+      city: ''
     };
     setLocalFilters(clearedFilters);
     setFilters(clearedFilters);
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
   };
 
   const handleDelete = async (id) => {
@@ -280,6 +276,9 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ad Soyad
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -300,8 +299,11 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {customers.map((customer) => (
+            {customers.map((customer, index) => (
               <tr key={customer.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {index + 1}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {customer.fullName}
@@ -377,57 +379,11 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
         </table>
       </div>
 
-      {/* Pagination */}
-      {pagination.total > pagination.pageSize && (
+      {/* Total count display */}
+      {customers.length > 0 && (
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="flex-1 flex justify-between sm:hidden">
-            <button
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page <= 1}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Önceki
-            </button>
-            <button
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Sonraki
-            </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Toplam <span className="font-medium">{pagination.total}</span> kayıttan{' '}
-                <span className="font-medium">
-                  {(pagination.page - 1) * pagination.pageSize + 1}
-                </span>{' '}
-                -{' '}
-                <span className="font-medium">
-                  {Math.min(pagination.page * pagination.pageSize, pagination.total)}
-                </span>{' '}
-                arası gösteriliyor
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Önceki
-                </button>
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Sonraki
-                </button>
-              </nav>
-            </div>
+          <div className="text-sm text-gray-700">
+            Toplam <span className="font-medium">{customers.length}</span> kayıt gösteriliyor
           </div>
         </div>
       )}

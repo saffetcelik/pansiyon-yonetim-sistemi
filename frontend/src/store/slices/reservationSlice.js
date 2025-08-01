@@ -5,8 +5,9 @@ export const fetchReservations = createAsyncThunk(
   'reservations/fetchReservations',
   async (params, { rejectWithValue }) => {
     try {
-      // Status filtresini işle
-      const processedParams = { ...params };
+      // Status filtresini işle ve pagination parametrelerini kaldır
+      const { page, pageSize, ...rest } = params;
+      const processedParams = { ...rest };
 
       if (processedParams.status === 'exclude-checked-out') {
         processedParams.excludeCheckedOut = true;
@@ -95,11 +96,7 @@ const initialState = {
     checkInDate: '',
     checkOutDate: '',
   },
-  pagination: {
-    page: 1,
-    pageSize: 10,
-    total: 0,
-  },
+  total: 0
 };
 
 const reservationSlice = createSlice({
@@ -124,9 +121,7 @@ const reservationSlice = createSlice({
         checkOutDate: '',
       };
     },
-    setPagination: (state, action) => {
-      state.pagination = { ...state.pagination, ...action.payload };
-    },
+
   },
   extraReducers: (builder) => {
     builder
@@ -137,9 +132,11 @@ const reservationSlice = createSlice({
       })
       .addCase(fetchReservations.fulfilled, (state, action) => {
         state.loading = false;
-        state.reservations = action.payload.data || action.payload;
-        if (action.payload.pagination) {
-          state.pagination = action.payload.pagination;
+        if (action.payload.data) {
+          // API yeni formatta veri dönüyorsa
+          state.reservations = action.payload.data;
+          // API artık pagination olmadan tüm veriyi dönüyor
+          state.reservations = action.payload.data || action.payload;
         }
       })
       .addCase(fetchReservations.rejected, (state, action) => {
@@ -197,8 +194,7 @@ export const {
   clearError,
   setSelectedReservation,
   setFilters,
-  clearFilters,
-  setPagination
+  clearFilters
 } = reservationSlice.actions;
 
 export default reservationSlice.reducer;

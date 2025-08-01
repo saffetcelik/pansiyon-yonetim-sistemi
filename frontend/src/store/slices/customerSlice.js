@@ -5,9 +5,12 @@ export const fetchCustomers = createAsyncThunk(
   'customers/fetchCustomers',
   async (params, { rejectWithValue }) => {
     try {
+      console.log('Calling customerService.getAll with params:', params);
       const response = await customerService.getAll(params);
-      return response.data;
+      console.log('Got response:', response);
+      return response.data || [];
     } catch (error) {
+      console.error('Error in fetchCustomers:', error);
       return rejectWithValue(error.response?.data?.message || 'Müşteriler yüklenemedi');
     }
   }
@@ -29,12 +32,7 @@ const initialState = {
   customers: [],
   selectedCustomer: null,
   loading: false,
-  error: null,
-  pagination: {
-    page: 1,
-    pageSize: 10,
-    total: 0,
-  },
+  error: null
 };
 
 const customerSlice = createSlice({
@@ -56,12 +54,9 @@ const customerSlice = createSlice({
       })
       .addCase(fetchCustomers.fulfilled, (state, action) => {
         state.loading = false;
-        state.customers = action.payload.data || action.payload;
-        state.pagination = {
-          page: action.payload.page || 1,
-          pageSize: action.payload.pageSize || 10,
-          total: action.payload.totalCount || 0,
-        };
+        console.log('fetchCustomers.fulfilled payload:', action.payload);
+        state.customers = Array.isArray(action.payload) ? action.payload : [];
+        console.log('Updated state.customers:', state.customers);
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.loading = false;

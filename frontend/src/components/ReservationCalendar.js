@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { reservationService } from '../services/api';
+import '../styles/calendar.css';
 
 const ReservationCalendar = ({ onReservationClick }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -203,12 +204,12 @@ const ReservationCalendar = ({ onReservationClick }) => {
                     </div>
 
                     {/* Reservations */}
-                    <div className="space-y-1">
-                      {reservations.slice(0, 3).map((reservation) => (
+                    <div className="space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
+                      {reservations.map((reservation) => (
                         <div
                           key={reservation.id}
                           onClick={() => onReservationClick && onReservationClick(reservation)}
-                          className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(reservation.status)}`}
+                          className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity mb-1 ${getStatusColor(reservation.status)}`}
                           title={`${reservation.customerName} - ${reservation.roomNumber}`}
                         >
                           <div className="truncate font-medium">
@@ -219,12 +220,6 @@ const ReservationCalendar = ({ onReservationClick }) => {
                           </div>
                         </div>
                       ))}
-                      
-                      {reservations.length > 3 && (
-                        <div className="text-xs text-gray-500 text-center">
-                          +{reservations.length - 3} daha
-                        </div>
-                      )}
                     </div>
                   </>
                 )}

@@ -94,7 +94,19 @@ export const roomService = {
 };
 
 export const customerService = {
-  getAll: (params) => api.get('/customers', { params }),
+  getAll: async (params) => {
+    const { page, pageSize, ...filteredParams } = params || {};
+    console.log('customerService.getAll called with params:', params);
+    console.log('Filtered params:', filteredParams);
+    try {
+      const response = await api.get('/customers', { params: filteredParams });
+      console.log('API response:', response);
+      return response;
+    } catch (error) {
+      console.error('API error:', error);
+      throw error;
+    }
+  },
   getById: (id) => api.get(`/customers/${id}`),
   create: (customerData) => api.post('/customers', customerData),
   update: (id, customerData) => api.put(`/customers/${id}`, customerData),

@@ -168,6 +168,9 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ürün
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -188,8 +191,11 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredProducts.map((product) => (
+            {filteredProducts.map((product, index) => (
               <tr key={product.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {index + 1}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
                     <div className="text-sm font-medium text-gray-900">
@@ -253,6 +259,15 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
             ))}
           </tbody>
         </table>
+
+        {/* Total count display */}
+        {filteredProducts.length > 0 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="text-sm text-gray-700">
+              Toplam <span className="font-medium">{filteredProducts.length}</span> kayıt gösteriliyor
+            </div>
+          </div>
+        )}
       </div>
 
       {filteredProducts.length === 0 && (

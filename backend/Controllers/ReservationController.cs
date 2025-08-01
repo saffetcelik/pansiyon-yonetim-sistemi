@@ -77,12 +77,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     Console.WriteLine("Including all reservation statuses");
                 }
 
-                var totalCount = await query.CountAsync();
-                
                 var reservations = await query
                     .OrderByDescending(r => r.CreatedAt)
-                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
-                    .Take(searchDto.PageSize)
                     .Select(r => new ReservationDto
                     {
                         Id = r.Id,
@@ -116,11 +112,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
 
                 return Ok(new
                 {
-                    data = reservations,
-                    totalCount,
-                    page = searchDto.Page,
-                    pageSize = searchDto.PageSize,
-                    totalPages = (int)Math.Ceiling((double)totalCount / searchDto.PageSize)
+                    data = reservations
                 });
             }
             catch (Exception ex)
