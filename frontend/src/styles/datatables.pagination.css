@@ -1,0 +1,51 @@
+/* DataTables için tam sayfalama (full_numbers) stil düzenlemeleri */
+.dataTables_paginate .paginate_button.first,
+.dataTables_paginate .paginate_button.last {
+  font-weight: bold;
+}
+
+.dataTables_paginate .paginate_button.first {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.dataTables_paginate .paginate_button.last {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+/* Sayfa numaralarını içeren container */
+.dataTables_paginate .pagination {
+  display: flex;
+  padding-left: 0;
+  list-style: none;
+  border-radius: 0.25rem;
+}
+
+/* Aktif olmayan sayfa numaraları için hover efektleri */
+.dataTables_paginate .paginate_button:not(.previous):not(.next):not(.current):hover {
+  background-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+/* Sayfalama için ek düzenlemeler */
+.dataTables_wrapper .dataTables_paginate {
+  padding-top: 0.5rem;
+}
+
+/* Sayfa numarası butonlarını düzelt */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+  box-sizing: border-box;
+  min-width: 2rem;
+  height: 2rem;
+  margin: 0 2px;
+  text-align: center;
+  text-decoration: none !important;
+  border-radius: 0.25rem;
+}
+
+/* Sayfa butonları ve bilgi metni */
+.dataTables_paginate,
+.dataTables_info {
+  margin-top: 0.75rem;
+}

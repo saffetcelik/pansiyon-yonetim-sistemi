@@ -107,6 +107,7 @@ namespace PansiyonYonetimSistemi.API.DTOs
     public class ReservationSearchDto
     {
         public string? CustomerName { get; set; }
+        public int? CustomerId { get; set; }
         public string? RoomNumber { get; set; }
         public DateTime? CheckInDate { get; set; }
         public DateTime? CheckOutDate { get; set; }

@@ -10,7 +10,8 @@ import Debug from './pages/Debug';
 import Sales from './pages/Sales';
 import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
-import Swal from 'sweetalert2';
+import DebugPanel from './components/DebugPanel';
+import SweetAlertInit from './components/SweetAlertInit';
 
 const theme = createTheme({
   palette: {
@@ -24,24 +25,10 @@ const theme = createTheme({
 });
 
 function App() {
-  // ResizeObserver hatalarını bastır ve SweetAlert global ayarları
+  // SweetAlert2 Initialize
+  
+  // ResizeObserver hatalarını bastır
   useEffect(() => {
-    // SweetAlert global konfigürasyonu
-    Swal.mixin({
-      customClass: {
-        popup: 'swal2-popup',
-        title: 'swal2-title',
-        content: 'swal2-content',
-        confirmButton: 'swal2-confirm',
-        cancelButton: 'swal2-cancel'
-      },
-      background: '#ffffff',
-      color: '#1f2937',
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      showDenyButton: false
-    });
-
     const handleError = (event) => {
       if (event.message && event.message.includes('ResizeObserver loop completed with undelivered notifications')) {
         event.stopImmediatePropagation();
@@ -51,9 +38,15 @@ function App() {
 
     window.addEventListener('error', handleError);
 
-    // Cleanup
+    // Temizleme işlemi
     return () => {
       window.removeEventListener('error', handleError);
+      
+      // SweetAlert stil temizliği
+      const styleElement = document.getElementById('sweetalert-global-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
     };
   }, []);
 
@@ -61,6 +54,7 @@ function App() {
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <SweetAlertInit />
         <Router>
           <div className="App">
             <Routes>
@@ -95,6 +89,9 @@ function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
+          
+          {/* Debug panel - sadece geliştirme ortamında görünür */}
+          {process.env.NODE_ENV !== 'production' && <DebugPanel />}
         </Router>
       </ThemeProvider>
     </Provider>

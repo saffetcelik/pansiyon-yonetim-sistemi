@@ -9,13 +9,82 @@ export const fetchReservations = createAsyncThunk(
       const { page, pageSize, ...rest } = params;
       const processedParams = { ...rest };
 
+      // Tarih parametrelerinin doğru formatta olduğundan emin ol
+      if (processedParams.checkInDate) {
+        console.log('Frontend - Raw checkInDate:', processedParams.checkInDate);
+        
+        try {
+          let date;
+          
+          if (processedParams.checkInDate instanceof Date) {
+            // Tarih bir Date nesnesi ise
+            date = processedParams.checkInDate;
+          } else {
+            // Tarih bir string ise
+            date = new Date(processedParams.checkInDate);
+          }
+          
+          // Yerel tarih bileşenlerini kullanarak yeni bir tarih oluştur (saat 12:00)
+          const year = date.getFullYear();
+          const month = date.getMonth(); 
+          const day = date.getDate();
+          
+          // Tam öğle saatini kullanarak oluştur (zaman dilimi sorunlarını önlemek için)
+          const fixedDate = new Date(year, month, day, 12, 0, 0);
+          
+          // ISO formatında tarih kısmını al (YYYY-MM-DD)
+          processedParams.checkInDate = fixedDate.toISOString().split('T')[0];
+        } catch (e) {
+          console.error('Error formatting checkInDate:', e);
+        }
+        
+        console.log('Frontend - Normalized checkInDate:', processedParams.checkInDate);
+      }
+
+      if (processedParams.checkOutDate) {
+        console.log('Frontend - Raw checkOutDate:', processedParams.checkOutDate);
+        
+        try {
+          let date;
+          
+          if (processedParams.checkOutDate instanceof Date) {
+            // Tarih bir Date nesnesi ise
+            date = processedParams.checkOutDate;
+          } else {
+            // Tarih bir string ise
+            date = new Date(processedParams.checkOutDate);
+          }
+          
+          // Yerel tarih bileşenlerini kullanarak yeni bir tarih oluştur (saat 12:00)
+          const year = date.getFullYear();
+          const month = date.getMonth(); 
+          const day = date.getDate();
+          
+          // Tam öğle saatini kullanarak oluştur (zaman dilimi sorunlarını önlemek için)
+          const fixedDate = new Date(year, month, day, 12, 0, 0);
+          
+          // ISO formatında tarih kısmını al (YYYY-MM-DD)
+          processedParams.checkOutDate = fixedDate.toISOString().split('T')[0];
+        } catch (e) {
+          console.error('Error formatting checkOutDate:', e);
+        }
+        
+        console.log('Frontend - Normalized checkOutDate:', processedParams.checkOutDate);
+      }
+
       if (processedParams.status === 'exclude-checked-out') {
         processedParams.excludeCheckedOut = true;
         delete processedParams.status; // Status parametresini kaldır
       }
 
-      console.log('Fetching reservations with params:', processedParams);
+      // customerId varsa customerName'i gönderme, sadece ID ile arama yap
+      if (processedParams.customerId) {
+        delete processedParams.customerName; // CustomerName parametresini kaldır
+      }
+
+      console.log('Fetching reservations with final params:', processedParams);
       const response = await reservationService.getAll(processedParams);
+      console.log('Reservation response:', response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Rezervasyonlar yüklenemedi');
@@ -92,6 +161,7 @@ const initialState = {
   filters: {
     status: 'exclude-checked-out', // Varsayılan olarak çıkış yapılanları hariç tut
     customerName: '',
+    customerId: null,
     roomNumber: '',
     checkInDate: '',
     checkOutDate: '',

@@ -6,6 +6,8 @@ using PansiyonYonetimSistemi.API.Models;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using PansiyonYonetimSistemi.API.Attributes;
+using System;
+using System.Linq;
 
 namespace PansiyonYonetimSistemi.API.Controllers
 {
@@ -45,20 +47,92 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         r.Customer.FirstName.Contains(searchDto.CustomerName) ||
                         r.Customer.LastName.Contains(searchDto.CustomerName));
                 }
+                
+                if (searchDto.CustomerId.HasValue && searchDto.CustomerId > 0)
+                {
+                    query = query.Where(r => r.CustomerId == searchDto.CustomerId);
+                }
 
                 if (!string.IsNullOrEmpty(searchDto.RoomNumber))
                 {
                     query = query.Where(r => r.Room.RoomNumber.Contains(searchDto.RoomNumber));
                 }
 
+                // Date filtering logic with detailed logging for debug
                 if (searchDto.CheckInDate.HasValue)
                 {
-                    query = query.Where(r => r.CheckInDate.Date >= searchDto.CheckInDate.Value.Date);
+                    var checkInDateValue = searchDto.CheckInDate.Value.Date;
+                    _logger.LogInformation($"Received checkInDate parameter: {checkInDateValue:yyyy-MM-dd}");
                 }
-
+                
                 if (searchDto.CheckOutDate.HasValue)
                 {
-                    query = query.Where(r => r.CheckOutDate.Date <= searchDto.CheckOutDate.Value.Date);
+                    var checkOutDateValue = searchDto.CheckOutDate.Value.Date;
+                    _logger.LogInformation($"Received checkOutDate parameter: {checkOutDateValue:yyyy-MM-dd}");
+                }
+
+                // Date filtering logic based on provided parameters
+                if (searchDto.CheckInDate.HasValue && searchDto.CheckOutDate.HasValue)
+                {
+                    // If both dates are provided, show all reservations between those dates
+                    var startDate = searchDto.CheckInDate.Value.Date;
+                    var endDate = searchDto.CheckOutDate.Value.Date;
+                    
+                    _logger.LogInformation($"Filtering by date range: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+                    
+                    // İki tarih arasındaki tüm rezervasyonları getir (kesişenler dahil)
+                    // Sadece gün bazında karşılaştır (saatleri dikkate alma)
+                    query = query.Where(r => 
+                        r.CheckInDate.Date <= endDate &&
+                        r.CheckOutDate.Date >= startDate);
+                        
+                    _logger.LogInformation($"Date range query built - total found: {query.Count()}");
+                    foreach (var r in query.Take(3).ToList())
+                    {
+                        _logger.LogInformation($"Found reservation in range: ID={r.Id}, CheckIn={r.CheckInDate:yyyy-MM-dd}, CheckOut={r.CheckOutDate:yyyy-MM-dd}");
+                    }
+                }
+                else if (searchDto.CheckInDate.HasValue)
+                {
+                    // If only check-in date is provided, show reservations with check-in on that exact date
+                    var targetDate = searchDto.CheckInDate.Value.Date;
+                    _logger.LogInformation($"Filtering by EXACT check-in date: {targetDate:yyyy-MM-dd}");
+                    
+                    // Günün başlangıç ve bitiş tarihleri arasında olup olmadığını kontrol et
+                    var nextDay = targetDate.AddDays(1);
+                    _logger.LogInformation($"Looking for check-in dates between {targetDate:yyyy-MM-dd 00:00:00} and {targetDate:yyyy-MM-dd 23:59:59}");
+                    
+                    // Tam gün bazında karşılaştırma için, o günün başlangıcından sonraki ve bitişinden önceki tarihler
+                    query = query.Where(r => 
+                        r.CheckInDate >= targetDate && 
+                        r.CheckInDate < nextDay);
+                        
+                    _logger.LogInformation($"Exact check-in date query built - total found: {query.Count()}");
+                    foreach (var r in query.Take(3).ToList())
+                    {
+                        _logger.LogInformation($"Found reservation with check-in: ID={r.Id}, CheckIn={r.CheckInDate:yyyy-MM-dd}, CheckOut={r.CheckOutDate:yyyy-MM-dd}");
+                    }
+                }
+                else if (searchDto.CheckOutDate.HasValue)
+                {
+                    // If only check-out date is provided, show reservations with check-out on that exact date
+                    var targetDate = searchDto.CheckOutDate.Value.Date;
+                    _logger.LogInformation($"Filtering by EXACT check-out date: {targetDate:yyyy-MM-dd}");
+                    
+                    // Günün başlangıç ve bitiş tarihleri arasında olup olmadığını kontrol et
+                    var nextDay = targetDate.AddDays(1);
+                    _logger.LogInformation($"Looking for check-out dates between {targetDate:yyyy-MM-dd 00:00:00} and {targetDate:yyyy-MM-dd 23:59:59}");
+                    
+                    // Tam gün bazında karşılaştırma için, o günün başlangıcından sonraki ve bitişinden önceki tarihler
+                    query = query.Where(r => 
+                        r.CheckOutDate >= targetDate && 
+                        r.CheckOutDate < nextDay);
+                        
+                    _logger.LogInformation($"Exact check-out date query built - total found: {query.Count()}");
+                    foreach (var r in query.Take(3).ToList())
+                    {
+                        _logger.LogInformation($"Found reservation with check-out: ID={r.Id}, CheckIn={r.CheckInDate:yyyy-MM-dd}, CheckOut={r.CheckOutDate:yyyy-MM-dd}");
+                    }
                 }
 
                 if (searchDto.Status.HasValue)

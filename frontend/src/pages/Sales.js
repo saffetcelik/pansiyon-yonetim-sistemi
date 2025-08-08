@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import customSwal, { confirmDialog, successMessage, errorMessage } from '../utils/sweetalert';
 
 const Sales = () => {
   const [products, setProducts] = useState([]);
@@ -30,7 +30,7 @@ const Sales = () => {
       setProducts(response.data.filter(p => p.isActive && p.stockQuantity > 0));
     } catch (error) {
       console.error('Ürünler yüklenirken hata:', error);
-      Swal.fire('Hata', 'Ürünler yüklenirken hata oluştu', 'error');
+      customSwal.fire('Hata', 'Ürünler yüklenirken hata oluştu', 'error');
     }
   };
 
@@ -52,7 +52,7 @@ const Sales = () => {
     
     if (existingItem) {
       if (existingItem.quantity >= product.stockQuantity) {
-        Swal.fire('Uyarı', 'Stok miktarını aştınız!', 'warning');
+        customSwal.fire('Uyarı', 'Stok miktarını aştınız!', 'warning');
         return;
       }
       setCart(cart.map(item =>
@@ -80,7 +80,7 @@ const Sales = () => {
 
     const product = products.find(p => p.id === productId);
     if (newQuantity > product.stockQuantity) {
-      Swal.fire('Uyarı', 'Stok miktarını aştınız!', 'warning');
+      customSwal.fire('Uyarı', 'Stok miktarını aştınız!', 'warning');
       return;
     }
 
@@ -109,13 +109,13 @@ const Sales = () => {
 
   const processSale = async () => {
     if (cart.length === 0) {
-      Swal.fire('Uyarı', 'Sepet boş!', 'warning');
+      customSwal.fire('Uyarı', 'Sepet boş!', 'warning');
       return;
     }
 
     const total = calculateTotal();
     if (total < 0) {
-      Swal.fire('Uyarı', 'İndirim tutarı toplam tutardan fazla olamaz!', 'warning');
+      customSwal.fire('Uyarı', 'İndirim tutarı toplam tutardan fazla olamaz!', 'warning');
       return;
     }
 
@@ -138,7 +138,7 @@ const Sales = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      Swal.fire({
+      customSwal.fire({
         title: 'Satış Tamamlandı!',
         text: `Satış No: ${response.data.saleNumber}`,
         icon: 'success',
@@ -149,7 +149,7 @@ const Sales = () => {
       fetchProducts(); // Refresh products to update stock
     } catch (error) {
       console.error('Satış işlemi hatası:', error);
-      Swal.fire('Hata', 'Satış işlemi sırasında hata oluştu', 'error');
+      customSwal.fire('Hata', 'Satış işlemi sırasında hata oluştu', 'error');
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ const Sales = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Büfe Satış Noktası</h1>
           <p className="text-gray-600 mt-2">Ürün seçin ve satış işlemini tamamlayın</p>
