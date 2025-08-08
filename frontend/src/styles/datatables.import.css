@@ -1,0 +1,5 @@
+/* This file imports all DataTables related CSS files */
+@import './datatables.css';
+@import './datatables.pagination.css';
+@import './datatables.plugins.css';
+@import './jquery.dataTables.css';
