@@ -7,12 +7,43 @@ import {
 } from '../store/slices/reservationSlice';
 import { fetchCustomers } from '../store/slices/customerSlice';
 import { customerService, roomService } from '../services/api';
+import { format, parse } from 'date-fns';
+import { tr as trLocale } from 'date-fns/locale';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { FaCalendarAlt } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import CustomerModal from './CustomerModal';
+import "react-datepicker/dist/react-datepicker.css";
+import "../styles/datepicker.css";
+
+// Türkçe lokalizasyonu kaydet
+registerLocale('tr', trLocale);
+
+// Tarihi DD/MM/YYYY formatında göstermek için yardımcı fonksiyon
+const formatDateForDisplay = (isoDate) => {
+  if (!isoDate) return '';
+  return format(new Date(isoDate), 'dd/MM/yyyy', { locale: trLocale });
+};
+
+// DD/MM/YYYY formatındaki tarihi ISO formatına çevirmek için yardımcı fonksiyon
+const parseDisplayDate = (displayDate) => {
+  if (!displayDate) return '';
+  try {
+    const parsedDate = parse(displayDate, 'dd/MM/yyyy', new Date());
+    return format(parsedDate, 'yyyy-MM-dd');
+  } catch (error) {
+    return '';
+  }
+};
 
 const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false }) => {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.reservations);
+  const { loading, error, filters, pagination } = useSelector((state) => state.reservations);
+
+    // Modal açıldığında yapılacak işlemler
+  useEffect(() => {
+    // Modal açıldığında yapılması gereken başka işlemler buraya eklenebilir
+  }, []);
   
   const [formData, setFormData] = useState({
     customerId: '',
@@ -56,57 +87,59 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
   // Initialize form data when editing
   useEffect(() => {
-    if (isEdit && reservation) {
-      setFormData({
-        customerId: reservation.customerId,
-        roomId: reservation.roomId,
-        checkInDate: reservation.checkInDate.split('T')[0],
-        checkOutDate: reservation.checkOutDate.split('T')[0],
-        numberOfGuests: reservation.numberOfGuests,
-        totalAmount: reservation.totalAmount,
-        paidAmount: reservation.paidAmount,
-        status: reservation.status,
-        notes: reservation.notes || ''
-      });
-      setSelectedCustomer({
-        id: reservation.customerId,
-        fullName: reservation.customerName
-      });
-
-      // Edit modunda rezervasyondaki müşterileri yükle
-      if (reservation.customers && reservation.customers.length > 0) {
-        const customers = reservation.customers.map(c => ({
-          id: c.customerId,
-          fullName: c.customerName,
-          tcKimlikNo: c.tcKimlikNo,
-          phone: c.phone
-        }));
-        setSelectedCustomers(customers);
-      } else {
-        // Eski rezervasyonlar için sadece ana müşteriyi ekle
-        setSelectedCustomers([{
+    if (isOpen) {
+      if (isEdit && reservation) {
+        setFormData({
+          customerId: reservation.customerId,
+          roomId: reservation.roomId,
+          checkInDate: reservation.checkInDate.split('T')[0],
+          checkOutDate: reservation.checkOutDate.split('T')[0],
+          numberOfGuests: reservation.numberOfGuests,
+          totalAmount: reservation.totalAmount,
+          paidAmount: reservation.paidAmount,
+          status: reservation.status,
+          notes: reservation.notes || ''
+        });
+        setSelectedCustomer({
           id: reservation.customerId,
           fullName: reservation.customerName
-        }]);
+        });
+        if (reservation.customers && reservation.customers.length > 0) {
+          const customers = reservation.customers.map(c => ({
+            id: c.customerId,
+            fullName: c.customerName,
+            tcKimlikNo: c.tcKimlikNo,
+            phone: c.phone
+          }));
+          setSelectedCustomers(customers);
+        } else {
+          setSelectedCustomers([{
+            id: reservation.customerId,
+            fullName: reservation.customerName
+          }]);
+        }
+      } else {
+        // Modal her açıldığında yeni rezervasyon için tüm girişleri temizle
+        setFormData({
+          customerId: '',
+          roomId: '',
+          checkInDate: '',
+          checkOutDate: '',
+          numberOfGuests: 1,
+          totalAmount: 0,
+          paidAmount: 0,
+          status: 0,
+          notes: ''
+        });
+        setSelectedCustomer(null);
+        setSelectedCustomers([]);
+        setCustomerSearch('');
+        setFormErrors({});
+        setSelectedRoomOccupiedDates([]);
+        setShowRoomCards(false);
       }
-    } else {
-      // Reset form for new reservation
-      setFormData({
-        customerId: '',
-        roomId: '',
-        checkInDate: '',
-        checkOutDate: '',
-        numberOfGuests: 1,
-        totalAmount: 0,
-        paidAmount: 0,
-        status: 0, // Default: Beklemede
-        notes: ''
-      });
-      setSelectedCustomer(null);
-      setSelectedCustomers([]); // Çoklu müşteri listesini temizle
-      setCustomerSearch('');
     }
-  }, [isEdit, reservation]);
+  }, [isOpen, isEdit, reservation]);
 
   // Load initial data
   useEffect(() => {
@@ -215,7 +248,20 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
       console.log('Searching customers with query:', query);
       const response = await customerService.search(query);
       console.log('Search results:', response.data);
-      setCustomers(response.data);
+      
+      // Backend'den gelen veri yapısını kontrol et ve düzenle
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        // Backend { data: [...] } şeklinde dönüyor
+        console.log('Veri data property içinde geldi:', response.data.data.length);
+        setCustomers(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        // Backend direkt array dönüyorsa
+        console.log('Veri direkt array olarak geldi:', response.data.length);
+        setCustomers(response.data);
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setCustomers([]);
+      }
     } catch (error) {
       console.error('Error searching customers:', error);
       setCustomers([]);
@@ -318,8 +364,12 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
     if (!selectedRoom) return 0;
 
-    const checkIn = new Date(formData.checkInDate);
-    const checkOut = new Date(formData.checkOutDate);
+    // Tarihleri Date nesnesine çevir
+    const [checkInYear, checkInMonth, checkInDay] = formData.checkInDate.split('-');
+    const [checkOutYear, checkOutMonth, checkOutDay] = formData.checkOutDate.split('-');
+    
+    const checkIn = new Date(checkInYear, checkInMonth - 1, checkInDay);
+    const checkOut = new Date(checkOutYear, checkOutMonth - 1, checkOutDay);
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
 
     return nights * selectedRoom.pricePerNight;
@@ -556,8 +606,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         showConfirmButton: false
       });
 
-      // Refresh reservations list
-      dispatch(fetchReservations({}));
+      // Refresh reservations list with current filters
+      dispatch(fetchReservations({ ...filters }));
       onClose();
     } catch (error) {
       console.error('Error saving reservation:', error);
@@ -620,28 +670,43 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Giriş Tarihi *
                 </label>
-                <input
-                  type="date"
-                  value={formData.checkInDate}
-                  onChange={(e) => {
-                    const selectedDate = e.target.value;
-                    if (formData.roomId && isDateDisabled(selectedDate, false)) {
-                      // Dolu tarih seçilmeye çalışılıyorsa uyarı ver
-                      Swal.fire({
-                        title: 'Uyarı!',
-                        text: 'Seçilen tarih bu oda için dolu. Lütfen başka bir tarih seçin.',
-                        icon: 'warning',
-                        confirmButtonText: 'Tamam'
-                      });
-                      return;
-                    }
-                    handleInputChange('checkInDate', selectedDate);
-                  }}
-                  min={new Date().toISOString().split('T')[0]}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.checkInDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
+                <div style={{ position: 'relative' }}>
+                  <DatePicker
+                    selected={formData.checkInDate ? new Date(formData.checkInDate) : null}
+                    onChange={(date) => {
+                      if (date) {
+                        const formattedDate = format(date, 'yyyy-MM-dd');
+                        if (formData.roomId && isDateDisabled(formattedDate, false)) {
+                          Swal.fire({
+                            title: 'Uyarı!',
+                            text: 'Seçilen tarih bu oda için dolu. Lütfen başka bir tarih seçin.',
+                            icon: 'warning',
+                            confirmButtonText: 'Tamam'
+                          });
+                          return;
+                        }
+                        handleInputChange('checkInDate', formattedDate);
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    locale="tr"
+                    minDate={new Date()}
+                    placeholderText="GG/AA/YYYY"
+                    className="w-full !pl-3 !pr-8 py-2 !border !rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    wrapperClassName={formErrors.checkInDate ? 'date-picker-error' : 'date-picker-normal'}
+                  />
+                  <FaCalendarAlt 
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#9CA3AF',
+                      pointerEvents: 'none'
+                    }}
+                    size={16}
+                  />
+                </div>
                 {formErrors.checkInDate && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.checkInDate}</p>
                 )}
@@ -656,28 +721,43 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Çıkış Tarihi *
                 </label>
-                <input
-                  type="date"
-                  value={formData.checkOutDate}
-                  onChange={(e) => {
-                    const selectedDate = e.target.value;
-                    if (formData.roomId && isDateDisabled(selectedDate, true)) {
-                      // Dolu tarih seçilmeye çalışılıyorsa uyarı ver
-                      Swal.fire({
-                        title: 'Uyarı!',
-                        text: 'Seçilen tarih bu oda için dolu. Lütfen başka bir tarih seçin.',
-                        icon: 'warning',
-                        confirmButtonText: 'Tamam'
-                      });
-                      return;
-                    }
-                    handleInputChange('checkOutDate', selectedDate);
-                  }}
-                  min={formData.checkInDate || new Date().toISOString().split('T')[0]}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.checkOutDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
+                <div style={{ position: 'relative' }}>
+                  <DatePicker
+                    selected={formData.checkOutDate ? new Date(formData.checkOutDate) : null}
+                    onChange={(date) => {
+                      if (date) {
+                        const formattedDate = format(date, 'yyyy-MM-dd');
+                        if (formData.roomId && isDateDisabled(formattedDate, true)) {
+                          Swal.fire({
+                            title: 'Uyarı!',
+                            text: 'Seçilen tarih bu oda için dolu. Lütfen başka bir tarih seçin.',
+                            icon: 'warning',
+                            confirmButtonText: 'Tamam'
+                          });
+                          return;
+                        }
+                        handleInputChange('checkOutDate', formattedDate);
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    locale="tr"
+                    minDate={formData.checkInDate ? new Date(formData.checkInDate) : new Date()}
+                    placeholderText="GG/AA/YYYY"
+                    className="w-full !pl-3 !pr-8 py-2 !border !rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    wrapperClassName={formErrors.checkOutDate ? 'date-picker-error' : 'date-picker-normal'}
+                  />
+                  <FaCalendarAlt 
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#9CA3AF',
+                      pointerEvents: 'none'
+                    }}
+                    size={16}
+                  />
+                </div>
                 {formErrors.checkOutDate && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.checkOutDate}</p>
                 )}
