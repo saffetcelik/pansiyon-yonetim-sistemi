@@ -5,6 +5,7 @@ using PansiyonYonetimSistemi.API.Models;
 using System.Globalization;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using System;
 
 namespace PansiyonYonetimSistemi.API.Services
 {
@@ -886,10 +887,37 @@ namespace PansiyonYonetimSistemi.API.Services
 
         public async Task<byte[]> ExportReportToExcelAsync(string reportType, DateTime startDate, DateTime endDate)
         {
-            // Set EPPlus license for non-commercial use (EPPlus 8+ compatible)
-            if (ExcelPackage.LicenseContext == LicenseContext.Commercial)
+            // Set EPPlus license for non-commercial use (compatible with all versions)
+            // Daha eski EPPlus sürümleri için (8'den öncesi)
+            try
             {
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"EPPlus eski lisans modu hatası: {ex.Message}");
+                // Yeni sürümler için alternatif
+                try 
+                {
+                    var licenseContext = Type.GetType("OfficeOpenXml.LicenseContext")?.GetField("NonCommercial");
+                    var licenseProperty = typeof(ExcelPackage).GetProperty("License");
+                    
+                    if (licenseProperty != null && licenseContext != null)
+                    {
+                        var licenseValue = licenseContext.GetValue(null);
+                        var packageLicense = licenseProperty.GetValue(null);
+                        
+                        var contextProperty = packageLicense?.GetType().GetProperty("LicenseContext");
+                        if (contextProperty != null)
+                        {
+                            contextProperty.SetValue(packageLicense, licenseValue);
+                        }
+                    }
+                }
+                catch (Exception reflectionEx)
+                {
+                    Console.WriteLine($"EPPlus lisans ayarı yapılamadı: {reflectionEx.Message}");
+                }
             }
 
             using var package = new ExcelPackage();

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import ReservationList from '../components/ReservationList';
 import ReservationModal from '../components/ReservationModal';
 import ReservationCalendar from '../components/ReservationCalendar';
+import RoomCalendar from '../components/RoomCalendar';
 
 const Reservations = () => {
-  const [activeView, setActiveView] = useState('list'); // 'list' or 'calendar'
+  const [activeView, setActiveView] = useState('list'); // 'list', 'calendar', or 'room'
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
@@ -31,7 +32,7 @@ const Reservations = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
@@ -64,6 +65,16 @@ const Reservations = () => {
               >
                 📅 Takvim
               </button>
+              <button
+                onClick={() => setActiveView('room')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  activeView === 'room'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🏨 Oda
+              </button>
             </div>
           </div>
         </div>
@@ -74,10 +85,12 @@ const Reservations = () => {
             onCreateReservation={handleCreateReservation}
             onEditReservation={handleEditReservation}
           />
-        ) : (
+        ) : activeView === 'calendar' ? (
           <ReservationCalendar
             onReservationClick={handleReservationClick}
           />
+        ) : (
+          <RoomCalendar />
         )}
 
         {/* Reservation Modals */}

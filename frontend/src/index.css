@@ -234,6 +234,95 @@
     opacity: 1;
     transform: translateY(0);
   }
+
+  /* SweetAlert2 Custom Styles - Enhanced */
+  .swal2-popup {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+  }
+
+  .swal2-title {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+  }
+
+  .swal2-content,
+  .swal2-html-container {
+    color: #374151 !important;
+  }
+
+  /* Confirm Button (Evet/Yes) */
+  .swal2-confirm,
+  button.swal2-confirm {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border: 2px solid #dc2626 !important;
+    font-weight: 600 !important;
+    min-height: 44px !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    text-shadow: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .swal2-confirm:hover,
+  button.swal2-confirm:hover {
+    background-color: #b91c1c !important;
+    border-color: #b91c1c !important;
+    color: #ffffff !important;
+  }
+
+  /* Cancel Button (İptal/Cancel) */
+  .swal2-cancel,
+  button.swal2-cancel {
+    background-color: #6b7280 !important;
+    color: #ffffff !important;
+    border: 2px solid #6b7280 !important;
+    font-weight: 600 !important;
+    min-height: 44px !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    text-shadow: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .swal2-cancel:hover,
+  button.swal2-cancel:hover {
+    background-color: #4b5563 !important;
+    border-color: #4b5563 !important;
+    color: #ffffff !important;
+  }
+
+  /* Deny Button - Hide it */
+  .swal2-deny,
+  button.swal2-deny {
+    display: none !important;
+  }
+
+  /* Actions container */
+  .swal2-actions {
+    margin-top: 20px !important;
+    gap: 12px !important;
+  }
+
+  .swal2-actions button {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+  }
+
+  /* Force visibility */
+  .swal2-actions .swal2-confirm,
+  .swal2-actions .swal2-cancel,
+  .swal2-actions .swal2-deny {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }
 
 @layer utilities {

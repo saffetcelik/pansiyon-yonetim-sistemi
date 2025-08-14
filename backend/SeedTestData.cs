@@ -12,6 +12,7 @@ namespace PansiyonYonetimSistemi.API
             Console.WriteLine("Test data seeding disabled for production.");
             return;
 
+#pragma warning disable CS0162 // Unreachable code detected
             // Add sample reservations
             var reservations = new List<Reservation>
             {
@@ -137,6 +138,7 @@ namespace PansiyonYonetimSistemi.API
             await context.SaveChangesAsync();
 
             Console.WriteLine("Test data seeded successfully!");
+#pragma warning restore CS0162 // Unreachable code detected
         }
     }
 }

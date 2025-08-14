@@ -5,6 +5,7 @@ using PansiyonYonetimSistemi.API.DTOs;
 using PansiyonYonetimSistemi.API.Models;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using System.Text.RegularExpressions;
 
 namespace PansiyonYonetimSistemi.API.Controllers
 {
@@ -27,68 +28,173 @@ namespace PansiyonYonetimSistemi.API.Controllers
         {
             try
             {
-                var query = _context.Customers.AsQueryable();
+                Console.WriteLine($"GetCustomers called with searchDto: {System.Text.Json.JsonSerializer.Serialize(searchDto)}");
 
-                // Apply filters
+                // LINQ ile sadece dolu alanları AND ile filtrele
+                IQueryable<Customer> customersQuery = _context.Customers;
+
+                // Eğer hem FirstName hem LastName doluysa, ikisini de AND ile uygula
+                if (!string.IsNullOrEmpty(searchDto.FirstName) && !string.IsNullOrEmpty(searchDto.LastName))
+                {
+                    customersQuery = customersQuery.Where(c =>
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.FirstName.ToLower()),
+                            EF.Functions.Unaccent("%" + searchDto.FirstName.ToLower() + "%")
+                        ) &&
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.LastName.ToLower()),
+                            EF.Functions.Unaccent("%" + searchDto.LastName.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added FirstName AND LastName filter: {searchDto.FirstName} {searchDto.LastName}");
+                }
+                else if (!string.IsNullOrEmpty(searchDto.FirstName))
+                {
+                    customersQuery = customersQuery.Where(c =>
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.FirstName.ToLower()),
+                            EF.Functions.Unaccent("%" + searchDto.FirstName.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added FirstName filter: {searchDto.FirstName}");
+                }
+                else if (!string.IsNullOrEmpty(searchDto.LastName))
+                {
+                    customersQuery = customersQuery.Where(c =>
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.LastName.ToLower()),
+                            EF.Functions.Unaccent("%" + searchDto.LastName.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added LastName filter: {searchDto.LastName}");
+                }
+
+                // Name parametresi varsa, hem ad hem de soyad için AND ile arama yap
                 if (!string.IsNullOrEmpty(searchDto.Name))
                 {
-                    query = query.Where(c => 
-                        c.FirstName.Contains(searchDto.Name) ||
-                        c.LastName.Contains(searchDto.Name));
+                    var nameParts = searchDto.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (nameParts.Length == 2)
+                    {
+                        string first = nameParts[0];
+                        string last = nameParts[1];
+                        customersQuery = customersQuery.Where(c =>
+                            EF.Functions.ILike(
+                                EF.Functions.Unaccent(c.FirstName.ToLower()),
+                                EF.Functions.Unaccent("%" + first.ToLower() + "%")
+                            ) &&
+                            EF.Functions.ILike(
+                                EF.Functions.Unaccent(c.LastName.ToLower()),
+                                EF.Functions.Unaccent("%" + last.ToLower() + "%")
+                            )
+                        );
+                        Console.WriteLine($"Added Name filter as AND: {first} {last}");
+                    }
+                    else
+                    {
+                        // Tek parça ise hem ad hem soyad içinde arama (OR)
+                        customersQuery = customersQuery.Where(c =>
+                            EF.Functions.ILike(
+                                EF.Functions.Unaccent(c.FirstName.ToLower()),
+                                EF.Functions.Unaccent("%" + searchDto.Name.ToLower() + "%")
+                            ) ||
+                            EF.Functions.ILike(
+                                EF.Functions.Unaccent(c.LastName.ToLower()),
+                                EF.Functions.Unaccent("%" + searchDto.Name.ToLower() + "%")
+                            )
+                        );
+                        Console.WriteLine($"Added Name filter as OR: {searchDto.Name}");
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.TCKimlikNo))
                 {
-                    query = query.Where(c => c.TCKimlikNo != null && c.TCKimlikNo.Contains(searchDto.TCKimlikNo));
+                    customersQuery = customersQuery.Where(c => 
+                        c.TCKimlikNo != null && 
+                        c.TCKimlikNo.Contains(searchDto.TCKimlikNo)
+                    );
+                    Console.WriteLine($"Added TCKimlikNo filter: {searchDto.TCKimlikNo}");
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.PassportNo))
                 {
-                    query = query.Where(c => c.PassportNo != null && c.PassportNo.Contains(searchDto.PassportNo));
+                    customersQuery = customersQuery.Where(c => 
+                        c.PassportNo != null && 
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.PassportNo.ToLower()), 
+                            EF.Functions.Unaccent("%" + searchDto.PassportNo.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added PassportNo filter: {searchDto.PassportNo}");
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.Phone))
                 {
-                    query = query.Where(c => c.Phone != null && c.Phone.Contains(searchDto.Phone));
+                    customersQuery = customersQuery.Where(c => 
+                        c.Phone != null && 
+                        c.Phone.Contains(searchDto.Phone)
+                    );
+                    Console.WriteLine($"Added Phone filter: {searchDto.Phone}");
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.Email))
                 {
-                    query = query.Where(c => c.Email != null && c.Email.Contains(searchDto.Email));
+                    customersQuery = customersQuery.Where(c => 
+                        c.Email != null && 
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.Email.ToLower()), 
+                            EF.Functions.Unaccent("%" + searchDto.Email.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added Email filter: {searchDto.Email}");
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.City))
                 {
-                    query = query.Where(c => c.City != null && c.City.Contains(searchDto.City));
+                    customersQuery = customersQuery.Where(c => 
+                        c.City != null && 
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.City.ToLower()), 
+                            EF.Functions.Unaccent("%" + searchDto.City.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added City filter: {searchDto.City}");
                 }
 
                 if (!string.IsNullOrEmpty(searchDto.Country))
                 {
-                    query = query.Where(c => c.Country != null && c.Country.Contains(searchDto.Country));
+                    customersQuery = customersQuery.Where(c => 
+                        c.Country != null && 
+                        EF.Functions.ILike(
+                            EF.Functions.Unaccent(c.Country.ToLower()), 
+                            EF.Functions.Unaccent("%" + searchDto.Country.ToLower() + "%")
+                        )
+                    );
+                    Console.WriteLine($"Added Country filter: {searchDto.Country}");
                 }
 
-                var totalCount = await query.CountAsync();
+                // Sıralama ekleyelim
+                var orderedQuery = customersQuery.OrderBy(c => c.FirstName).ThenBy(c => c.LastName);
                 
-                var customers = await query
-                    .OrderBy(c => c.FirstName)
-                    .ThenBy(c => c.LastName)
-                    .Skip((searchDto.Page - 1) * searchDto.PageSize)
-                    .Take(searchDto.PageSize)
-                    .ToListAsync();
+                // Debug için oluşturulan SQL'i yazdıralım
+                string generatedSql = orderedQuery.ToQueryString();
+                Console.WriteLine($"Generated SQL: {generatedSql}");
+                
+                // Sorguyu çalıştır
+                var customers = await orderedQuery.ToListAsync();
+
+                Console.WriteLine($"Found {customers.Count} customers");
 
                 var customerDtos = _mapper.Map<List<CustomerDto>>(customers);
 
-                return Ok(new
-                {
-                    data = customerDtos,
-                    totalCount,
-                    page = searchDto.Page,
-                    pageSize = searchDto.PageSize,
-                    totalPages = (int)Math.Ceiling((double)totalCount / searchDto.PageSize)
-                });
+                return Ok(new { data = customerDtos });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in CustomerController.GetCustomers: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
                 return StatusCode(500, new { message = "Müşteriler getirilirken hata oluştu", error = ex.Message });
             }
         }
@@ -249,6 +355,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
             {
                 var customer = await _context.Customers
                     .Include(c => c.Reservations)
+                    .Include(c => c.ReservationCustomers)
+                        .ThenInclude(rc => rc.Reservation)
                     .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (customer == null)
@@ -256,17 +364,30 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return NotFound(new { message = "Müşteri bulunamadı" });
                 }
 
-                // Check if customer has any active reservations
-                var hasActiveReservations = customer.Reservations.Any(r => 
-                    r.Status == ReservationStatus.Confirmed || 
+                // Check if customer has any active reservations (as primary customer)
+                var hasActiveReservations = customer.Reservations.Any(r =>
+                    r.Status == ReservationStatus.Confirmed ||
                     r.Status == ReservationStatus.CheckedIn ||
                     r.Status == ReservationStatus.Pending);
 
-                if (hasActiveReservations)
+                // Check if customer is part of any active reservations (as additional customer)
+                var hasActiveReservationCustomers = customer.ReservationCustomers.Any(rc =>
+                    rc.Reservation.Status == ReservationStatus.Confirmed ||
+                    rc.Reservation.Status == ReservationStatus.CheckedIn ||
+                    rc.Reservation.Status == ReservationStatus.Pending);
+
+                if (hasActiveReservations || hasActiveReservationCustomers)
                 {
                     return BadRequest(new { message = "Bu müşterinin aktif rezervasyonları bulunduğu için silinemez" });
                 }
 
+                // First remove all ReservationCustomer entries
+                if (customer.ReservationCustomers.Any())
+                {
+                    _context.ReservationCustomers.RemoveRange(customer.ReservationCustomers);
+                }
+
+                // Then remove the customer
                 _context.Customers.Remove(customer);
                 await _context.SaveChangesAsync();
 
@@ -288,24 +409,29 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return Ok(new List<CustomerDto>());
                 }
 
-                // Büyük/küçük harf duyarsız arama için ToLower kullan
-                var lowerQuery = query.ToLower();
-
+                // SQL sorgusu oluştur - Tüm alanlarda unaccent fonksiyonu kullanılıyor
+                var sql = @"SELECT * FROM ""Customers"" 
+                           WHERE unaccent(LOWER(""FirstName"")) LIKE unaccent(@p0)
+                              OR unaccent(LOWER(""LastName"")) LIKE unaccent(@p0)
+                              OR (""TCKimlikNo"" IS NOT NULL AND ""TCKimlikNo"" LIKE @p0)
+                              OR (""PassportNo"" IS NOT NULL AND unaccent(LOWER(""PassportNo"")) LIKE unaccent(@p0))
+                              OR (""Phone"" IS NOT NULL AND ""Phone"" LIKE @p0)
+                              OR (""Email"" IS NOT NULL AND unaccent(LOWER(""Email"")) LIKE unaccent(@p0))
+                           ORDER BY ""FirstName"", ""LastName""";
+                
+                var searchTerm = "%" + query.ToLower() + "%";
+                Console.WriteLine($"Genel arama sorgusu: {sql} with param: {searchTerm}");
+                
+                // SQL'i çalıştır
                 var customers = await _context.Customers
-                    .Where(c =>
-                        c.FirstName.ToLower().Contains(lowerQuery) ||
-                        c.LastName.ToLower().Contains(lowerQuery) ||
-                        (c.TCKimlikNo != null && c.TCKimlikNo.Contains(query)) ||
-                        (c.PassportNo != null && c.PassportNo.ToLower().Contains(lowerQuery)) ||
-                        (c.Phone != null && c.Phone.Contains(query)) ||
-                        (c.Email != null && c.Email.ToLower().Contains(lowerQuery)))
+                    .FromSqlRaw(sql, searchTerm)
                     .OrderBy(c => c.FirstName)
                     .ThenBy(c => c.LastName)
                     .Take(10)
                     .ToListAsync();
 
                 var customerDtos = _mapper.Map<List<CustomerDto>>(customers);
-                return Ok(customerDtos);
+                return Ok(new { data = customerDtos });
             }
             catch (Exception ex)
             {
@@ -324,11 +450,79 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     .ToListAsync();
 
                 var customerDtos = _mapper.Map<List<CustomerDto>>(customers);
-                return Ok(customerDtos);
+                return Ok(new { data = customerDtos });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Son müşteriler getirilirken hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpGet("{id}/reservation-check")]
+        public async Task<IActionResult> CheckCustomerReservations(int id)
+        {
+            try
+            {
+                // Müşteriyi bul
+                var customer = await _context.Customers.FindAsync(id);
+                if (customer == null)
+                {
+                    return NotFound(new { message = "Müşteri bulunamadı" });
+                }
+
+                // Müşterinin rezervasyonlarını kontrol et (doğrudan ilişkili olanlar)
+                var directReservations = await _context.Reservations
+                    .Where(r => r.CustomerId == id)
+                    .ToListAsync();
+
+                // ReservationCustomers ilişkisi üzerinden müşterinin rezervasyonlarını kontrol et
+                var relatedReservations = await _context.ReservationCustomers
+                    .Where(rc => rc.CustomerId == id)
+                    .Include(rc => rc.Reservation)
+                    .Select(rc => rc.Reservation)
+                    .ToListAsync();
+
+                // Tüm rezervasyonları birleştir
+                var allReservations = directReservations
+                    .Union(relatedReservations)
+                    .Where(r => r != null)
+                    .ToList();
+
+                // Rezervasyon varsa bilgileri döndür
+                if (allReservations.Any())
+                {
+                    var reservationData = allReservations.Select(r => new
+                    {
+                        id = r.Id,
+                        roomNumber = _context.Rooms.FirstOrDefault(rm => rm.Id == r.RoomId)?.RoomNumber,
+                        checkInDate = r.CheckInDate,
+                        checkOutDate = r.CheckOutDate,
+                        status = r.Status,
+                        isActive = r.Status == ReservationStatus.CheckedIn
+                                   || r.Status == ReservationStatus.Confirmed
+                                   || r.Status == ReservationStatus.Pending
+                    }).ToList();
+
+                    // Aktif ve geçmiş rezervasyonları ayır
+                    var activeReservations = reservationData.Where(r => r.isActive).ToList();
+                    var pastReservations = reservationData.Where(r => !r.isActive).ToList();
+
+                    return Ok(new
+                    {
+                        hasReservations = true,
+                        reservationCount = reservationData.Count,
+                        activeReservationCount = activeReservations.Count,
+                        pastReservationCount = pastReservations.Count,
+                        reservations = reservationData
+                    });
+                }
+
+                // Rezervasyon yoksa silinebilir
+                return Ok(new { hasReservations = false });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Rezervasyon kontrolü yapılırken hata oluştu", error = ex.Message });
             }
         }
     }

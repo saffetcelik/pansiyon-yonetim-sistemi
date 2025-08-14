@@ -1,0 +1,318 @@
+/* DataTables özelleştirmeleri - iyileştirilmiş düzen */
+.dataTables_wrapper-header,
+.dataTables_wrapper-footer {
+  padding: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dataTables_wrapper-header {
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.dataTables_wrapper-footer {
+  justify-content: space-between;
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dataTables_length-container,
+.dataTables_info-container {
+  flex: 1;
+  min-width: 200px;
+  padding: 0 10px;
+}
+
+.dataTables_filter-container,
+.dataTables_paginate-container {
+  flex: 1;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 200px;
+  padding: 0 10px;
+}
+
+.dataTables_paginate-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.dataTables_length select {
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  margin: 0 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  min-width: 70px;
+  appearance: auto;
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dataTables_filter input {
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  padding-left: 2rem;
+  margin: 0 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  width: 200px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 0.5rem center;
+  background-size: 1rem;
+}
+
+.dataTables_filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dataTables_paginate {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Önceki/Sonraki metin stil düzenlemesi */
+.dataTables_paginate .previous:before {
+  content: "« ";
+  font-weight: normal;
+}
+
+.dataTables_paginate .next:before {
+  content: " »";
+  font-weight: normal;
+}
+
+.dataTables_paginate .paginate_button {
+  border: 1px solid #d1d5db;
+  margin: 0 2px;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  background-color: #ffffff;
+  color: #4b5563 !important;
+  font-size: 0.875rem;
+  min-width: 36px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none !important;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.dataTables_paginate .paginate_button.current {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 5;
+}
+
+.dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
+  background-color: #f3f4f6 !important;
+  color: #1f2937 !important;
+  border-color: #a3a3a3;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+.dataTables_paginate .paginate_button.disabled {
+  color: #9ca3af !important;
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+  opacity: 0.7;
+}
+
+/* Mobil cihazlar için düzenlemeler */
+/* Bilgi metni stili */
+.dataTables_info {
+  color: #6b7280;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Mobil cihazlar için düzenlemeler */
+@media (max-width: 768px) {
+  .dataTables_wrapper-header,
+  .dataTables_wrapper-footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.5rem;
+  }
+  
+  .dataTables_length-container,
+  .dataTables_info-container,
+  .dataTables_filter-container,
+  .dataTables_paginate-container {
+    text-align: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    padding: 0;
+  }
+  
+  .dataTables_filter input {
+    width: 100%;
+    margin: 0.5rem 0;
+    max-width: none;
+  }
+  
+  .dataTables_paginate .paginate_button {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    min-width: 36px;
+    height: 36px;
+    margin: 0 1px;
+  }
+
+  .dataTables_paginate {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0.5rem 0;
+  }
+
+  .dataTables_length select {
+    width: 100%;
+    max-width: 150px;
+    margin: 0;
+    margin-top: 0.5rem;
+  }
+}
+
+/* DataTable'ın tablo genişliğini kontrol et */
+table.dataTable {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+/* DataTables'ın başlık kısmı */
+table.dataTable thead th {
+  background-color: #f3f4f6;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #d1d5db;
+}
+
+/* Responsive tablo için eklenen stiller */
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Zebra stili satırlar */
+table.dataTable tbody tr:nth-of-type(odd) {
+  background-color: #f9fafb;
+}
+
+/* Hover efekti */
+table.dataTable tbody tr:hover {
+  background-color: #f3f4f6;
+}
+
+/* DataTables duyarlı tasarım ayarları */
+table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control::before,
+table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control::before {
+  background-color: #3b82f6;
+}
+
+/* DataTables başlık sıralama ikon rengi */
+table.dataTable thead th.sorting::after,
+table.dataTable thead th.sorting_asc::after,
+table.dataTable thead th.sorting_desc::after {
+  color: #6b7280;
+}
+
+/* Responsive genişletme içeriği için stil */
+.dtr-details {
+  width: 100%;
+}
+
+.dtr-data {
+  padding-left: 10px;
+  word-break: break-word;
+}
+
+.child ul.dtr-details li {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.5rem 0;
+}
+
+.child ul.dtr-details li:last-child {
+  border-bottom: none;
+}
+
+.child ul.dtr-details li .dtr-title {
+  font-weight: 600;
+  min-width: 120px;
+  padding-right: 10px;
+}
+
+.dtr-details li {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Responsive görünüm için ikinci satır stili */
+tr.child {
+  background-color: #f8f9fa;
+}
+
+/* Sayfalama için çerçeve stili */
+.dataTables_wrapper .dataTables_paginate {
+  border-radius: 0.375rem;
+  padding: 3px;
+  background-color: white;
+}
+
+/* Tablo altındaki sayfa bilgisi daha belirgin */
+.dataTables_info {
+  font-weight: 500;
+}
+
+@media (max-width: 767.98px) {
+  table.dataTable > tbody > tr.child ul.dtr-details {
+    width: 100%;
+    padding: 0.75rem;
+  }
+  
+  .dataTables_wrapper-header,
+  .dataTables_wrapper-footer {
+    padding: 0.5rem;
+  }
+}

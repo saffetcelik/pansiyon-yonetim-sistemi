@@ -10,6 +10,8 @@ import Debug from './pages/Debug';
 import Sales from './pages/Sales';
 import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
+import DebugPanel from './components/DebugPanel';
+import SweetAlertInit from './components/SweetAlertInit';
 
 const theme = createTheme({
   palette: {
@@ -23,6 +25,8 @@ const theme = createTheme({
 });
 
 function App() {
+  // SweetAlert2 Initialize
+  
   // ResizeObserver hatalarını bastır
   useEffect(() => {
     const handleError = (event) => {
@@ -34,9 +38,15 @@ function App() {
 
     window.addEventListener('error', handleError);
 
-    // Cleanup
+    // Temizleme işlemi
     return () => {
       window.removeEventListener('error', handleError);
+      
+      // SweetAlert stil temizliği
+      const styleElement = document.getElementById('sweetalert-global-styles');
+      if (styleElement) {
+        styleElement.remove();
+      }
     };
   }, []);
 
@@ -44,6 +54,7 @@ function App() {
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <SweetAlertInit />
         <Router>
           <div className="App">
             <Routes>
@@ -78,6 +89,9 @@ function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
+          
+          {/* Debug panel - sadece geliştirme ortamında görünür */}
+          {process.env.NODE_ENV !== 'production' && <DebugPanel />}
         </Router>
       </ThemeProvider>
     </Provider>

@@ -94,11 +94,131 @@ export const roomService = {
 };
 
 export const customerService = {
-  getAll: (params) => api.get('/customers', { params }),
+  getAll: async (params) => {
+    const { page, pageSize, ...filteredParams } = params || {};
+    console.log('customerService.getAll called with params:', params);
+    console.log('Filtered params:', filteredParams);
+    try {
+      // API istek yolunu kontrol et
+      const apiUrl = '/customers';
+      console.log('API URL:', `${API_BASE_URL}${apiUrl}`);
+      console.log('Token:', localStorage.getItem('authToken') ? 'Mevcut' : 'Mevcut değil');
+      
+      // Axios istek konfigürasyonu
+      const config = { 
+        params: filteredParams,
+        headers: {
+          'X-Debug-Info': 'CustomerAPI-Request'
+        }
+      };
+      console.log('Request config:', config);
+      
+      // API isteği yapma
+      const response = await api.get(apiUrl, config);
+      console.log('API response status:', response.status);
+      console.log('API response headers:', response.headers);
+      console.log('API response data:', response.data);
+      
+      // Doğru cevap alındı mı kontrol et
+      if (!response.data) {
+        console.warn('API response is missing data property:', response);
+        return { data: [] };
+      }
+      
+      // Veri yapısını kontrol et
+      if (Array.isArray(response.data)) {
+        console.log(`Veri bir dizi olarak geldi, ${response.data.length} kayıt içeriyor`);
+        return { data: response.data }; // Backend direkt dizi dönüyorsa, data property içine saralım
+      } else {
+        console.log('Veri bir nesne olarak geldi:', typeof response.data);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('API error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        config: error.config
+      });
+      
+      // Otomatik düzeltme mekanizması
+      if (error.response?.status === 404) {
+        console.log('Alternatif API endpoint deneniyor: /customer');
+        try {
+          const altResponse = await api.get('/customer', { params: filteredParams });
+          console.log('Alternatif API endpoint çalıştı:', altResponse);
+          return altResponse;
+        } catch (altError) {
+          console.error('Alternatif API endpoint de çalışmadı:', altError.message);
+          throw altError;
+        }
+      }
+      
+      // API kontrolü deneme
+      try {
+        console.log('API endpoint kontrolü yapılıyor: /api/customers');
+        const checkResponse = await axios.get(`${API_BASE_URL}/customers`, {
+          params: filteredParams,
+          headers: api.defaults.headers
+        });
+        console.log('API kontrolü cevabı:', checkResponse);
+        return { data: checkResponse.data };
+      } catch (checkError) {
+        console.error('API kontrol hatası:', checkError.message);
+      }
+      
+      throw error;
+    }
+  },
   getById: (id) => api.get(`/customers/${id}`),
   create: (customerData) => api.post('/customers', customerData),
   update: (id, customerData) => api.put(`/customers/${id}`, customerData),
-  delete: (id) => api.delete(`/customers/${id}`),
+  delete: async (id) => {
+    try {
+      // Müşterinin herhangi bir rezervasyonunu kontrol et (aktif veya aktif değil)
+      const reservationCheck = await api.get(`/customers/${id}/reservation-check`);
+      // Eğer herhangi bir rezervasyon varsa (API'den bir kontrol değeri dönecek)
+      if (reservationCheck.data && reservationCheck.data.hasReservations) {
+        // Rezervasyonları duruma göre sınıflandır
+        const reservations = reservationCheck.data.reservations || [];
+        const activeReservations = reservations.filter(r => 
+          r.status === 'Active' || r.status === 'CheckedIn' || 
+          r.status === 'Confirmed' || r.status === 'Reserved');
+        const pastReservations = reservations.filter(r => 
+          r.status === 'CheckedOut' || r.status === 'Completed' || 
+          r.status === 'Canceled' || r.status === 'NoShow');
+
+        // Detaylı hata mesajı oluştur
+        let errorMessage = 'Bu müşteri rezervasyon kayıtlarına bağlı olduğu için silinemez.';
+        if (activeReservations.length > 0) {
+          errorMessage += ' Aktif rezervasyonları bulunmaktadır.';
+        }
+        if (pastReservations.length > 0) {
+          errorMessage += ' Geçmiş rezervasyon kayıtları bulunmaktadır.';
+        }
+        
+        // Özel hata fırlat
+        const error = new Error(errorMessage);
+        error.isReservationError = true;
+        error.reservations = reservations;
+        error.activeReservations = activeReservations;
+        error.pastReservations = pastReservations;
+        throw error;
+      }
+      
+      // Rezervasyon yoksa silme işlemini gerçekleştir
+      return api.delete(`/customers/${id}`);
+    } catch (error) {
+      // API'nin 404 hatası döndürdüğü durumda eski endpoint'i dene
+      if (error.response?.status === 404 && !error.isReservationError) {
+        console.log('Rezervasyon kontrolü endpoint bulunamadı, direkt silme deneniyor');
+        return api.delete(`/customers/${id}`);
+      }
+      throw error;
+    }
+  },
   search: (query) => api.get(`/customers/search?query=${encodeURIComponent(query)}`),
   getRecent: (count = 10) => api.get(`/customers/recent?count=${count}`)
 };
