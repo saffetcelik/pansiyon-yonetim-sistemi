@@ -248,7 +248,20 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
       console.log('Searching customers with query:', query);
       const response = await customerService.search(query);
       console.log('Search results:', response.data);
-      setCustomers(response.data);
+      
+      // Backend'den gelen veri yapısını kontrol et ve düzenle
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        // Backend { data: [...] } şeklinde dönüyor
+        console.log('Veri data property içinde geldi:', response.data.data.length);
+        setCustomers(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        // Backend direkt array dönüyorsa
+        console.log('Veri direkt array olarak geldi:', response.data.length);
+        setCustomers(response.data);
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setCustomers([]);
+      }
     } catch (error) {
       console.error('Error searching customers:', error);
       setCustomers([]);
