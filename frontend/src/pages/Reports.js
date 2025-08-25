@@ -17,6 +17,22 @@ import {
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
+// API Base URL - Domain üzerinden erişim için dinamik URL belirleme
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  console.log('Reports - Hostname:', hostname, 'Protocol:', protocol);
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  return `${protocol}//${hostname}/api`;
+};
+
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -62,7 +78,8 @@ const Reports = () => {
     }
 
     try {
-      const response = await axios.get(`http://localhost:5297/api/reports/test`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/reports/test`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Auth test response:', response.data);
@@ -85,7 +102,8 @@ const Reports = () => {
     setLoading(true);
     console.log('Dashboard summary fetch başlatılıyor...');
     try {
-      const response = await axios.get(`http://localhost:5297/api/reports/dashboard/summary`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/reports/dashboard/summary`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { date: new Date().toISOString().split('T')[0] }
       });
@@ -111,7 +129,8 @@ const Reports = () => {
 
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5297/api/reports/occupancy`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/reports/occupancy`, {
         headers: { Authorization: `Bearer ${token}` },
         params: dateRange
       });
@@ -128,7 +147,8 @@ const Reports = () => {
   const fetchRevenueReport = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5297/api/reports/revenue`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/reports/revenue`, {
         headers: { Authorization: `Bearer ${token}` },
         params: dateRange
       });
@@ -144,7 +164,8 @@ const Reports = () => {
   const fetchCustomerReport = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5297/api/reports/customers/statistics`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/reports/customers/statistics`, {
         headers: { Authorization: `Bearer ${token}` },
         params: dateRange
       });
@@ -159,7 +180,8 @@ const Reports = () => {
 
   const exportToExcel = async (reportType) => {
     try {
-      const response = await axios.get(`http://localhost:5297/api/reports/export/excel`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/reports/export/excel`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { reportType, ...dateRange },
         responseType: 'blob'

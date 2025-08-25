@@ -18,12 +18,25 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "https://localhost:3000",
-                "http://127.0.0.1:3000",
-                "https://127.0.0.1:3000"
-              )
+        policy.SetIsOriginAllowed(origin => 
+            {
+                // Geliştirme ortamında tüm originlere izin ver
+                if (builder.Environment.IsDevelopment())
+                {
+                    return true;
+                }
+                
+                // Production'da sadece belirli domainlere izin ver
+                var allowedOrigins = new[]
+                {
+                    "https://admin.gunespansiyon.com.tr",
+                    "http://admin.gunespansiyon.com.tr",
+                    "http://localhost:3000",
+                    "https://localhost:3000"
+                };
+                
+                return allowedOrigins.Contains(origin?.ToLower());
+            })
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

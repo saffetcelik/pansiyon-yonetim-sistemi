@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { authService } from '../services/authService';
 
+// API Base URL - Domain üzerinden erişim için dinamik URL belirleme
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  console.log('Debug - Hostname:', hostname, 'Protocol:', protocol);
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  return `${protocol}//${hostname}/api`;
+};
+
 const Debug = () => {
   const authState = useSelector((state) => state.auth);
   const [testResult, setTestResult] = useState('');
@@ -38,7 +54,8 @@ const Debug = () => {
   const testAPI = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5297/api/test/health');
+      const apiBaseUrl = getBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/test/health`);
       const data = await response.json();
       setTestResult('API Test: ' + JSON.stringify(data, null, 2));
     } catch (error) {
@@ -50,7 +67,8 @@ const Debug = () => {
   const testUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5297/api/test/users');
+      const apiBaseUrl = getBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/test/users`);
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
 

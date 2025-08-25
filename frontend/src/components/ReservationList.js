@@ -28,6 +28,20 @@ import "../styles/datepicker.css";
 import "../styles/datatables.css"; // Özel DataTables stilleri
 import "../styles/datatables.pagination.css"; // Sayfalama için özel stiller
 
+// API Base URL - Domain üzerinden erişim için dinamik URL belirleme
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  return `${protocol}//${hostname}/api`;
+};
+
 // jQuery'yi global değişkenlere ekle
 window.$ = $;
 window.jQuery = $;
@@ -397,7 +411,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5297/api/reservations/${reservationId}/status`, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/reservations/${reservationId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

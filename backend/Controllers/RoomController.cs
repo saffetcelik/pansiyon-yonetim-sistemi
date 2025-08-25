@@ -70,7 +70,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateRoom([FromBody] CreateRoomDto createRoomDto)
         {
             try
@@ -105,7 +105,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRoom(int id, [FromBody] UpdateRoomDto updateRoomDto)
         {
             try

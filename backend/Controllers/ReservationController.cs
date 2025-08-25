@@ -251,7 +251,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto createReservationDto)
         {
             try
@@ -379,7 +379,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationDto updateReservationDto)
         {
             try
@@ -556,7 +556,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> DeleteReservation(int id)
         {
             try

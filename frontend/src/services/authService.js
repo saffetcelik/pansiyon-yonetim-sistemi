@@ -1,6 +1,26 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5297/api';
+// API Base URL - Domain üzerinden erişim için dinamik URL belirleme
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol; // 'http:' veya 'https:'
+  
+  console.log('AuthService - Hostname:', hostname, 'Protocol:', protocol);
+  console.log('AuthService - Full location:', window.location.href);
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    console.log('AuthService: Gerçek localhost erişimi tespit edildi.');
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  const apiUrl = `${protocol}//${hostname}/api`;
+  console.log('AuthService: Domain erişimi - API URL:', apiUrl);
+  return apiUrl;
+};
+
+const API_BASE_URL = getBaseUrl();
 
 // Cookie yardımcı fonksiyonları
 const cookieUtils = {

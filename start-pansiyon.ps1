@@ -27,7 +27,7 @@ $backendJob = Start-Job -ScriptBlock {
     param($path)
     Set-Location -Path $path
     $env:DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "false"
-    dotnet run --urls=http://localhost:5297
+    dotnet run --urls=http://0.0.0.0:5297
 } -ArgumentList $backendPath
 
 Write-Host "Frontend başlatılıyor..." -ForegroundColor Yellow

@@ -1,7 +1,27 @@
 import axios from 'axios';
 
 // API Base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5297/api';
+// Tarayıcının mevcut konumuna ve protokolüne göre API URL'ini belirle
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol; // 'http:' veya 'https:'
+  
+  console.log('API Service - Hostname:', hostname, 'Protocol:', protocol);
+  console.log('API Service - Full location:', window.location.href);
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    console.log('API Service: Gerçek localhost erişimi tespit edildi.');
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  const apiUrl = `${protocol}//${hostname}/api`;
+  console.log('API Service: Domain erişimi - API URL:', apiUrl);
+  return apiUrl;
+};
+
+const API_BASE_URL = getBaseUrl();
 
 // Create axios instance
 const api = axios.create({
@@ -19,9 +39,14 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // API isteğinin URL'sini konsola yazdır
+    console.log(`API İstek: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    
     return config;
   },
   (error) => {
+    console.error('API istek hatası:', error);
     return Promise.reject(error);
   }
 );
@@ -29,9 +54,18 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
+    console.log(`API Başarılı Yanıt: ${response.status} ${response.config.url}`);
     return response;
   },
   (error) => {
+    console.error(`API Hata: ${error.config?.url || 'bilinmeyen URL'}, 
+      Durum: ${error.response?.status || 'bilinmeyen durum'}, 
+      Mesaj: ${error.message || 'bilinmeyen hata'}`);
+      
+    if (error.response?.data) {
+      console.error('API Hata Detayları:', error.response.data);
+    }
+    
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('authToken');
