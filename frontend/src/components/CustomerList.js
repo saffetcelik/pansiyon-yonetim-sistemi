@@ -5,6 +5,20 @@ import customSwal, { confirmDialog, successMessage, errorMessage } from '../util
 import { Tooltip } from 'react-tooltip';
 import { customerService } from '../services/api';
 
+// API Base URL - Domain üzerinden erişim için dinamik URL belirleme
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  return `${protocol}//${hostname}/api`;
+};
+
 const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   const dispatch = useDispatch();
   const { customers, loading, error } = useSelector((state) => {
@@ -628,7 +642,7 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
             <div className="mt-6 p-4 bg-gray-50 rounded-lg max-w-2xl mx-auto text-left">
               <h3 className="text-sm font-medium text-gray-800 mb-2">Geliştirici Bilgileri</h3>
               <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
-                <li>API URL: {process.env.REACT_APP_API_URL || 'http://localhost:5297/api'}</li>
+                <li>API URL: {getBaseUrl()}</li>
                 <li>Oturum Durumu: {localStorage.getItem('authToken') ? 'Oturum açık' : 'Oturum kapalı'}</li>
                 <li>
                   <button 

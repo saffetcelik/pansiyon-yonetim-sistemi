@@ -3,6 +3,20 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import customSwal, { confirmDialog, successMessage, errorMessage } from '../utils/sweetalert';
 
+// API Base URL - Domain üzerinden erişim için dinamik URL belirleme
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // ASLA localhost kullanma - sadece gerçek localhost erişiminde
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `http://${hostname}:5297/api`;
+  }
+  
+  // Tüm domain erişimleri için domain üzerinden API kullan
+  return `${protocol}//${hostname}/api`;
+};
+
 const Sales = () => {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -24,7 +38,8 @@ const Sales = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://localhost:5297/api/product', {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/product`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(response.data.filter(p => p.isActive && p.stockQuantity > 0));
@@ -36,7 +51,8 @@ const Sales = () => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await axios.get('http://localhost:5297/api/customers', {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/customers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Response'un data property'sini kontrol et
@@ -134,7 +150,8 @@ const Sales = () => {
         }))
       };
 
-      const response = await axios.post('http://localhost:5297/api/sale', saleData, {
+      const apiBaseUrl = getBaseUrl();
+      const response = await axios.post(`${apiBaseUrl}/sale`, saleData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -84,7 +84,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<ActionResult<ProductDto>> CreateProduct(CreateProductDto createProductDto)
         {
             try
@@ -128,7 +128,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<ActionResult<ProductDto>> UpdateProduct(int id, UpdateProductDto updateProductDto)
         {
             try
@@ -286,7 +286,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpPost("{id}/stock")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> UpdateStock(int id, UpdateStockDto updateStockDto)
         {
             try

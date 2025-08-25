@@ -84,7 +84,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         #region Customer Reports
 
         [HttpGet("customers/statistics")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetCustomerStatistics([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try
@@ -99,7 +99,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("customers/top")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetTopCustomers([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int count = 10)
         {
             try
@@ -114,7 +114,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("customers/demographics")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetCustomerDemographics([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try
@@ -129,7 +129,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("customers/retention")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetCustomerRetention([FromQuery] int year)
         {
             try
@@ -148,7 +148,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         #region Revenue Reports
 
         [HttpGet("revenue")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetRevenueReport([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try
@@ -163,7 +163,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("revenue/trends")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetDailyRevenueTrends([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try
@@ -178,7 +178,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("revenue/monthly")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetMonthlyRevenue([FromQuery] int year, [FromQuery] int month)
         {
             try
@@ -193,7 +193,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("revenue/by-source")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> GetRevenueBySource([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try
@@ -246,7 +246,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         #region Export Functions
 
         [HttpGet("export/excel")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> ExportToExcel([FromQuery] string reportType, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try
@@ -263,7 +263,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("export/pdf")]
-        [ManagerOrAbove]
+        [AdminOnly]
         public async Task<IActionResult> ExportToPdf([FromQuery] string reportType, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             try

@@ -39,7 +39,9 @@
   },
   "scripts": {
     "start": "set \"GENERATE_SOURCEMAP=false\" && react-scripts start",
+    "start:prod": "set \"NODE_ENV=production\" && set \"GENERATE_SOURCEMAP=false\" && react-scripts start",
     "build": "set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
+    "build:prod": "set \"NODE_ENV=production\" && set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
