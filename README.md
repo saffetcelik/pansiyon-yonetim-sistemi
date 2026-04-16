@@ -164,8 +164,14 @@ Her türlü soru, öneri veya destek için [issue açabilir](https://github.com/
     ```
 
 2.  **Veritabanını Ayarlayın:**
-    *   `backend/appsettings.Development.json` dosyasını açın.
-    *   `ConnectionStrings.Default` alanını kendi PostgreSQL bağlantı bilgilerinizle güncelleyin.
+    *   Projenin ana dizinindeki `.env` dosyasını açın. (Yoksa oluşturun).
+    *   Aşağıdaki değişkenleri kendi PostgreSQL bağlantı bilgilerinizle güncelleyin:
+        ```env
+        POSTGRES_USER=postgres
+        POSTGRES_PASSWORD=sifreniz
+        POSTGRES_DB=pansiyon_yeni_db
+        ```
+    *   Proje başlarken C# ve Docker bu dosyayı otomatik olarak tanıyacaktır.
 
 3.  **Backend'i Çalıştırın:**
     <details>

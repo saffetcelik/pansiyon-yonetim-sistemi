@@ -7,7 +7,14 @@ using PansiyonYonetimSistemi.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Yüklenecek test ya da production fark etmeksizin root dizindeki .env okunur
+DotNetEnv.Env.TraversePath().Load();
+
+// Hedef .env ayarlarını IConfiguration içine enjekte edebilmesi için Environment variables kullanıyoruz
+builder.Configuration.AddEnvironmentVariables();
+
 // Configure DateTime handling for PostgreSQL
+
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Add services to the container.
