@@ -360,5 +360,4 @@ $RECYCLE.BIN/
 .dockerignore
 build-and-push.ps1
 build-and-push.sh
-Dockerfile
 backend/appsettings.json
