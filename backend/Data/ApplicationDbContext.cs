@@ -97,7 +97,7 @@ namespace PansiyonYonetimSistemi.API.Data
                       .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasOne(e => e.Reservation)
-                      .WithMany()
+                      .WithMany(e => e.Sales)
                       .HasForeignKey(e => e.ReservationId)
                       .OnDelete(DeleteBehavior.SetNull);
             });

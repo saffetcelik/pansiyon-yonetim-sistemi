@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass_123}
-      POSTGRES_DB: ${POSTGRES_DB:-pansiyondb}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_pass_123
+      POSTGRES_DB: pansiyondb
     volumes:
       - pgdata:/var/lib/postgresql/data
     # Exposing the port internally within the docker network
@@ -20,9 +20,9 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
-      - ASPNETCORE_HTTP_PORTS=${ASPNETCORE_HTTP_PORTS:-8080}
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB:-pansiyondb};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres_secure_pass_123}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=pansiyondb;Username=postgres;Password=postgres_secure_pass_123
     depends_on:
       - db
     expose:
