@@ -386,12 +386,12 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
   return (
     <div className="bg-white shadow-lg rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+      <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-white">Müşteriler</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-white">Müşteriler</h2>
           <button
             onClick={onCreateCustomer}
-            className="bg-white text-green-600 px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition-colors"
+            className="bg-white text-green-600 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition-colors text-sm sm:text-base"
           >
             + Yeni Müşteri
           </button>
@@ -399,8 +399,8 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-50 px-6 py-4 border-b">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="bg-gray-50 px-4 sm:px-6 py-4 border-b">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad</label>
             <input
@@ -408,10 +408,9 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               value={localFilters.name}
               onChange={(e) => handleFilterChange('name', e.target.value)}
               placeholder="Ad veya soyad ara..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
-          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">TC Kimlik No</label>
             <input
@@ -419,10 +418,9 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               value={localFilters.tcKimlikNo}
               onChange={(e) => handleFilterChange('tcKimlikNo', e.target.value)}
               placeholder="TC Kimlik No..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
-          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
             <input
@@ -430,10 +428,9 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               value={localFilters.phone}
               onChange={(e) => handleFilterChange('phone', e.target.value)}
               placeholder="Telefon numarası..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
-          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
             <input
@@ -441,10 +438,9 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               value={localFilters.email}
               onChange={(e) => handleFilterChange('email', e.target.value)}
               placeholder="E-posta adresi..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
-          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Şehir</label>
             <input
@@ -452,16 +448,12 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               value={localFilters.city}
               onChange={(e) => handleFilterChange('city', e.target.value)}
               placeholder="Şehir..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
         </div>
-        
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={handleClearFilters}
-            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
-          >
+        <div className="flex gap-2 mt-3">
+          <button onClick={handleClearFilters} className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm">
             Temizle
           </button>
         </div>
@@ -470,51 +462,29 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 m-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* Desktop Table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ad Soyad
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                TC Kimlik / Pasaport
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İletişim
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Adres
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Doğum Tarihi
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İşlemler
-              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ad Soyad</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TC / Pasaport</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İletişim</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adres</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doğum Tarihi</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {customers && customers.length > 0 ? (
               customers.map((customer, index) => {
-                console.log('Rendering customer:', customer);
-                // Backend API'den gelen verinin farklı formatlarda olma ihtimalini ele al
                 const customerData = {
                   id: customer.id || customer.Id,
-                  firstName: customer.firstName || customer.FirstName,
-                  lastName: customer.lastName || customer.LastName,
                   fullName: customer.fullName || customer.FullName || `${customer.firstName || customer.FirstName || ''} ${customer.lastName || customer.LastName || ''}`,
                   tcKimlikNo: customer.tcKimlikNo || customer.TCKimlikNo,
                   passportNo: customer.passportNo || customer.PassportNo,
@@ -525,79 +495,30 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
                   country: customer.country || customer.Country,
                   dateOfBirth: customer.dateOfBirth || customer.DateOfBirth,
                 };
-                
                 return (
                   <tr key={customerData.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {index + 1}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{customerData.fullName}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {customerData.tcKimlikNo && <div>TC: {customerData.tcKimlikNo}</div>}
+                      {customerData.passportNo && <div>Pasaport: {customerData.passportNo}</div>}
+                      {!customerData.tcKimlikNo && !customerData.passportNo && <span className="text-gray-400">-</span>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {customerData.fullName}
-                      </div>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {customerData.phone && <div>📞 {customerData.phone}</div>}
+                      {customerData.email && <div>✉️ {customerData.email}</div>}
+                      {!customerData.phone && !customerData.email && <span className="text-gray-400">-</span>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {customerData.tcKimlikNo && (
-                          <div>TC: {customerData.tcKimlikNo}</div>
-                        )}
-                        {customerData.passportNo && (
-                          <div>Pasaport: {customerData.passportNo}</div>
-                        )}
-                        {!customerData.tcKimlikNo && !customerData.passportNo && (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {customerData.address && <div>{customerData.address}</div>}
+                      {customerData.city && customerData.country && <div className="text-gray-500">{customerData.city}, {customerData.country}</div>}
+                      {!customerData.address && !customerData.city && <span className="text-gray-400">-</span>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {customerData.phone && (
-                          <div>📞 {customerData.phone}</div>
-                        )}
-                        {customerData.email && (
-                          <div>✉️ {customerData.email}</div>
-                        )}
-                        {!customerData.phone && !customerData.email && (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {customerData.address && (
-                          <div>{customerData.address}</div>
-                        )}
-                        {customerData.city && customerData.country && (
-                          <div className="text-gray-500">{customerData.city}, {customerData.country}</div>
-                        )}
-                        {!customerData.address && !customerData.city && (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(customerData.dateOfBirth)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => onEditCustomer(customer)}
-                          className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50"
-                          data-tooltip-id="edit-tooltip"
-                          data-tooltip-content="Müşteriyi düzenle"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDelete(customerData.id)}
-                          className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50"
-                          data-tooltip-id="delete-tooltip"
-                          data-tooltip-content="Müşteriyi sil"
-                        >
-                          🗑️
-                        </button>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatDate(customerData.dateOfBirth)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-1">
+                        <button onClick={() => onEditCustomer(customer)} className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50" title="Düzenle">✏️</button>
+                        <button onClick={() => handleDelete(customerData.id)} className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50" title="Sil">🗑️</button>
                       </div>
                     </td>
                   </tr>
@@ -605,14 +526,9 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               })
             ) : (
               <tr>
-                <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
-                  <div className="py-8">
-                    <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    <p className="mt-2 text-sm text-gray-500">Henüz müşteri kaydı bulunmuyor.</p>
-                    <p className="text-sm text-gray-500">Yeni bir müşteri eklemek için 'Yeni Müşteri' düğmesini kullanın.</p>
-                  </div>
+                <td colSpan="7" className="px-6 py-8 text-center">
+                  <p className="text-sm text-gray-500">Henüz müşteri kaydı bulunmuyor.</p>
+                  <p className="text-sm text-gray-400 mt-1">Yeni bir müşteri eklemek için 'Yeni Müşteri' düğmesini kullanın.</p>
                 </td>
               </tr>
             )}
@@ -620,67 +536,56 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
         </table>
       </div>
 
-      {/* Total count display */}
-      {customers.length > 0 && (
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="text-sm text-gray-700">
-            Toplam <span className="font-medium">{customers.length}</span> kayıt gösteriliyor
-          </div>
-        </div>
-      )}
-
-      {/* Empty State with Detailed Diagnostics */}
-      {!loading && customers.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-500 text-lg mb-2">Müşteri bulunamadı</div>
-          <div className="text-gray-400 text-sm mb-4">
-            Yeni bir müşteri oluşturmak için yukarıdaki butonu kullanın.
-          </div>
-          
-          {/* Debug bilgileri - Sadece geliştirme modunda görünür */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg max-w-2xl mx-auto text-left">
-              <h3 className="text-sm font-medium text-gray-800 mb-2">Geliştirici Bilgileri</h3>
-              <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
-                <li>API URL: {getBaseUrl()}</li>
-                <li>Oturum Durumu: {localStorage.getItem('authToken') ? 'Oturum açık' : 'Oturum kapalı'}</li>
-                <li>
-                  <button 
-                    className="text-blue-600 hover:underline focus:outline-none"
-                    onClick={() => {
-                      console.log('Yeniden deneniyor...');
-                      dispatch(fetchCustomers(filters));
-                    }}
-                  >
-                    Yeniden dene
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    className="text-blue-600 hover:underline focus:outline-none"
-                    onClick={() => {
-                      localStorage.removeItem('authToken');
-                      window.location.href = '/login';
-                    }}
-                  >
-                    Oturumu yenile
-                  </button>
-                </li>
-              </ul>
-            </div>
-          )}
-          
-          {/* Alternatif: API sorunu mesajı */}
-          {error && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md max-w-md mx-auto">
-              <div className="flex items-center">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span className="ml-2 text-sm text-yellow-700">API'ye bağlanırken bir sorun oluştu.</span>
+      {/* Mobile Card View */}
+      <div className="md:hidden divide-y divide-gray-200">
+        {customers && customers.length > 0 ? (
+          customers.map((customer, index) => {
+            const customerData = {
+              id: customer.id || customer.Id,
+              fullName: customer.fullName || customer.FullName || `${customer.firstName || customer.FirstName || ''} ${customer.lastName || customer.LastName || ''}`,
+              tcKimlikNo: customer.tcKimlikNo || customer.TCKimlikNo,
+              passportNo: customer.passportNo || customer.PassportNo,
+              phone: customer.phone || customer.Phone,
+              email: customer.email || customer.Email,
+              city: customer.city || customer.City,
+              country: customer.country || customer.Country,
+              dateOfBirth: customer.dateOfBirth || customer.DateOfBirth,
+            };
+            return (
+              <div key={customerData.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{index + 1}. {customerData.fullName}</p>
+                    {customerData.tcKimlikNo && <p className="text-xs text-gray-500 mt-0.5">TC: {customerData.tcKimlikNo}</p>}
+                    {customerData.passportNo && <p className="text-xs text-gray-500 mt-0.5">Pasaport: {customerData.passportNo}</p>}
+                    {customerData.phone && <p className="text-xs text-gray-600 mt-1">📞 {customerData.phone}</p>}
+                    {customerData.email && <p className="text-xs text-gray-600">✉️ {customerData.email}</p>}
+                    {(customerData.city || customerData.country) && (
+                      <p className="text-xs text-gray-500 mt-0.5">📍 {[customerData.city, customerData.country].filter(Boolean).join(', ')}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button onClick={() => onEditCustomer(customer)} className="text-green-600 p-2 rounded-md hover:bg-green-50 touch-manipulation text-base">✏️</button>
+                    <button onClick={() => handleDelete(customerData.id)} className="text-red-600 p-2 rounded-md hover:bg-red-50 touch-manipulation text-base">🗑️</button>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })
+        ) : (
+          <div className="py-12 text-center">
+            <p className="text-sm text-gray-500">Henüz müşteri kaydı bulunmuyor.</p>
+            <p className="text-sm text-gray-400 mt-1">Yeni bir müşteri eklemek için yukarıdaki butonu kullanın.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Total count */}
+      {customers.length > 0 && (
+        <div className="bg-white px-4 py-3 border-t border-gray-200">
+          <div className="text-sm text-gray-700">
+            Toplam <span className="font-medium">{customers.length}</span> kayıt
+          </div>
         </div>
       )}
 
@@ -690,5 +595,6 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
     </div>
   );
 };
+
 
 export default CustomerList;

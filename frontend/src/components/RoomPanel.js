@@ -119,8 +119,8 @@ const RoomPanel = ({ readOnly = false }) => {
       {/* Room Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '15px',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+        gap: '12px',
         marginBottom: '30px'
       }}>
         {rooms.map((room) => (
@@ -322,7 +322,7 @@ const RoomPanel = ({ readOnly = false }) => {
       {/* Status Change Modal */}
       {!readOnly && selectedRoomForStatus && (
         <div className="modal-backdrop active">
-          <div className="modal-content" style={{ minWidth: '400px', maxWidth: '500px' }}>
+          <div className="modal-content" style={{ width: '95vw', maxWidth: '500px' }}>
             <h3 style={{ marginTop: 0, color: '#333' }}>
               Oda {selectedRoomForStatus.roomNumber} - Durum Değiştir
             </h3>

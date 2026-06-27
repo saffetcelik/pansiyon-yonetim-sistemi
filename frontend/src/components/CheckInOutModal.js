@@ -144,9 +144,9 @@ const CheckInOutModal = ({
   const actionColor = isCheckIn ? 'green' : 'orange';
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style={{ zIndex: 10000 }}>
-      <div className="relative top-10 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
-        <div className="mt-3">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full px-2 sm:px-4 py-2" style={{ zIndex: 10000 }}>
+      <div className="relative top-2 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div className="mt-1 sm:mt-3">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900">{title}</h3>

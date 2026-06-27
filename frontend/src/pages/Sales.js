@@ -181,19 +181,18 @@ const Sales = () => {
   const categories = ['All', ...new Set(products.map(p => p.categoryName))];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       <div className="w-full mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Büfe Satış Noktası</h1>
-          <p className="text-gray-600 mt-2">Ürün seçin ve satış işlemini tamamlayın</p>
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Büfe Satış Noktası</h1>
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Ürün seçin ve satış işlemini tamamlayın</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Products Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Ürünler</h2>
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Ürünler</h2>
                 
                 {/* Search and Filter */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -221,7 +220,7 @@ const Sales = () => {
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto">
                 {filteredProducts.map(product => (
                   <div
                     key={product.id}
@@ -258,7 +257,7 @@ const Sales = () => {
 
           {/* Cart Section */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:sticky lg:top-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Sepet</h2>
 
               {/* Customer Selection */}

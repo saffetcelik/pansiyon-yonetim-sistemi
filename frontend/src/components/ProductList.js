@@ -112,49 +112,29 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Filters */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ürün Ara
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Ürün Ara</label>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Ürün adı veya açıklama..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
         </div>
-        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Kategori
-          </label>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Kategori</label>
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
             <option value="">Tüm Kategoriler</option>
-            {categories.map(category => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
+            {categories.map(category => (<option key={category.value} value={category.value}>{category.label}</option>))}
           </select>
         </div>
-        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Stok Durumu
-          </label>
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Stok Durumu</label>
+          <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
             <option value="">Tüm Ürünler</option>
             <option value="low">Düşük Stok</option>
             <option value="normal">Normal Stok</option>
@@ -162,126 +142,92 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
         </div>
       </div>
 
-      {/* Products Table */}
-      <div className="overflow-x-auto">
+      {/* Desktop Table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ürün
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kategori
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fiyat
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stok
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Durum
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İşlemler
-              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiyat</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredProducts.map((product, index) => (
               <tr key={product.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {index + 1}
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                  {product.description && <div className="text-xs text-gray-500">{product.description}</div>}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {product.name}
-                    </div>
-                    {product.description && (
-                      <div className="text-sm text-gray-500">
-                        {product.description}
-                      </div>
-                    )}
-                  </div>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{getCategoryLabel(product.categoryName)}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {getCategoryLabel(product.categoryName)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ₺{product.price.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₺{product.price.toFixed(2)}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {product.stockQuantity} {product.unit}
-                  <div className="text-xs text-gray-500">
-                    Min: {product.minStockLevel}
-                  </div>
+                  <div className="text-xs text-gray-500">Min: {product.minStockLevel}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatusColor(product)}`}>
-                    {getStockStatusText(product)}
-                  </span>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatusColor(product)}`}>{getStockStatusText(product)}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => onEditProduct(product)}
-                      className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50"
-                      data-tooltip-id="edit-product-tooltip"
-                      data-tooltip-content="Ürünü düzenle"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => onStockUpdate(product)}
-                      className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50"
-                      data-tooltip-id="stock-tooltip"
-                      data-tooltip-content="Stok güncelle"
-                    >
-                      📦
-                    </button>
-                    <button
-                      onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50"
-                      data-tooltip-id="delete-product-tooltip"
-                      data-tooltip-content="Ürünü sil"
-                    >
-                      🗑️
-                    </button>
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                  <div className="flex space-x-1">
+                    <button onClick={() => onEditProduct(product)} className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50" title="Düzenle">✏️</button>
+                    <button onClick={() => onStockUpdate(product)} className="text-green-600 hover:text-green-900 p-2 rounded-md hover:bg-green-50" title="Stok Güncelle">📦</button>
+                    <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900 p-2 rounded-md hover:bg-red-50" title="Sil">🗑️</button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {/* Total count display */}
         {filteredProducts.length > 0 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="text-sm text-gray-700">
-              Toplam <span className="font-medium">{filteredProducts.length}</span> kayıt gösteriliyor
-            </div>
+          <div className="px-4 py-3 border-t border-gray-200">
+            <div className="text-sm text-gray-700">Toplam <span className="font-medium">{filteredProducts.length}</span> kayıt</div>
           </div>
         )}
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+        {filteredProducts.map((product, index) => (
+          <div key={product.id} className="p-4 bg-white hover:bg-gray-50">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-semibold text-gray-900">{index + 1}. {product.name}</p>
+                  <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getStockStatusColor(product)}`}>{getStockStatusText(product)}</span>
+                </div>
+                {product.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{product.description}</p>}
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                  <span className="text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{getCategoryLabel(product.categoryName)}</span>
+                  <span className="text-xs font-semibold text-green-700">₺{product.price.toFixed(2)}</span>
+                  <span className="text-xs text-gray-600">Stok: {product.stockQuantity} {product.unit}</span>
+                </div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <button onClick={() => onEditProduct(product)} className="text-blue-600 p-2 rounded-md hover:bg-blue-50 touch-manipulation" title="Düzenle">✏️</button>
+                <button onClick={() => onStockUpdate(product)} className="text-green-600 p-2 rounded-md hover:bg-green-50 touch-manipulation" title="Stok">📦</button>
+                <button onClick={() => handleDelete(product.id)} className="text-red-600 p-2 rounded-md hover:bg-red-50 touch-manipulation" title="Sil">🗑️</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500 text-lg">
-            {searchTerm || categoryFilter || stockFilter ? 
-              'Filtrelere uygun ürün bulunamadı.' : 
-              'Henüz ürün eklenmemiş.'
-            }
+          <div className="text-gray-500 text-base">
+            {searchTerm || categoryFilter || stockFilter ? 'Filtrelere uygun ürün bulunamadı.' : 'Henüz ürün eklenmemiş.'}
           </div>
         </div>
       )}
 
-      {/* Tooltips */}
       <Tooltip id="edit-product-tooltip" />
       <Tooltip id="stock-tooltip" />
       <Tooltip id="delete-product-tooltip" />

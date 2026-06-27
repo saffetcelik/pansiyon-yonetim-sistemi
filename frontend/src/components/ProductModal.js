@@ -162,8 +162,8 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[95vh] overflow-y-auto mt-2 sm:mt-0">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
             {product ? 'Ürün Düzenle' : 'Yeni Ürün'}

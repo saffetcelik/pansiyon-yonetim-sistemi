@@ -496,12 +496,12 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   return (
     <div className="bg-white shadow-lg rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-white">Rezervasyonlar</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-white">Rezervasyonlar</h2>
           <button
             onClick={onCreateReservation}
-            className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+            className="bg-white text-blue-600 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors text-sm sm:text-base"
           >
             + Yeni Rezervasyon
           </button>
@@ -509,8 +509,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-50 px-6 py-4 border-b">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="bg-gray-50 px-4 sm:px-6 py-4 border-b">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Durum</label>
             <select
@@ -828,8 +828,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         </div>
       )}
 
-      {/* Table - DataTables responsive için optimize edilmiş */}
-      <div className="px-4 pb-4">
+      {/* Table - scrollable on mobile */}
+      <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
         <table ref={tableRef} className="min-w-full divide-y divide-gray-200 display nowrap w-full table-responsive">
           <thead className="bg-gray-50">
             <tr>

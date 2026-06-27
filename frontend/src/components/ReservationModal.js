@@ -633,9 +633,9 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 transition-opacity duration-200">
-      <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white transform transition-transform duration-200">
-        <div className="mt-3">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 transition-opacity duration-200 px-2 sm:px-4 py-2">
+      <div className="relative top-2 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white transform transition-transform duration-200">
+        <div className="mt-1 sm:mt-3">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900">
