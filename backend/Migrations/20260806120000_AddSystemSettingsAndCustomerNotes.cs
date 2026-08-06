@@ -1,15 +1,10 @@
-using System;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using PansiyonYonetimSistemi.API.Data;
 
 #nullable disable
 
 namespace PansiyonYonetimSistemi.API.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260806120000_AddSystemSettingsAndCustomerNotes")]
+    /// <inheritdoc />
     public partial class AddSystemSettingsAndCustomerNotes : Migration
     {
         /// <inheritdoc />
