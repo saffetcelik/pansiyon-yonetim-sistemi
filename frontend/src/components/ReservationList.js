@@ -32,12 +32,12 @@ import "../styles/datatables.pagination.css"; // Sayfalama için özel stiller
 const getBaseUrl = () => {
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  
+
   // ASLA localhost kullanma - sadece gerçek localhost erişiminde
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return `http://${hostname}:5297/api`;
   }
-  
+
   // Tüm domain erişimleri için domain üzerinden API kullan
   return `${protocol}//${hostname}/api`;
 };
@@ -68,13 +68,13 @@ const parseDisplayDate = (displayDate) => {
 
 const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const dispatch = useDispatch();
-  const { 
-    reservations, 
-    loading, 
-    error, 
+  const {
+    reservations,
+    loading,
+    error,
     filters
   } = useSelector((state) => state.reservations);
-  
+
   const { rooms } = useSelector((state) => state.rooms);
 
   const [localFilters, setLocalFilters] = useState(filters);
@@ -84,10 +84,10 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const [selectedReservationForAction, setSelectedReservationForAction] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  
+
   // DataTable referansı
   const tableRef = useRef(null);
-  
+
   // Oda arama alanı için
   const [roomSearchTerm, setRoomSearchTerm] = useState('');
   const [showRoomDropdown, setShowRoomDropdown] = useState(false);
@@ -110,11 +110,11 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       console.log('Filter already correct, fetching reservations');
       dispatch(fetchReservations({ ...filters }));
     }
-    
+
     // Odaları getir
     dispatch(fetchRooms());
   }, []);
-  
+
   // Dışarıdaki bir yere tıklanınca dropdown menüyü kapat
   useEffect(() => {
     function handleClickOutside(event) {
@@ -122,7 +122,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         setShowRoomDropdown(false);
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -133,14 +133,14 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   useEffect(() => {
     console.log('Fetching reservations with filters:', filters);
     // sadece customerId ile ara, customerName'i yoksay
-    const searchFilters = {...filters};
+    const searchFilters = { ...filters };
     if (searchFilters.customerId) {
       // customerId varsa customerName parametresini göndermemek için boşaltıyoruz
       searchFilters.customerName = '';
     }
     dispatch(fetchReservations(searchFilters));
   }, [dispatch, filters]);
-  
+
   // DataTables'ı başlat
   useEffect(() => {
     // DataTables yalnızca rezervasyonlar yüklendiyse başlat
@@ -150,7 +150,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         if ($.fn.DataTable && $.fn.DataTable.isDataTable(tableRef.current)) {
           $(tableRef.current).DataTable().destroy();
         }
-        
+
         // Türkçe lokalizasyonu
         const turkishLanguage = {
           "emptyTable": "Rezervasyon bulunamadı",
@@ -173,7 +173,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             "sortDescending": ": azalan sıralama"
           }
         };
-        
+
         // DataTable yapılandırması - sayfalama kontrolleri için özelleştirilmiş
         const table = $(tableRef.current).DataTable({
           language: turkishLanguage,
@@ -184,8 +184,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
           lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Tümü"]],
           // Sayfalama ve diğer kontroller için özel DOM düzeni
           dom: '<"dataTables_wrapper-header"<"dataTables_length-container"l><"dataTables_filter-container"f>>' +
-               '<"table-responsive"t>' +
-               '<"dataTables_wrapper-footer"<"dataTables_info-container"i><"dataTables_paginate-container"p>>',
+            '<"table-responsive"t>' +
+            '<"dataTables_wrapper-footer"<"dataTables_info-container"i><"dataTables_paginate-container"p>>',
           columnDefs: [
             { orderable: false, targets: [1, 7] }, // Müşteriler ve İşlemler sütunlarında sıralama yapma
             { responsivePriority: 1, targets: [0, 1] }, // Oda No ve Müşteri öncelikli gösterilecek
@@ -201,27 +201,27 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 // Sadece gizlenen sütunları göster
                 columns.filter(col => !col.visible).forEach(col => {
                   data += '<li>' +
-                          '<span class="dtr-title">' + col.title + '</span> ' +
-                          '<span class="dtr-data">' + col.data + '</span>' +
-                          '</li>';
+                    '<span class="dtr-title">' + col.title + '</span> ' +
+                    '<span class="dtr-data">' + col.data + '</span>' +
+                    '</li>';
                 });
-                
+
                 return data ? '<ul class="dtr-details">' + data + '</ul>' : false;
               }
             }
           },
-          drawCallback: function() {
+          drawCallback: function () {
             // Tablo çizildikten sonra responsive uyumluluğu tekrar kontrol et
             $(window).trigger('resize');
-            
+
             // Search input placeholder ekle
             $('.dataTables_filter input').attr('placeholder', 'Rezervasyon ara...');
-            
+
             // "Sayfa başına göster" yazısını düzelt
-            $('.dataTables_length label').contents().filter(function() {
+            $('.dataTables_length label').contents().filter(function () {
               return this.nodeType === 3;
             }).replaceWith('Göster: ');
-            
+
             // Sayfalama düğmelerini iyileştir
             $('.dataTables_paginate .paginate_button.first').html('«');
             $('.dataTables_paginate .paginate_button.previous').html('‹');
@@ -229,7 +229,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             $('.dataTables_paginate .paginate_button.last').html('»');
           }
         });
-        
+
         return () => {
           // Bileşen kaldırıldığında tabloyu temizle
           try {
@@ -285,7 +285,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       customerName: `${customer.firstName} ${customer.lastName}`,
       customerId: customer.id
     });
-    
+
     // Müşteriyi seçtikten sonra doğrudan filtreleri uygula
     dispatch(setFilters({
       ...localFilters,
@@ -293,13 +293,13 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       customerId: customer.id // Backend aramasında kullanılacak
     }));
   };
-  
+
   // Oda arama fonksiyonu
   const handleRoomSearch = (e) => {
     setRoomSearchTerm(e.target.value);
     setShowRoomDropdown(true);
   };
-  
+
   // Oda seçme fonksiyonu
   const handleSelectRoom = (room) => {
     setLocalFilters(prev => ({
@@ -309,35 +309,35 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
     setRoomSearchTerm('');
     setShowRoomDropdown(false);
   };
-  
+
   // Filtrelenmiş oda listesi
   const filteredRooms = roomSearchTerm
     ? rooms.filter(room => {
-        const searchTermLower = roomSearchTerm.toLowerCase();
-        
-        // Temel oda bilgileri ile arama
-        if (room.roomNumber.toString().includes(searchTermLower)) return true;
-        if (room.roomType && room.roomType.toLowerCase().includes(searchTermLower)) return true;
-        if (room.description && room.description.toLowerCase().includes(searchTermLower)) return true;
-        
-        // Oda özellikleri ile arama
-        if (searchTermLower.includes('wifi') && room.hasWiFi) return true;
-        if ((searchTermLower.includes('tv') || searchTermLower.includes('televizyon')) && room.hasTV) return true;
-        if ((searchTermLower.includes('klima') || searchTermLower.includes('air')) && room.hasAirConditioning) return true;
-        if ((searchTermLower.includes('balkon') || searchTermLower.includes('balcony')) && room.hasBalcony) return true;
-        if ((searchTermLower.includes('minibar') || searchTermLower.includes('bar')) && room.hasMinibar) return true;
-        if ((searchTermLower.includes('manzara') || searchTermLower.includes('deniz') || 
-             searchTermLower.includes('sea') || searchTermLower.includes('view')) && room.hasSeaView) return true;
-        
-        // Kişi kapasitesi ile arama
-        if (room.capacity && (
-            searchTermLower.includes(room.capacity.toString() + ' kişi') || 
-            searchTermLower.includes(room.capacity.toString() + ' kişilik') ||
-            searchTermLower === room.capacity.toString()
-           )) return true;
-           
-        return false;
-      })
+      const searchTermLower = roomSearchTerm.toLowerCase();
+
+      // Temel oda bilgileri ile arama
+      if (room.roomNumber.toString().includes(searchTermLower)) return true;
+      if (room.roomType && room.roomType.toLowerCase().includes(searchTermLower)) return true;
+      if (room.description && room.description.toLowerCase().includes(searchTermLower)) return true;
+
+      // Oda özellikleri ile arama
+      if (searchTermLower.includes('wifi') && room.hasWiFi) return true;
+      if ((searchTermLower.includes('tv') || searchTermLower.includes('televizyon')) && room.hasTV) return true;
+      if ((searchTermLower.includes('klima') || searchTermLower.includes('air')) && room.hasAirConditioning) return true;
+      if ((searchTermLower.includes('balkon') || searchTermLower.includes('balcony')) && room.hasBalcony) return true;
+      if ((searchTermLower.includes('minibar') || searchTermLower.includes('bar')) && room.hasMinibar) return true;
+      if ((searchTermLower.includes('manzara') || searchTermLower.includes('deniz') ||
+        searchTermLower.includes('sea') || searchTermLower.includes('view')) && room.hasSeaView) return true;
+
+      // Kişi kapasitesi ile arama
+      if (room.capacity && (
+        searchTermLower.includes(room.capacity.toString() + ' kişi') ||
+        searchTermLower.includes(room.capacity.toString() + ' kişilik') ||
+        searchTermLower === room.capacity.toString()
+      )) return true;
+
+      return false;
+    })
     : rooms;
 
   const handleDelete = async (id) => {
@@ -466,7 +466,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
     };
 
     const config = statusConfig[status] || { label: 'Bilinmiyor', color: 'bg-gray-100 text-gray-800' };
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
         {config.label}
@@ -527,7 +527,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               <option value="5">Gelmedi</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri</label>
             <div className="relative">
@@ -549,7 +549,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                       handleFilterChange('customerId', null);
                       setSelectedCustomer(null);
                       console.log("Müşteri filtresi temizlendi");
-                      
+
                       // Otomatik filtreleme yap
                       dispatch(setFilters({
                         ...localFilters,
@@ -579,7 +579,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               </div>
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Oda</label>
             <div className="relative" ref={roomDropdownRef}>
@@ -605,7 +605,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   </svg>
                 </button>
               )}
-              
+
               {/* Oda Dropdown */}
               {showRoomDropdown && filteredRooms.length > 0 && (
                 <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-72 overflow-y-auto">
@@ -677,7 +677,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   ))}
                 </div>
               )}
-              
+
               {/* Oda bulunamadı mesajı */}
               {showRoomDropdown && roomSearchTerm && filteredRooms.length === 0 && (
                 <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 p-4 text-center text-gray-500">
@@ -687,7 +687,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               )}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Giriş Tarihi</label>
             <div style={{ position: 'relative' }}>
@@ -699,14 +699,14 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                     const year = date.getFullYear();
                     const month = date.getMonth();
                     const day = date.getDate();
-                    
+
                     // Yeni bir tarih oluştur ve saati ayarla (UTC kayması olmasın)
                     const fixedDate = new Date(year, month, day, 12, 0, 0);
-                    
+
                     // ISO formatında tarih kısmını al (YYYY-MM-DD)
                     const isoDate = fixedDate.toISOString().split('T')[0];
                     console.log("Seçilen giriş tarihi (ISO):", isoDate);
-                    
+
                     handleFilterChange('checkInDate', isoDate);
                   } else {
                     handleFilterChange('checkInDate', '');
@@ -718,7 +718,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 className="w-full !pl-3 !pr-8 py-2 !border !rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 wrapperClassName="date-picker-normal"
               />
-              <FaCalendarAlt 
+              <FaCalendarAlt
                 style={{
                   position: 'absolute',
                   right: '10px',
@@ -743,7 +743,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               )}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Çıkış Tarihi</label>
             <div style={{ position: 'relative' }}>
@@ -755,14 +755,14 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                     const year = date.getFullYear();
                     const month = date.getMonth();
                     const day = date.getDate();
-                    
+
                     // Yeni bir tarih oluştur ve saati ayarla (UTC kayması olmasın)
                     const fixedDate = new Date(year, month, day, 12, 0, 0);
-                    
+
                     // ISO formatında tarih kısmını al (YYYY-MM-DD)
                     const isoDate = fixedDate.toISOString().split('T')[0];
                     console.log("Seçilen çıkış tarihi (ISO):", isoDate);
-                    
+
                     handleFilterChange('checkOutDate', isoDate);
                   } else {
                     handleFilterChange('checkOutDate', '');
@@ -774,7 +774,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 className="w-full !pl-3 !pr-8 py-2 !border !rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 wrapperClassName="date-picker-normal"
               />
-              <FaCalendarAlt 
+              <FaCalendarAlt
                 style={{
                   position: 'absolute',
                   right: '10px',
@@ -800,7 +800,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex gap-2 mt-4">
           <button
             onClick={handleApplyFilters}
@@ -1239,7 +1239,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         reservation={selectedReservationForAction}
         type="checkout"
       />
-      
+
       <CustomerModal
         isOpen={showCustomerSearchModal}
         onClose={() => setShowCustomerSearchModal(false)}
