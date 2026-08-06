@@ -167,9 +167,22 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Console.WriteLine("[Database] EF Core Migrations uygulanıyor...");
+        
+        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+        if (pendingMigrations.Any())
+        {
+            Console.WriteLine($"[Database] Uygulanacak {pendingMigrations.Count()} yeni migration bulundu: {string.Join(", ", pendingMigrations)}");
+        }
+        else
+        {
+            Console.WriteLine("[Database] Veritabanı güncel, uygulanacak yeni migration yok.");
+        }
+
         await context.Database.MigrateAsync();
-        Console.WriteLine("[Database] Migration başarılı.");
+
+        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+        Console.WriteLine($"[Database] Migration başarılı. Toplam uygulanan migration sayısı: {appliedMigrations.Count()} (Son: {appliedMigrations.LastOrDefault()})");
+
         await SeedData.SeedAsync(context);
     }
     catch (Exception ex)
