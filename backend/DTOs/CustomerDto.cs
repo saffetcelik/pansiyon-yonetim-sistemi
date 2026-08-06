@@ -15,6 +15,7 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public string? City { get; set; }
         public string? Country { get; set; }
         public DateTime? DateOfBirth { get; set; }
+        public string? Notes { get; set; }
         public string FullName => $"{FirstName} {LastName}";
     }
 
@@ -51,6 +52,8 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public string? Country { get; set; }
 
         public DateTime? DateOfBirth { get; set; }
+
+        public string? Notes { get; set; }
     }
 
     public class UpdateCustomerDto : CreateCustomerDto
@@ -69,5 +72,6 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public string? Email { get; set; }
         public string? City { get; set; }
         public string? Country { get; set; }
+        public string? Notes { get; set; }
     }
 }

@@ -9,6 +9,7 @@ import {
 import { fetchRooms } from '../store/slices/roomSlice';
 import CheckInOutModal from './CheckInOutModal';
 import CustomerModal from './CustomerModal';
+import { reservationService } from '../services/api';
 import Swal from 'sweetalert2';
 import { Tooltip } from 'react-tooltip';
 import { format, parse } from 'date-fns';
@@ -85,6 +86,137 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [guestPopupReservation, setGuestPopupReservation] = useState(null);
   const [notePopupReservation, setNotePopupReservation] = useState(null);
+
+  // Toplu İşlem State'leri
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [showBulkDropdown, setShowBulkDropdown] = useState(false);
+  const [selectedReservationIds, setSelectedReservationIds] = useState([]);
+  const [bulkModalType, setBulkModalType] = useState(null); // 'checkin', 'checkout', 'status'
+  const [bulkStatusTarget, setBulkStatusTarget] = useState(0);
+  const [bulkItemsData, setBulkItemsData] = useState([]);
+  const [bulkGlobalNotes, setBulkGlobalNotes] = useState('');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  const handleTriggerBulkModal = async (type, targetStatus = null) => {
+    setShowBulkDropdown(false);
+    if (selectedReservationIds.length === 0) {
+      Swal.fire({ title: 'Uyarı', text: 'Lütfen en az 1 rezervasyon seçiniz.', icon: 'warning', confirmButtonText: 'Tamam' });
+      return;
+    }
+
+    const selectedReservations = reservations.filter(r => selectedReservationIds.includes(r.id));
+
+    if (type === 'delete') {
+      const result = await Swal.fire({
+        title: 'Toplu Silme Onayı',
+        text: `Seçilen ${selectedReservationIds.length} adet rezervasyonu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, Hepsini Sil',
+        cancelButtonText: 'İptal'
+      });
+
+      if (result.isConfirmed) {
+        try {
+          await reservationService.bulkDelete({ reservationIds: selectedReservationIds });
+          await Swal.fire({ title: 'Başarılı!', text: `${selectedReservationIds.length} adet rezervasyon silindi.`, icon: 'success', timer: 2000, showConfirmButton: false });
+          setSelectedReservationIds([]);
+          setIsBulkMode(false);
+          dispatch(fetchReservations({ ...filters }));
+        } catch (err) {
+          Swal.fire({ title: 'Hata!', text: 'Toplu silme sırasında bir hata oluştu.', icon: 'error', confirmButtonText: 'Tamam' });
+        }
+      }
+      return;
+    }
+
+    if (type === 'status') {
+      setBulkStatusTarget(targetStatus);
+      setBulkGlobalNotes('');
+      setBulkModalType('status');
+      return;
+    }
+
+    if (type === 'checkin') {
+      const nowStr = new Date().toISOString().slice(0, 16);
+      const items = selectedReservations.map(r => ({
+        reservationId: r.id,
+        roomNumber: r.roomNumber,
+        reservationName: r.reservationName || r.customerName || `Oda ${r.roomNumber}`,
+        actualCheckInDate: nowStr,
+        paymentAmount: r.paidAmount || 0
+      }));
+      setBulkItemsData(items);
+      setBulkGlobalNotes('');
+      setBulkModalType('checkin');
+      return;
+    }
+
+    if (type === 'checkout') {
+      const nowStr = new Date().toISOString().slice(0, 16);
+      const items = selectedReservations.map(r => ({
+        reservationId: r.id,
+        roomNumber: r.roomNumber,
+        reservationName: r.reservationName || r.customerName || `Oda ${r.roomNumber}`,
+        actualCheckOutDate: nowStr,
+        additionalCharges: 0,
+        paymentAmount: r.paidAmount || 0
+      }));
+      setBulkItemsData(items);
+      setBulkGlobalNotes('');
+      setBulkModalType('checkout');
+      return;
+    }
+  };
+
+  const handleBulkSubmit = async () => {
+    setBulkSubmitting(true);
+    try {
+      if (bulkModalType === 'checkin') {
+        const payload = {
+          items: bulkItemsData.map(i => ({
+            reservationId: i.reservationId,
+            actualCheckInDate: new Date(i.actualCheckInDate).toISOString(),
+            paymentAmount: parseFloat(i.paymentAmount) || 0
+          })),
+          notes: bulkGlobalNotes
+        };
+        await reservationService.bulkCheckIn(payload);
+        await Swal.fire({ title: 'Başarılı!', text: `${bulkItemsData.length} adet oda için giriş yapıldı.`, icon: 'success', timer: 2000, showConfirmButton: false });
+      } else if (bulkModalType === 'checkout') {
+        const payload = {
+          items: bulkItemsData.map(i => ({
+            reservationId: i.reservationId,
+            actualCheckOutDate: new Date(i.actualCheckOutDate).toISOString(),
+            additionalCharges: parseFloat(i.additionalCharges) || 0,
+            paymentAmount: parseFloat(i.paymentAmount) || 0
+          })),
+          notes: bulkGlobalNotes
+        };
+        await reservationService.bulkCheckOut(payload);
+        await Swal.fire({ title: 'Başarılı!', text: `${bulkItemsData.length} adet oda için çıkış yapıldı.`, icon: 'success', timer: 2000, showConfirmButton: false });
+      } else if (bulkModalType === 'status') {
+        await reservationService.bulkUpdateStatus({
+          reservationIds: selectedReservationIds,
+          status: bulkStatusTarget,
+          notes: bulkGlobalNotes
+        });
+        await Swal.fire({ title: 'Başarılı!', text: `${selectedReservationIds.length} adet rezervasyonun durumu güncellendi.`, icon: 'success', timer: 2000, showConfirmButton: false });
+      }
+
+      setBulkModalType(null);
+      setSelectedReservationIds([]);
+      setIsBulkMode(false);
+      dispatch(fetchReservations({ ...filters }));
+    } catch (err) {
+      console.error('Bulk submit error:', err);
+      Swal.fire({ title: 'Hata!', text: 'Toplu işlem sırasında hata oluştu.', icon: 'error', confirmButtonText: 'Tamam' });
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
 
   // DataTable referansı
   const tableRef = useRef(null);
@@ -499,13 +631,98 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg sm:text-xl font-semibold text-white">Rezervasyonlar</h2>
-          <button
-            onClick={onCreateReservation}
-            className="bg-white text-blue-600 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors text-sm sm:text-base"
-          >
-            + Yeni Rezervasyon
-          </button>
+          <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
+            <span>Rezervasyonlar</span>
+            {isBulkMode && (
+              <span className="text-xs bg-purple-500 text-white px-2.5 py-1 rounded-full font-normal shadow-sm">
+                Toplu İşlem Modu ({selectedReservationIds.length} Seçili)
+              </span>
+            )}
+          </h2>
+          <div className="flex items-center gap-2">
+            {!isBulkMode ? (
+              <button
+                onClick={() => {
+                  setIsBulkMode(true);
+                  setShowBulkDropdown(true);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center gap-1.5 shadow-sm"
+              >
+                ⚡ Toplu İşlemler
+              </button>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setShowBulkDropdown(!showBulkDropdown)}
+                  className="bg-purple-800 hover:bg-purple-900 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center gap-1.5 shadow-md"
+                >
+                  ⚡ Toplu İşlemler Menüsü ({selectedReservationIds.length}) ▼
+                </button>
+                {showBulkDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden text-gray-800 text-sm">
+                    <button
+                      onClick={() => {
+                        setIsBulkMode(false);
+                        setSelectedReservationIds([]);
+                        setShowBulkDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-600 font-semibold border-b border-gray-100 flex items-center gap-2"
+                    >
+                      ❌ Toplu Seçimi İptal Et
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('checkin')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-green-50 text-green-700 font-medium flex items-center gap-2 border-b border-gray-50"
+                    >
+                      🏨 Toplu Giriş Yap (Check-In)
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('checkout')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-amber-50 text-amber-700 font-medium flex items-center gap-2 border-b border-gray-50"
+                    >
+                      🚪 Toplu Çıkış Yap (Check-Out)
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('status', 0)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-blue-700 flex items-center gap-2"
+                    >
+                      🟡 Toplu Beklemeye Al
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('status', 1)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-blue-800 flex items-center gap-2"
+                    >
+                      🔵 Toplu Onayla
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('status', 4)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-700 flex items-center gap-2"
+                    >
+                      🔴 Toplu İptal Et
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('status', 5)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-100 text-gray-700 flex items-center gap-2"
+                    >
+                      ⚫ Toplu Gelmedi İşaretle
+                    </button>
+                    <button
+                      onClick={() => handleTriggerBulkModal('delete')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-100 text-red-800 font-semibold border-t border-gray-100 flex items-center gap-2"
+                    >
+                      🗑️ Toplu Sil
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              onClick={onCreateReservation}
+              className="bg-white text-blue-600 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors text-sm sm:text-base"
+            >
+              + Yeni Rezervasyon
+            </button>
+          </div>
         </div>
       </div>
 
@@ -834,6 +1051,22 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         <table ref={tableRef} className="min-w-full divide-y divide-gray-200 display nowrap w-full table-responsive">
           <thead className="bg-gray-50">
             <tr>
+              {isBulkMode && (
+                <th className="px-3 py-3 text-center w-10 bg-purple-50">
+                  <input
+                    type="checkbox"
+                    checked={reservations.length > 0 && selectedReservationIds.length === reservations.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedReservationIds(reservations.map(r => r.id));
+                      } else {
+                        setSelectedReservationIds([]);
+                      }
+                    }}
+                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 cursor-pointer"
+                  />
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
                 #
               </th>
@@ -862,7 +1095,23 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {reservations.map((reservation, index) => (
-              <tr key={reservation.id} className="hover:bg-gray-50">
+              <tr key={reservation.id} className={`hover:bg-gray-50 ${selectedReservationIds.includes(reservation.id) ? 'bg-purple-50/60' : ''}`}>
+                {isBulkMode && (
+                  <td className="px-3 py-4 text-center whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedReservationIds.includes(reservation.id)}
+                      onChange={() => {
+                        if (selectedReservationIds.includes(reservation.id)) {
+                          setSelectedReservationIds(prev => prev.filter(id => id !== reservation.id));
+                        } else {
+                          setSelectedReservationIds(prev => [...prev, reservation.id]);
+                        }
+                      }}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 cursor-pointer"
+                    />
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {index + 1}
                 </td>
@@ -1363,6 +1612,186 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
                 {notePopupReservation.notes}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Toplu İşlemler Modalı ─── */}
+      {bulkModalType && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-700 to-indigo-800 text-white px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  {bulkModalType === 'checkin' && '🏨 Toplu Giriş Yap (Check-In)'}
+                  {bulkModalType === 'checkout' && '🚪 Toplu Çıkış Yap (Check-Out)'}
+                  {bulkModalType === 'status' && '⚙️ Toplu Durum Güncelle'}
+                </h3>
+                <p className="text-xs text-purple-200 mt-0.5">
+                  Seçili {bulkItemsData.length || selectedReservationIds.length} adet oda için işlem yapılıyor
+                </p>
+              </div>
+              <button
+                onClick={() => setBulkModalType(null)}
+                className="text-purple-200 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {/* Check-In / Check-Out Oda Kartları */}
+              {(bulkModalType === 'checkin' || bulkModalType === 'checkout') && (
+                <div className="space-y-3">
+                  <label className="block text-xs font-semibold uppercase text-gray-500 tracking-wider mb-2">
+                    Seçili Odalar ve Detayları
+                  </label>
+                  {bulkItemsData.map((item, idx) => (
+                    <div key={item.reservationId} className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 space-y-3">
+                      <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+                        <span className="font-bold text-gray-900 text-sm">
+                          🛏️ Oda {item.roomNumber} — <span className="text-purple-700">{item.reservationName}</span>
+                        </span>
+                        <span className="text-xs text-gray-400">ID: #{item.reservationId}</span>
+                      </div>
+
+                      {bulkModalType === 'checkin' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Gerçek Giriş Tarihi</label>
+                            <input
+                              type="datetime-local"
+                              value={item.actualCheckInDate}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBulkItemsData(prev => prev.map((it, i) => i === idx ? { ...it, actualCheckInDate: val } : it));
+                              }}
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Ödenen Tutar (TL)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.paymentAmount}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBulkItemsData(prev => prev.map((it, i) => i === idx ? { ...it, paymentAmount: val } : it));
+                              }}
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {bulkModalType === 'checkout' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Gerçek Çıkış Tarihi</label>
+                            <input
+                              type="datetime-local"
+                              value={item.actualCheckOutDate}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBulkItemsData(prev => prev.map((it, i) => i === idx ? { ...it, actualCheckOutDate: val } : it));
+                              }}
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Ek Ücret (TL)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.additionalCharges}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBulkItemsData(prev => prev.map((it, i) => i === idx ? { ...it, additionalCharges: val } : it));
+                              }}
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Ödenen Tutar (TL)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.paymentAmount}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setBulkItemsData(prev => prev.map((it, i) => i === idx ? { ...it, paymentAmount: val } : it));
+                              }}
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Status Change Target Info */}
+              {bulkModalType === 'status' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
+                  <p className="font-medium mb-1">Yeni Durum:</p>
+                  <div className="font-bold text-base">
+                    {bulkStatusTarget === 0 && '🟡 Beklemede'}
+                    {bulkStatusTarget === 1 && '🔵 Onaylandı'}
+                    {bulkStatusTarget === 4 && '🔴 İptal Edildi'}
+                    {bulkStatusTarget === 5 && '⚫ Gelmedi'}
+                  </div>
+                  <p className="text-xs text-blue-700 mt-2">
+                    Bu işlem seçili {selectedReservationIds.length} adet rezervasyonun durumunu topluca değiştirecektir.
+                  </p>
+                </div>
+              )}
+
+              {/* Ortak Notlar Alanı */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ortak Not / Açıklama (Tüm Seçili Odalar İçin Geçerli)
+                </label>
+                <textarea
+                  value={bulkGlobalNotes}
+                  onChange={(e) => setBulkGlobalNotes(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-purple-500"
+                  placeholder="Örn: Toplu grup girişi yapıldı, ödeme alındı..."
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setBulkModalType(null)}
+                disabled={bulkSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-100 transition"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkSubmit}
+                disabled={bulkSubmitting}
+                className="px-5 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition shadow-md flex items-center gap-2 disabled:opacity-50"
+              >
+                {bulkSubmitting ? 'İşlem Yapılıyor...' : 'Toplu İşlemi Uygula'}
+              </button>
             </div>
           </div>
         </div>

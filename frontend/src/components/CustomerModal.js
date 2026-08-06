@@ -87,7 +87,8 @@ const CustomerModal = ({
         address: customer.address || '',
         city: customer.city || '',
         country: customer.country || 'Türkiye',
-        dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.split('T')[0] : ''
+        dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.split('T')[0] : '',
+        notes: customer.notes || ''
       });
     } else {
       // Reset form for new customer or search
@@ -101,7 +102,8 @@ const CustomerModal = ({
         address: '',
         city: '',
         country: 'Türkiye',
-        dateOfBirth: ''
+        dateOfBirth: '',
+        notes: ''
       });
       
       // Clear search results when opening in search mode
@@ -927,6 +929,20 @@ const CustomerModal = ({
                   placeholder="Türkiye"
                 />
               </div>
+            </div>
+
+            {/* Notes / Açıklama */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Özel Notlar / Açıklama (İsteğe Bağlı)
+              </label>
+              <textarea
+                value={formData.notes || ''}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                placeholder="Örn: Ahmet'in kuzeni, Daimi müşteri..."
+              />
             </div>
 
             {/* Date of Birth */}

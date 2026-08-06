@@ -476,6 +476,7 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TC / Pasaport</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İletişim</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adres</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notlar</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doğum Tarihi</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
             </tr>
@@ -494,6 +495,7 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
                   city: customer.city || customer.City,
                   country: customer.country || customer.Country,
                   dateOfBirth: customer.dateOfBirth || customer.DateOfBirth,
+                  notes: customer.notes || customer.Notes,
                 };
                 return (
                   <tr key={customerData.id} className="hover:bg-gray-50">
@@ -513,6 +515,15 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
                       {customerData.address && <div>{customerData.address}</div>}
                       {customerData.city && customerData.country && <div className="text-gray-500">{customerData.city}, {customerData.country}</div>}
                       {!customerData.address && !customerData.city && <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
+                      {customerData.notes ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-xs font-medium border border-amber-200" title={customerData.notes}>
+                          📝 {customerData.notes}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatDate(customerData.dateOfBirth)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">

@@ -417,6 +417,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                               OR (""PassportNo"" IS NOT NULL AND unaccent(LOWER(""PassportNo"")) LIKE unaccent(@p0))
                               OR (""Phone"" IS NOT NULL AND ""Phone"" LIKE @p0)
                               OR (""Email"" IS NOT NULL AND unaccent(LOWER(""Email"")) LIKE unaccent(@p0))
+                              OR (""Notes"" IS NOT NULL AND unaccent(LOWER(""Notes"")) LIKE unaccent(@p0))
                            ORDER BY ""FirstName"", ""LastName""";
                 
                 var searchTerm = "%" + query.ToLower() + "%";

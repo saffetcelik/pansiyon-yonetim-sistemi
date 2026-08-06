@@ -288,7 +288,11 @@ export const reservationService = {
   checkIn: (id, checkInData) => api.post(`/reservations/${id}/checkin`, checkInData),
   checkOut: (id, checkOutData) => api.post(`/reservations/${id}/checkout`, checkOutData),
   getCalendar: (month, year) => api.get(`/reservations/calendar?month=${month}&year=${year}`),
-  getDashboardStats: () => api.get('/reservations/dashboard-stats')
+  getDashboardStats: () => api.get('/reservations/dashboard-stats'),
+  bulkCheckIn: (data) => api.post('/reservations/bulk-check-in', data),
+  bulkCheckOut: (data) => api.post('/reservations/bulk-check-out', data),
+  bulkUpdateStatus: (data) => api.patch('/reservations/bulk-status', data),
+  bulkDelete: (data) => api.post('/reservations/bulk-delete', data),
 };
 
 

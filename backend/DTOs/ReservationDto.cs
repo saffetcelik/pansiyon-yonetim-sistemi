@@ -207,4 +207,43 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public string Role { get; set; } = "Guest"; // "Primary", "Guest"
         public int OrderIndex { get; set; }
     }
+
+    public class BulkCheckInItemDto
+    {
+        public int ReservationId { get; set; }
+        public DateTime ActualCheckInDate { get; set; } = DateTime.Now;
+        public decimal? PaymentAmount { get; set; }
+    }
+
+    public class BulkCheckInRequestDto
+    {
+        public List<BulkCheckInItemDto> Items { get; set; } = new();
+        public string? Notes { get; set; }
+    }
+
+    public class BulkCheckOutItemDto
+    {
+        public int ReservationId { get; set; }
+        public DateTime ActualCheckOutDate { get; set; } = DateTime.Now;
+        public decimal? AdditionalCharges { get; set; }
+        public decimal? PaymentAmount { get; set; }
+    }
+
+    public class BulkCheckOutRequestDto
+    {
+        public List<BulkCheckOutItemDto> Items { get; set; } = new();
+        public string? Notes { get; set; }
+    }
+
+    public class BulkStatusDto
+    {
+        public List<int> ReservationIds { get; set; } = new();
+        public ReservationStatus Status { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class BulkDeleteDto
+    {
+        public List<int> ReservationIds { get; set; } = new();
+    }
 }

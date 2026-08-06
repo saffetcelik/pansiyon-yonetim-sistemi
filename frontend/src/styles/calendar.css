@@ -22,13 +22,13 @@
 
 @media print {
   /* Hides non-printable UI elements */
-  header, nav, .no-print, button, label {
+  header, nav, .no-print, button, label, .dataTables_wrapper-header, .dataTables_wrapper-footer {
     display: none !important;
   }
 
   body {
     background: white !important;
-    font-size: 11pt !important;
+    font-size: 10pt !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -42,9 +42,23 @@
     overflow: visible !important;
   }
 
+  .overflow-x-auto, .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  .min-w-max {
+    min-width: 100% !important;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 1rem !important;
+  }
+
   @page {
     size: landscape;
-    margin: 8mm;
+    margin: 6mm;
   }
 
   /* Ensure text colors print with background colors */
@@ -52,4 +66,8 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
+
+.print-header {
+  display: none;
 }

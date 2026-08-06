@@ -877,7 +877,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                               if (item.recentCustomers.length === 0) loadRecentCustomersForIndex(index);
                             }}
                             onBlur={() => setTimeout(() => updateRoomField(index, 'showDropdown', false), 150)}
-                            placeholder="Müşteri adı veya TC ile arayın..."
+                            placeholder="Müşteri adı, TC veya not ile arayın..."
                             className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>

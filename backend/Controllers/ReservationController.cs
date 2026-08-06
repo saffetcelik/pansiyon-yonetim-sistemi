@@ -46,8 +46,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     var searchTerm = searchDto.CustomerName.Trim();
                     query = query.Where(r => 
                         (r.ReservationName != null && r.ReservationName.Contains(searchTerm)) ||
-                        (r.Customer != null && (r.Customer.FirstName.Contains(searchTerm) || r.Customer.LastName.Contains(searchTerm) || (r.Customer.FirstName + " " + r.Customer.LastName).Contains(searchTerm))) ||
-                        r.ReservationCustomers.Any(rc => rc.Customer.FirstName.Contains(searchTerm) || rc.Customer.LastName.Contains(searchTerm) || (rc.Customer.FirstName + " " + rc.Customer.LastName).Contains(searchTerm) || (rc.Customer.TCKimlikNo != null && rc.Customer.TCKimlikNo.Contains(searchTerm))));
+                        (r.Customer != null && (r.Customer.FirstName.Contains(searchTerm) || r.Customer.LastName.Contains(searchTerm) || (r.Customer.FirstName + " " + r.Customer.LastName).Contains(searchTerm) || (r.Customer.Notes != null && r.Customer.Notes.Contains(searchTerm)))) ||
+                        r.ReservationCustomers.Any(rc => rc.Customer.FirstName.Contains(searchTerm) || rc.Customer.LastName.Contains(searchTerm) || (rc.Customer.FirstName + " " + rc.Customer.LastName).Contains(searchTerm) || (rc.Customer.TCKimlikNo != null && rc.Customer.TCKimlikNo.Contains(searchTerm)) || (rc.Customer.Notes != null && rc.Customer.Notes.Contains(searchTerm))));
                 }
                 
                 if (searchDto.CustomerId.HasValue && searchDto.CustomerId > 0)
@@ -1001,6 +1001,160 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
 
             return !conflictingReservations.Any();
+        }
+
+        [HttpPost("bulk-check-in")]
+        public async Task<IActionResult> BulkCheckIn([FromBody] BulkCheckInRequestDto dto)
+        {
+            try
+            {
+                if (dto.Items == null || !dto.Items.Any())
+                    return BadRequest(new { message = "Lütfen en az bir rezervasyon seçiniz." });
+
+                var reservationIds = dto.Items.Select(i => i.ReservationId).ToList();
+                var reservations = await _context.Reservations
+                    .Include(r => r.Room)
+                    .Where(r => reservationIds.Contains(r.Id))
+                    .ToListAsync();
+
+                foreach (var res in reservations)
+                {
+                    var itemDto = dto.Items.FirstOrDefault(i => i.ReservationId == res.Id);
+                    if (itemDto != null)
+                    {
+                        res.Status = ReservationStatus.CheckedIn;
+                        res.ActualCheckInDate = itemDto.ActualCheckInDate;
+                        if (itemDto.PaymentAmount.HasValue) res.PaidAmount = itemDto.PaymentAmount.Value;
+                        if (!string.IsNullOrWhiteSpace(dto.Notes))
+                        {
+                            res.Notes = string.IsNullOrWhiteSpace(res.Notes) ? dto.Notes : res.Notes + "\n" + dto.Notes;
+                        }
+                        res.UpdatedAt = DateTime.UtcNow;
+
+                        if (res.Room != null)
+                        {
+                            res.Room.Status = RoomStatus.Occupied;
+                            res.Room.UpdatedAt = DateTime.UtcNow;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = $"{reservations.Count} adet rezervasyon başarıyla giriş yapıldı." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Toplu giriş işlemi sırasında hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpPost("bulk-check-out")]
+        public async Task<IActionResult> BulkCheckOut([FromBody] BulkCheckOutRequestDto dto)
+        {
+            try
+            {
+                if (dto.Items == null || !dto.Items.Any())
+                    return BadRequest(new { message = "Lütfen en az bir rezervasyon seçiniz." });
+
+                var reservationIds = dto.Items.Select(i => i.ReservationId).ToList();
+                var reservations = await _context.Reservations
+                    .Include(r => r.Room)
+                    .Where(r => reservationIds.Contains(r.Id))
+                    .ToListAsync();
+
+                foreach (var res in reservations)
+                {
+                    var itemDto = dto.Items.FirstOrDefault(i => i.ReservationId == res.Id);
+                    if (itemDto != null)
+                    {
+                        res.Status = ReservationStatus.CheckedOut;
+                        res.ActualCheckOutDate = itemDto.ActualCheckOutDate;
+                        if (itemDto.AdditionalCharges.HasValue && itemDto.AdditionalCharges.Value > 0)
+                        {
+                            res.TotalAmount += itemDto.AdditionalCharges.Value;
+                        }
+                        if (itemDto.PaymentAmount.HasValue) res.PaidAmount = itemDto.PaymentAmount.Value;
+                        if (!string.IsNullOrWhiteSpace(dto.Notes))
+                        {
+                            res.Notes = string.IsNullOrWhiteSpace(res.Notes) ? dto.Notes : res.Notes + "\n" + dto.Notes;
+                        }
+                        res.UpdatedAt = DateTime.UtcNow;
+
+                        if (res.Room != null)
+                        {
+                            res.Room.Status = RoomStatus.Available;
+                            res.Room.UpdatedAt = DateTime.UtcNow;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = $"{reservations.Count} adet rezervasyon başarıyla çıkış yapıldı." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Toplu çıkış işlemi sırasında hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpPatch("bulk-status")]
+        public async Task<IActionResult> BulkUpdateStatus([FromBody] BulkStatusDto dto)
+        {
+            try
+            {
+                if (dto.ReservationIds == null || !dto.ReservationIds.Any())
+                    return BadRequest(new { message = "Lütfen en az bir rezervasyon seçiniz." });
+
+                var reservations = await _context.Reservations
+                    .Include(r => r.Room)
+                    .Where(r => dto.ReservationIds.Contains(r.Id))
+                    .ToListAsync();
+
+                foreach (var res in reservations)
+                {
+                    res.Status = dto.Status;
+                    res.UpdatedAt = DateTime.UtcNow;
+                    if (!string.IsNullOrWhiteSpace(dto.Notes))
+                    {
+                        res.Notes = string.IsNullOrWhiteSpace(res.Notes) ? dto.Notes : res.Notes + "\n" + dto.Notes;
+                    }
+
+                    if (dto.Status == ReservationStatus.CheckedIn && res.Room != null)
+                        res.Room.Status = RoomStatus.Occupied;
+                    else if ((dto.Status == ReservationStatus.CheckedOut || dto.Status == ReservationStatus.Cancelled) && res.Room != null)
+                        res.Room.Status = RoomStatus.Available;
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = $"{reservations.Count} adet rezervasyonun durumu güncellendi." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Toplu durum güncelleme sırasında hata oluştu", error = ex.Message });
+            }
+        }
+
+        [HttpPost("bulk-delete")]
+        public async Task<IActionResult> BulkDelete([FromBody] BulkDeleteDto dto)
+        {
+            try
+            {
+                if (dto.ReservationIds == null || !dto.ReservationIds.Any())
+                    return BadRequest(new { message = "Lütfen en az bir rezervasyon seçiniz." });
+
+                var reservations = await _context.Reservations
+                    .Where(r => dto.ReservationIds.Contains(r.Id))
+                    .ToListAsync();
+
+                _context.Reservations.RemoveRange(reservations);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = $"{reservations.Count} adet rezervasyon başarıyla silindi." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Toplu silme işlemi sırasında hata oluştu", error = ex.Message });
+            }
         }
     }
 }

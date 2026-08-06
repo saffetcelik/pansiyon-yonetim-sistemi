@@ -152,12 +152,37 @@ const ReservationCalendar = ({ onReservationClick }) => {
             </button>
 
             <button
-              onClick={() => window.print()}
-              className="no-print bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-2"
-              title="Takvimi yazdır veya PDF olarak indir"
+              onClick={() => {
+                document.title = `Gunes_Pansiyon_Rezervasyon_Takvimi_${formatMonthYear(currentDate).replace(/\s+/g, '_')}`;
+                window.print();
+              }}
+              className="no-print bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-2 text-sm"
+              title="PDF belgesi indir / kaydet"
             >
-              🖨️ <span>Yazdır / PDF</span>
+              📄 <span>PDF İndir</span>
             </button>
+
+            <button
+              onClick={() => window.print()}
+              className="no-print bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-1 text-sm"
+              title="Takvimi yazdır"
+            >
+              🖨️ <span>Yazdır</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Yazdırma / PDF Rapor Başlığı */}
+      <div className="print-header p-4 border-b border-gray-300 mb-4 bg-gray-50 rounded-lg">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">🏨 Güneş Pansiyon — Rezervasyon Takvimi Raporu</h1>
+            <p className="text-xs text-gray-600 mt-1">Dönem: {formatMonthYear(currentDate)}</p>
+          </div>
+          <div className="text-right text-xs text-gray-500">
+            <p>Tarih: {new Date().toLocaleDateString('tr-TR')}</p>
+            <p>Kayıtlı Rezervasyon: {calendarData.length}</p>
           </div>
         </div>
       </div>
