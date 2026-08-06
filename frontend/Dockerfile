@@ -8,8 +8,11 @@ RUN npm install
 
 # Copy source code and build
 COPY . .
+ENV CI=false
+ENV DISABLE_ESLINT_PLUGIN=true
 ENV GENERATE_SOURCEMAP=false
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm run build
 
 # Production stage
