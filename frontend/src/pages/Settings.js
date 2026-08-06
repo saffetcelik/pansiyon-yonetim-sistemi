@@ -262,25 +262,27 @@ const Settings = () => {
         <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <Link to="/dashboard" className="text-2xl font-bold text-white hover:opacity-90 transition-opacity flex items-center gap-2">
-                🏨 Güneş Pansiyon — ⚙️ Ayarlar
-              </Link>
-              <p className="text-blue-100 text-sm mt-1">
-                <Link to="/dashboard" className="hover:underline text-white font-medium inline-flex items-center gap-1">
-                  ← 🏠 Ana Sayfaya Dön
+              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                ⚙️ Ayarlar
+              </h1>
+              <div className="flex items-center gap-2 text-blue-100 text-xs sm:text-sm mt-1">
+                <Link to="/dashboard" className="hover:text-white transition flex items-center gap-1 font-medium">
+                  🏠 Ana Sayfa
                 </Link>
-              </p>
+                <span>/</span>
+                <span className="text-white font-medium">⚙️ Ayarlar</span>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <Link
                 to="/dashboard"
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-1.5"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3.5 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm"
               >
-                🏠 <span>Ana Sayfa</span>
+                ← 🏠 <span>Ana Sayfa</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium text-sm flex items-center gap-1.5"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3.5 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm"
               >
                 🚪 <span>Çıkış Yap</span>
               </button>

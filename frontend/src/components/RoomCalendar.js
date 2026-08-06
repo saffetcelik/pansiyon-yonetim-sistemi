@@ -160,13 +160,13 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
   );
 
   return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div className="printable-area bg-white shadow-lg rounded-lg overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center space-x-4">
             <h2 className="text-xl font-semibold text-white">Oda Takvimi</h2>
-            <div className="flex items-center space-x-4 bg-white bg-opacity-20 rounded-lg p-2">
+            <div className="no-print flex items-center space-x-4 bg-white bg-opacity-20 rounded-lg p-2">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="radio"
@@ -176,7 +176,7 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
                   onChange={(e) => setViewMode(e.target.value)}
                   className="form-radio text-white border-white focus:ring-white"
                 />
-                <span className="text-white text-sm">Yatay Görünüm</span>
+                <span className="text-white text-sm font-medium">Yatay Görünüm</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
@@ -187,27 +187,27 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
                   onChange={(e) => setViewMode(e.target.value)}
                   className="form-radio text-white border-white focus:ring-white"
                 />
-                <span className="text-white text-sm">Dikey Görünüm</span>
+                <span className="text-white text-sm font-medium">Dikey Görünüm</span>
               </label>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => navigateMonth(-1)}
-              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all duration-200"
+              className="no-print bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all duration-200"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             
-            <div className="text-white font-medium min-w-[200px] text-center">
+            <div className="text-white font-bold text-lg min-w-[180px] text-center">
               {formatMonthYear(currentDate)}
             </div>
             
             <button
               onClick={() => navigateMonth(1)}
-              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all duration-200"
+              className="no-print bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all duration-200"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -216,9 +216,17 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
             
             <button
               onClick={goToToday}
-              className="bg-white text-indigo-600 px-3 py-2 rounded-lg font-medium hover:bg-indigo-50 transition-colors ml-4"
+              className="no-print bg-white text-indigo-600 px-3 py-2 rounded-lg font-medium hover:bg-indigo-50 transition-colors ml-2"
             >
               Bugün
+            </button>
+
+            <button
+              onClick={() => window.print()}
+              className="no-print bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-2"
+              title="Yazıcı çıktısı al veya PDF olarak kaydet"
+            >
+              🖨️ <span>Yazdır / PDF</span>
             </button>
           </div>
         </div>

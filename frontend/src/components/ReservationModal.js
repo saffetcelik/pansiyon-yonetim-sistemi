@@ -47,17 +47,17 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
 
   // ── Form state ──
   const [reservationName, setReservationName] = useState('');
-  const [checkInDate, setCheckInDate]   = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
-  const [notes, setNotes]               = useState('');
-  const [status, setStatus]             = useState(0);
+  const [notes, setNotes] = useState('');
+  const [status, setStatus] = useState(0);
 
   // ── Oda listesi (çoklu oda) ──
   const [roomItems, setRoomItems] = useState([emptyRoomItem()]);
 
   // ── Müsait odalar ──
   const [availableRooms, setAvailableRooms] = useState([]);
-  const [allRooms, setAllRooms]             = useState([]);
+  const [allRooms, setAllRooms] = useState([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
   // ── Oda seçim popupı ──
@@ -68,46 +68,55 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const [formErrors, setFormErrors] = useState({});
 
   // ── Yeni müşteri modal ──
-  const [showNewCustomerModal, setShowNewCustomerModal]     = useState(false);
+  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
   const [newCustomerTargetIndex, setNewCustomerTargetIndex] = useState(null);
 
   // ─── Body scroll kilitle ─────────────────────────────────────────────────
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
-    else        document.body.style.overflow = 'unset';
+    else document.body.style.overflow = 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   // ─── Modal açılışında başlangıç verileri ─────────────────────────────────
+  const prevDatesRef = React.useRef({ checkInDate: '', checkOutDate: '' });
+  const isInitialMountRef = React.useRef(true);
+
   useEffect(() => {
     if (!isOpen) return;
 
     loadAllRooms();
+    isInitialMountRef.current = true;
 
     if (isEdit && reservation) {
       // Düzenleme modu: mevcut veriyi yükle
+      const inDate = reservation.checkInDate?.split('T')[0] || '';
+      const outDate = reservation.checkOutDate?.split('T')[0] || '';
+
       setReservationName(reservation.reservationName || '');
-      setCheckInDate(reservation.checkInDate?.split('T')[0] || '');
-      setCheckOutDate(reservation.checkOutDate?.split('T')[0] || '');
+      setCheckInDate(inDate);
+      setCheckOutDate(outDate);
       setNotes(reservation.notes || '');
       setStatus(reservation.status ?? 0);
 
+      prevDatesRef.current = { checkInDate: inDate, checkOutDate: outDate };
+
       const customers = reservation.customers?.length
         ? reservation.customers.map(c => ({
-            id: c.customerId,
-            fullName: c.customerName,
-            tcKimlikNo: c.tcKimlikNo,
-            phone: c.phone,
-          }))
+          id: c.customerId,
+          fullName: c.customerName,
+          tcKimlikNo: c.tcKimlikNo,
+          phone: c.phone,
+        }))
         : (reservation.customerId
-            ? [{ id: reservation.customerId, fullName: reservation.customerName }]
-            : []);
+          ? [{ id: reservation.customerId, fullName: reservation.customerName }]
+          : []);
 
       setRoomItems([{
         ...emptyRoomItem(reservation.roomId),
         numberOfGuests: reservation.numberOfGuests || 1,
-        totalAmount:    reservation.totalAmount    || 0,
-        paidAmount:     reservation.paidAmount     || 0,
+        totalAmount: reservation.totalAmount || 0,
+        paidAmount: reservation.paidAmount || 0,
         customers,
       }]);
     } else {
@@ -121,65 +130,77 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
       setAvailableRooms([]);
       setFormErrors({});
       setOccupiedDatesByRoom({});
+      prevDatesRef.current = { checkInDate: '', checkOutDate: '' };
     }
   }, [isOpen, isEdit, reservation]);
 
-  // ─── Tarihler değişince müsait odaları yükle + fiyat güncelleme onayı ─────
-  const prevDatesRef = React.useRef({ checkInDate: '', checkOutDate: '' });
-
+  // ─── Tarihler değişince müsait odaları yükle + fiyat güncelleme ──────────
   useEffect(() => {
     if (!checkInDate || !checkOutDate) return;
     if (new Date(checkOutDate) <= new Date(checkInDate)) return;
 
-    // Hem giriş hem çıkış değişmişse veya modal ilk açılıyorsa direkt yükle
-    const prevIn  = prevDatesRef.current.checkInDate;
+    // İlk yüklemede popup sorma, sadece referansı güncelle
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      prevDatesRef.current = { checkInDate, checkOutDate };
+      loadAvailableRooms();
+      return;
+    }
+
+    const prevIn = prevDatesRef.current.checkInDate;
     const prevOut = prevDatesRef.current.checkOutDate;
     prevDatesRef.current = { checkInDate, checkOutDate };
 
     const datesActuallyChanged = prevIn && prevOut && (prevIn !== checkInDate || prevOut !== checkOutDate);
+    const newNights = Math.max(0, Math.ceil(
+      (new Date(checkOutDate) - new Date(checkInDate)) / 86400000
+    ));
 
-    // Oda seçilmiş mi ve fiyat girilmiş mi kontrol et
-    const hasRoomsWithPrices = roomItems.some(
-      item => item.roomId && parseFloat(item.totalAmount) > 0
-    );
+    // SADECE DÜZENLEME MODUNDA (isEdit === true) VE KULLANICI TARİHLERİ DEĞİŞTİRDİĞİNDE ONAY SOR
+    if (isEdit && datesActuallyChanged) {
+      const hasRoomsWithPrices = roomItems.some(
+        item => item.roomId && parseFloat(item.totalAmount) > 0
+      );
 
-    if (datesActuallyChanged && hasRoomsWithPrices) {
-      // Tarihler değişti ve mevcut fiyat var → önce yeni oda listesini yükle, sonra onay sor
-      const newNights = Math.max(0, Math.ceil(
-        (new Date(checkOutDate) - new Date(checkInDate)) / 86400000
-      ));
+      if (hasRoomsWithPrices) {
+        loadAvailableRooms().then(freshRooms => {
+          const roomSource = (freshRooms && freshRooms.length > 0) ? freshRooms : allRooms;
 
-      // loadAvailableRooms çalıştır ve onay diyaloğunu oda listesi geldikten sonra aç
-      loadAvailableRooms().then(freshRooms => {
-        const roomSource = (freshRooms && freshRooms.length > 0) ? freshRooms : allRooms;
-
-        Swal.fire({
-          title: 'Tarihler Değişti',
-          html: `Yeni süre: <strong>${newNights} gece</strong>.<br>Oda fiyat${roomItems.length > 1 ? 'ları' : 'ı'} yeni tarihe göre güncellensin mi?`,
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Evet, Güncelle',
-          cancelButtonText: 'Hayır, Mevcut Kalsın',
-          confirmButtonColor: '#2563eb',
-          cancelButtonColor: '#6b7280',
-        }).then(result => {
-          if (result.isConfirmed) {
-            setRoomItems(prev => prev.map(item => {
-              if (!item.roomId) return item;
-              const room = roomSource.find(r => r.id == item.roomId);
-              if (!room) return item;
-              const autoTotal = newNights * room.pricePerNight;
-              return { ...item, totalAmount: autoTotal };
-            }));
-          }
-          // Hayır seçildiyse fiyatlar olduğu gibi kalır
+          Swal.fire({
+            title: 'Tarihler Değişti',
+            html: `Yeni süre: <strong>${newNights} gece</strong>.<br>Oda fiyat${roomItems.length > 1 ? 'ları' : 'ı'} yeni tarihe göre güncellensin mi?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Evet, Güncelle',
+            cancelButtonText: 'Hayır, Mevcut Kalsın',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6b7280',
+          }).then(result => {
+            if (result.isConfirmed) {
+              setRoomItems(prev => prev.map(item => {
+                if (!item.roomId) return item;
+                const room = roomSource.find(r => r.id == item.roomId);
+                if (!room) return item;
+                return { ...item, totalAmount: newNights * room.pricePerNight };
+              }));
+            }
+          });
         });
-      });
-    } else {
-      // Fiyat yök veya tarihler ilk kez giriliyor → sadece müsait odaları yenile
-      loadAvailableRooms();
+        return;
+      }
     }
-  }, [checkInDate, checkOutDate]);
+
+    // YENİ REZERVASYON OLUŞTURURKEN (isEdit === false): ODA FİYATLARINI OTOMATİK HESAPLA VE UYGULA (POPUP SORMADAN)
+    loadAvailableRooms().then(freshRooms => {
+      const roomSource = (freshRooms && freshRooms.length > 0) ? freshRooms : allRooms;
+      setRoomItems(prev => prev.map(item => {
+        if (!item.roomId) return item;
+        const room = roomSource.find(r => r.id == item.roomId);
+        if (!room) return item;
+        return { ...item, totalAmount: newNights * room.pricePerNight };
+      }));
+    });
+  }, [checkInDate, checkOutDate, isEdit]);
 
   // ─── API çağrıları ────────────────────────────────────────────────────────
   const loadAllRooms = async () => {
@@ -192,7 +213,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   };
 
   const loadAvailableRooms = async () => {
-    const checkIn  = new Date(checkInDate);
+    const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
     if (checkOut <= checkIn) { setAvailableRooms([]); return []; }
 
@@ -275,7 +296,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
     const hasExistingPrice = parseFloat(currentItem.totalAmount) > 0;
     const isRoomChanging = currentItem.roomId && currentItem.roomId != roomId;
 
-    if ((hasExistingPrice || isRoomChanging) && autoTotal !== parseFloat(currentItem.totalAmount)) {
+    // SADECE DÜZENLEME MODUNDA (isEdit === true) VE ODA VEYA FİYAT DEĞİŞİMİNDE ONAY SOR
+    if (isEdit && (hasExistingPrice || isRoomChanging) && autoTotal !== parseFloat(currentItem.totalAmount)) {
       setShowRoomSelector(null);
       const result = await Swal.fire({
         title: 'Oda Seçimi Değişti',
@@ -315,7 +337,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
           ...prev,
           [roomId]: res.data.occupiedPeriods || []
         }));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -392,15 +414,15 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
   const validateForm = () => {
     const errors = {};
 
-    if (!checkInDate)  errors.checkInDate  = 'Giriş tarihi zorunludur';
+    if (!checkInDate) errors.checkInDate = 'Giriş tarihi zorunludur';
     if (!checkOutDate) errors.checkOutDate = 'Çıkış tarihi zorunludur';
     if (checkInDate && checkOutDate && new Date(checkInDate) >= new Date(checkOutDate)) {
       errors.checkOutDate = 'Çıkış tarihi giriş tarihinden sonra olmalıdır';
     }
 
-    const isMultiRoom     = roomItems.length > 1;
+    const isMultiRoom = roomItems.length > 1;
     const allHaveCustomers = roomItems.every(item => item.customers.length > 0);
-    const anyHasCustomer  = roomItems.some(item => item.customers.length > 0);
+    const anyHasCustomer = roomItems.some(item => item.customers.length > 0);
 
     // Rezervasyon adı zorunluluk kontrolü
     if (!reservationName.trim()) {
@@ -453,15 +475,15 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         const payload = {
           reservationName: reservationName.trim() || null,
           reservationGroupId: groupId,
-          checkInDate:  new Date(checkInDate).toISOString(),
+          checkInDate: new Date(checkInDate).toISOString(),
           checkOutDate: new Date(checkOutDate).toISOString(),
           notes: notes || null,
           roomItems: roomItems.map(item => ({
-            roomId:         parseInt(item.roomId),
+            roomId: parseInt(item.roomId),
             numberOfGuests: parseInt(item.numberOfGuests),
-            totalAmount:    parseFloat(item.totalAmount),
-            paidAmount:     parseFloat(item.paidAmount),
-            customerIds:    item.customers.map(c => c.id),
+            totalAmount: parseFloat(item.totalAmount),
+            paidAmount: parseFloat(item.paidAmount),
+            customerIds: item.customers.map(c => c.id),
           })),
         };
         await dispatch(createReservation(payload)).unwrap();
@@ -471,16 +493,16 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         const payload = {
           reservationName: reservationName.trim() || null,
           reservationGroupId: groupId || null,
-          customerId:     item.customers[0]?.id || null,
-          roomId:         parseInt(item.roomId),
-          checkInDate:    new Date(checkInDate).toISOString(),
-          checkOutDate:   new Date(checkOutDate).toISOString(),
+          customerId: item.customers[0]?.id || null,
+          roomId: parseInt(item.roomId),
+          checkInDate: new Date(checkInDate).toISOString(),
+          checkOutDate: new Date(checkOutDate).toISOString(),
           numberOfGuests: parseInt(item.numberOfGuests),
-          totalAmount:    parseFloat(item.totalAmount),
-          paidAmount:     parseFloat(item.paidAmount),
-          notes:          notes || null,
-          customerIds:    item.customers.map(c => c.id),
-          status:         isEdit ? status : 0,
+          totalAmount: parseFloat(item.totalAmount),
+          paidAmount: parseFloat(item.paidAmount),
+          notes: notes || null,
+          customerIds: item.customers.map(c => c.id),
+          status: isEdit ? status : 0,
         };
         if (isEdit) {
           await dispatch(updateReservation({ id: reservation.id, reservationData: payload })).unwrap();
@@ -553,10 +575,9 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
               type="text"
               value={reservationName}
               onChange={e => { setReservationName(e.target.value); setFormErrors(prev => ({ ...prev, reservationName: '' })); }}
-              placeholder="Örn: Ailem, İş Seyahati, Düğün..."
-              className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                formErrors.reservationName ? 'border-red-400 bg-red-50' : 'border-gray-300'
-              }`}
+              placeholder="Örn: Burak'ın arkadaşı, Ahmet'in kuzeni"
+              className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${formErrors.reservationName ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                }`}
             />
             {formErrors.reservationName && (
               <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.reservationName}</p>
@@ -660,13 +681,12 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                           onClick={() => {
                             setShowRoomSelector(showRoomSelector === index ? null : index);
                           }}
-                          className={`w-full px-3 py-2.5 border rounded-lg text-left text-sm flex items-center justify-between transition ${
-                            formErrors[`room_${index}_roomId`]
+                          className={`w-full px-3 py-2.5 border rounded-lg text-left text-sm flex items-center justify-between transition ${formErrors[`room_${index}_roomId`]
                               ? 'border-red-400 bg-red-50'
                               : selectedRoom
-                              ? 'border-blue-400 bg-blue-50'
-                              : 'border-gray-300 bg-white hover:border-gray-400'
-                          }`}
+                                ? 'border-blue-400 bg-blue-50'
+                                : 'border-gray-300 bg-white hover:border-gray-400'
+                            }`}
                         >
                           <span>
                             {selectedRoom
@@ -694,13 +714,12 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                                   <div
                                     key={room.id}
                                     onClick={() => !isAlreadySelected && handleRoomSelect(index, room.id)}
-                                    className={`p-3 border-b border-gray-100 last:border-0 transition ${
-                                      isAlreadySelected
+                                    className={`p-3 border-b border-gray-100 last:border-0 transition ${isAlreadySelected
                                         ? 'opacity-40 cursor-not-allowed bg-gray-50'
                                         : room.id == item.roomId
-                                        ? 'bg-blue-50 cursor-pointer'
-                                        : 'hover:bg-blue-50 cursor-pointer'
-                                    }`}
+                                          ? 'bg-blue-50 cursor-pointer'
+                                          : 'hover:bg-blue-50 cursor-pointer'
+                                      }`}
                                   >
                                     <div className="flex items-center justify-between">
                                       <div>
@@ -744,9 +763,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                           type="number" min="1" max="10"
                           value={item.numberOfGuests}
                           onChange={e => updateRoomField(index, 'numberOfGuests', e.target.value)}
-                          className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            formErrors[`room_${index}_numberOfGuests`] ? 'border-red-400' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors[`room_${index}_numberOfGuests`] ? 'border-red-400' : 'border-gray-300'
+                            }`}
                         />
                         {formErrors[`room_${index}_numberOfGuests`] && (
                           <p className="text-red-500 text-xs mt-0.5">{formErrors[`room_${index}_numberOfGuests`]}</p>
@@ -758,9 +776,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                           type="number" step="0.01" min="0"
                           value={item.totalAmount}
                           onChange={e => updateRoomField(index, 'totalAmount', e.target.value)}
-                          className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            formErrors[`room_${index}_totalAmount`] ? 'border-red-400' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors[`room_${index}_totalAmount`] ? 'border-red-400' : 'border-gray-300'
+                            }`}
                         />
                         {nights > 0 && selectedRoom && (
                           <p className="text-gray-400 text-xs mt-0.5">{nights}g × {selectedRoom.pricePerNight} TL</p>
@@ -775,9 +792,8 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                           type="number" step="0.01" min="0"
                           value={item.paidAmount}
                           onChange={e => updateRoomField(index, 'paidAmount', e.target.value)}
-                          className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            formErrors[`room_${index}_paidAmount`] ? 'border-red-400' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors[`room_${index}_paidAmount`] ? 'border-red-400' : 'border-gray-300'
+                            }`}
                         />
                         {formErrors[`room_${index}_paidAmount`] && (
                           <p className="text-red-500 text-xs mt-0.5">{formErrors[`room_${index}_paidAmount`]}</p>

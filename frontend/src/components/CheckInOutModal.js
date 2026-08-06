@@ -35,7 +35,7 @@ const CheckInOutModal = ({
         actualDate: localISOTime,
         notes: '',
         additionalCharges: 0,
-        paymentAmount: type === 'checkout' ? (reservation.totalAmount - reservation.paidAmount) : 0
+        paymentAmount: reservation.paidAmount || 0
       });
       setFormErrors({});
     }
@@ -239,7 +239,7 @@ const CheckInOutModal = ({
             {/* Payment Amount */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {isCheckIn ? 'Ek Ödeme (TL)' : 'Tahsil Edilen Tutar (TL)'}
+                Ödenen Tutar (TL)
               </label>
               <input
                 type="number"
@@ -255,11 +255,9 @@ const CheckInOutModal = ({
               {formErrors.paymentAmount && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.paymentAmount}</p>
               )}
-              {!isCheckIn && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Kalan tutar: {formatCurrency(reservation.totalAmount - reservation.paidAmount + parseFloat(formData.additionalCharges || 0))}
-                </p>
-              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Toplam Rezervasyon Tutarı: {formatCurrency(reservation.totalAmount || 0)} | Kalan Bakiye: {formatCurrency(Math.max(0, (reservation.totalAmount || 0) - parseFloat(formData.paymentAmount || 0)))}
+              </p>
             </div>
 
             {/* Notes */}

@@ -172,6 +172,7 @@ namespace PansiyonYonetimSistemi.API.DTOs
     {
         public int ReservationId { get; set; }
         public DateTime ActualCheckInDate { get; set; } = DateTime.Now;
+        public decimal? PaymentAmount { get; set; }
         public string? Notes { get; set; }
     }
 

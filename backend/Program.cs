@@ -183,6 +183,40 @@ using (var scope = app.Services.CreateScope())
             );
             CREATE UNIQUE INDEX IF NOT EXISTS ""IX_SystemSettings_Key"" ON ""SystemSettings"" (""Key"");
         ");
+
+        // Geriye dönük 1 defalık migration kontrolü (Sistemin hayatı boyunca tam 1 kez çalışır)
+        var migrationApplied = await context.SystemSettings.AnyAsync(s => s.Key == "Migration_ReservationNamePopulated_v1");
+        if (!migrationApplied)
+        {
+            Console.WriteLine("[Migration] Geriye dönük boş rezervasyon adları müşteri isimleriyle dolduruluyor (1 Defalık)...");
+            await context.Database.ExecuteSqlRawAsync(@"
+                UPDATE ""Reservations"" r
+                SET ""ReservationName"" = CONCAT(c.""FirstName"", ' ', c.""LastName"")
+                FROM ""Customers"" c
+                WHERE r.""CustomerId"" = c.""Id""
+                  AND (r.""ReservationName"" IS NULL OR TRIM(r.""ReservationName"") = '');
+
+                UPDATE ""Reservations"" r
+                SET ""ReservationName"" = (
+                    SELECT CONCAT(c.""FirstName"", ' ', c.""LastName"")
+                    FROM ""ReservationCustomers"" rc
+                    JOIN ""Customers"" c ON rc.""CustomerId"" = c.""Id""
+                    WHERE rc.""ReservationId"" = r.""Id""
+                    ORDER BY rc.""OrderIndex"" ASC LIMIT 1
+                )
+                WHERE (r.""ReservationName"" IS NULL OR TRIM(r.""ReservationName"") = '');
+            ");
+
+            context.SystemSettings.Add(new SystemSetting
+            {
+                Key = "Migration_ReservationNamePopulated_v1",
+                Value = "true",
+                Description = "Geriye dönük rezervasyon adı doldurma işlemi 1 defaya mahsus çalıştırıldı",
+                UpdatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+            Console.WriteLine("[Migration] 1 defalık rezervasyon adı doldurma işlemi tamamlandı ve kaydedildi. Bir daha çalıştırılmayacak.");
+        }
         Console.WriteLine("[Database] DDL kontrolü tamamlandı.");
 
         Console.WriteLine("[Database] Migration uygulanıyor...");

@@ -19,3 +19,37 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.7);
 }
+
+@media print {
+  /* Hides non-printable UI elements */
+  header, nav, .no-print, button, label {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .printable-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  @page {
+    size: landscape;
+    margin: 8mm;
+  }
+
+  /* Ensure text colors print with background colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

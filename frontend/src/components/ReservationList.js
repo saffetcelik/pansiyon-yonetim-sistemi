@@ -180,9 +180,9 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
           language: turkishLanguage,
           ordering: true,
           paging: true,
-          pageLength: 10,
+          pageLength: 100,
           pagingType: "full_numbers", // İlk, Son, Önceki, Sonraki ve sayfa numaralarını göster
-          lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Tümü"]],
+          lengthMenu: [[100, 200, 500, 1000, -1], [100, 200, 500, 1000, "Hepsi"]],
           // Sayfalama ve diğer kontroller için özel DOM düzeni
           dom: '<"dataTables_wrapper-header"<"dataTables_length-container"l><"dataTables_filter-container"f>>' +
             '<"table-responsive"t>' +
@@ -838,7 +838,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 #
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
-                Rezervasyon / Müşteri
+                Rezervasyon Adı
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
                 Oda
@@ -872,42 +872,9 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                       {(reservation.reservationName || reservation.customerName || '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      {/* Önce rezervasyon adı, yoksa müşteri adı */}
-                      {reservation.reservationName ? (
-                        <div className="text-sm font-bold text-gray-900 truncate">
-                          📋 {reservation.reservationName}
-                        </div>
-                      ) : null}
-                      {reservation.customerName && (
-                        <div className={`truncate ${reservation.reservationName ? 'text-xs text-gray-500 mt-0.5' : 'text-sm font-medium text-gray-900'}`}>
-                          {reservation.customerName}
-                          {reservation.customers && reservation.customers.length > 1 && (
-                            <span className="ml-1 text-xs text-gray-400">(Ana)</span>
-                          )}
-                        </div>
-                      )}
-                      {!reservation.reservationName && !reservation.customerName && (
-                        <div className="text-sm text-gray-400 italic">— İsimsiz —</div>
-                      )}
-                      {/* Ek müşteriler avatarları */}
-                      {reservation.customers && reservation.customers.length > 1 && (
-                        <div className="flex items-center mt-1 space-x-1">
-                          {reservation.customers.slice(1, 4).map((customer) => (
-                            <div
-                              key={customer.customerId}
-                              className="h-5 w-5 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                              title={customer.customerName}
-                            >
-                              {customer.customerName ? customer.customerName.charAt(0).toUpperCase() : '?'}
-                            </div>
-                          ))}
-                          {reservation.customers.length > 4 && (
-                            <div className="h-5 w-5 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-medium">
-                              +{reservation.customers.length - 4}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      <div className="text-sm font-bold text-gray-900 truncate">
+                        📋 {reservation.reservationName || reservation.customerName || 'İsimsiz Rezervasyon'}
+                      </div>
                     </div>
                   </div>
                 </td>

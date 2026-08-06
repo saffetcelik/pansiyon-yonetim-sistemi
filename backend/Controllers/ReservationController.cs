@@ -43,9 +43,11 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 // Apply filters
                 if (!string.IsNullOrEmpty(searchDto.CustomerName))
                 {
+                    var searchTerm = searchDto.CustomerName.Trim();
                     query = query.Where(r => 
-                        (r.ReservationName != null && r.ReservationName.Contains(searchDto.CustomerName)) ||
-                        (r.Customer != null && (r.Customer.FirstName.Contains(searchDto.CustomerName) || r.Customer.LastName.Contains(searchDto.CustomerName))));
+                        (r.ReservationName != null && r.ReservationName.Contains(searchTerm)) ||
+                        (r.Customer != null && (r.Customer.FirstName.Contains(searchTerm) || r.Customer.LastName.Contains(searchTerm) || (r.Customer.FirstName + " " + r.Customer.LastName).Contains(searchTerm))) ||
+                        r.ReservationCustomers.Any(rc => rc.Customer.FirstName.Contains(searchTerm) || rc.Customer.LastName.Contains(searchTerm) || (rc.Customer.FirstName + " " + rc.Customer.LastName).Contains(searchTerm) || (rc.Customer.TCKimlikNo != null && rc.Customer.TCKimlikNo.Contains(searchTerm))));
                 }
                 
                 if (searchDto.CustomerId.HasValue && searchDto.CustomerId > 0)
@@ -795,6 +797,11 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 reservation.Status = ReservationStatus.CheckedIn;
                 reservation.ActualCheckInDate = checkInDto.ActualCheckInDate;
                 reservation.UpdatedAt = DateTime.UtcNow;
+
+                if (checkInDto.PaymentAmount.HasValue)
+                {
+                    reservation.PaidAmount = checkInDto.PaymentAmount.Value;
+                }
 
                 if (!string.IsNullOrEmpty(checkInDto.Notes))
                 {
