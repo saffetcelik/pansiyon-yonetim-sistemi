@@ -289,19 +289,17 @@ const Dashboard = () => {
             <div className="flex items-center gap-1 sm:gap-3 ml-2 flex-shrink-0">
               <button
                 onClick={() => navigate('/settings')}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 font-medium"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm flex items-center gap-1 touch-manipulation"
                 title="Ayarlar"
               >
-                <span className="hidden sm:inline">⚙️ Ayarlar</span>
-                <span className="sm:hidden text-lg">⚙️</span>
+                ⚙️ <span>Ayarlar</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 font-medium"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm flex items-center gap-1 touch-manipulation"
                 title="Çıkış Yap"
               >
-                <span className="hidden sm:inline">Çıkış Yap</span>
-                <span className="sm:hidden text-lg">🚪</span>
+                🚪 <span>Çıkış</span>
               </button>
               {/* Hamburger - mobile only */}
               <button

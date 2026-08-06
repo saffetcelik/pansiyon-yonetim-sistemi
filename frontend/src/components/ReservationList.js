@@ -828,8 +828,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         </div>
       )}
 
-      {/* Table - scrollable on mobile */}
-      <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
         <table ref={tableRef} className="min-w-full divide-y divide-gray-200 display nowrap w-full table-responsive">
           <thead className="bg-gray-50">
             <tr>
@@ -867,12 +867,9 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
-                    {/* Ana müşteri avatarı */}
                     <div className="flex-shrink-0 h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                      {reservation.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      {reservation.customerName ? reservation.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
                     </div>
-
-                    {/* Müşteri bilgileri */}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 truncate">
                         {reservation.customerName}
@@ -882,29 +879,22 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                           </span>
                         )}
                       </div>
-
-                      {/* Çoklu müşteri gösterimi */}
                       {reservation.customers && reservation.customers.length > 1 && (
                         <div className="flex items-center mt-1 space-x-1">
-                          {/* Diğer müşteri avatarları (maksimum 3 göster) */}
-                          {reservation.customers.slice(1, 4).map((customer, index) => (
+                          {reservation.customers.slice(1, 4).map((customer) => (
                             <div
                               key={customer.customerId}
                               className="h-6 w-6 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium"
                               title={customer.customerName}
                             >
-                              {customer.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                              {customer.customerName ? customer.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
                             </div>
                           ))}
-
-                          {/* Fazla müşteri sayısı */}
                           {reservation.customers.length > 4 && (
                             <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-medium">
                               +{reservation.customers.length - 4}
                             </div>
                           )}
-
-                          {/* Toplam müşteri sayısı */}
                           <span className="text-xs text-gray-500 ml-2">
                             {reservation.customers.length} kişi
                           </span>
@@ -972,7 +962,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                       </button>
                     )}
 
-                    {/* Quick Status Change Dropdown */}
                     <div className="relative">
                       <button
                         onClick={() => toggleDropdown(reservation.id)}
@@ -985,13 +974,11 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
 
                       {openDropdownId === reservation.id && (
                         <>
-                          {/* Overlay */}
                           <div
                             className="fixed inset-0 bg-black bg-opacity-25"
                             style={{ zIndex: 9998 }}
                             onClick={() => setOpenDropdownId(null)}
                           />
-                          {/* Dropdown */}
                           <div
                             className="fixed bg-white rounded-md shadow-xl border border-gray-200"
                             style={{
@@ -1002,43 +989,43 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                               transform: 'translate(-50%, -50%)'
                             }}
                           >
-                          <div className="py-1">
-                            <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b bg-gray-50">
-                              Durum Değiştir
+                            <div className="py-1">
+                              <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b bg-gray-50">
+                                Durum Değiştir
+                              </div>
+                              {reservation.status !== 0 && (
+                                <button
+                                  onClick={() => handleQuickStatusChange(reservation.id, 0)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                  🟡 Beklemede
+                                </button>
+                              )}
+                              {reservation.status !== 4 && (
+                                <button
+                                  onClick={() => handleQuickStatusChange(reservation.id, 4)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                  🔴 İptal Et
+                                </button>
+                              )}
+                              {reservation.status !== 5 && (
+                                <button
+                                  onClick={() => handleQuickStatusChange(reservation.id, 5)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                  ❌ Gelmedi
+                                </button>
+                              )}
+                              <div className="border-t">
+                                <button
+                                  onClick={() => setOpenDropdownId(null)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+                                >
+                                  ✕ İptal
+                                </button>
+                              </div>
                             </div>
-                            {reservation.status !== 0 && (
-                              <button
-                                onClick={() => handleQuickStatusChange(reservation.id, 0)}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                              >
-                                🟡 Beklemede
-                              </button>
-                            )}
-                            {reservation.status !== 4 && (
-                              <button
-                                onClick={() => handleQuickStatusChange(reservation.id, 4)}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                              >
-                                🔴 İptal Et
-                              </button>
-                            )}
-                            {reservation.status !== 5 && (
-                              <button
-                                onClick={() => handleQuickStatusChange(reservation.id, 5)}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                              >
-                                ❌ Gelmedi
-                              </button>
-                            )}
-                            <div className="border-t">
-                              <button
-                                onClick={() => setOpenDropdownId(null)}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors"
-                              >
-                                ✕ İptal
-                              </button>
-                            </div>
-                          </div>
                           </div>
                         </>
                       )}
@@ -1058,6 +1045,175 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View (Teknolojik ve Dokunmatik Dostu) */}
+      <div className="md:hidden divide-y divide-gray-200">
+        {reservations && reservations.length > 0 ? (
+          reservations.map((reservation, index) => (
+            <div key={reservation.id} className="p-4 bg-white hover:bg-gray-50">
+              {/* Kart Üst Bilgisi */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0 flex-1 flex items-center space-x-3">
+                  <div className="flex-shrink-0 h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                    {reservation.customerName ? reservation.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-bold text-gray-900 truncate">
+                      {reservation.customerName}
+                    </p>
+                    <p className="text-xs text-blue-600 font-bold mt-0.5">
+                      🏨 Oda {reservation.roomNumber}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  {getStatusBadge(reservation.status)}
+                </div>
+              </div>
+
+              {/* Kart Detay Tablosu */}
+              <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg text-xs space-y-1.5 my-3 text-gray-700">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">📅 Tarih:</span>
+                  <span className="font-semibold text-gray-900">{formatDate(reservation.checkInDate)} - {formatDate(reservation.checkOutDate)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">👥 Misafir:</span>
+                  <span className="font-semibold text-gray-900">{reservation.numberOfGuests} Kişi</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-blue-100">
+                  <span className="text-gray-500 font-medium">💰 Toplam Tutar:</span>
+                  <span className="font-bold text-gray-900">{formatCurrency(reservation.totalAmount)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">💳 Ödenen:</span>
+                  <span className="font-semibold text-green-700">{formatCurrency(reservation.paidAmount)}</span>
+                </div>
+              </div>
+
+              {/* Butonlar: Yazılı ve Dokunmatik Dostu */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {/* Düzenle */}
+                <button
+                  type="button"
+                  onClick={() => onEditReservation(reservation)}
+                  className="flex-1 min-w-[90px] inline-flex items-center justify-center px-3 py-2 bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                >
+                  ✏️ Düzenle
+                </button>
+
+                {/* Giriş Yap */}
+                {(reservation.status === 0 || reservation.status === 1) && (
+                  <button
+                    type="button"
+                    onClick={() => handleCheckIn(reservation)}
+                    className="flex-1 min-w-[95px] inline-flex items-center justify-center px-3 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                  >
+                    🏨 Giriş Yap
+                  </button>
+                )}
+
+                {/* Çıkış Yap */}
+                {reservation.status === 2 && (
+                  <button
+                    type="button"
+                    onClick={() => handleCheckOut(reservation)}
+                    className="flex-1 min-w-[95px] inline-flex items-center justify-center px-3 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                  >
+                    🚪 Çıkış Yap
+                  </button>
+                )}
+
+                {/* Durum Değiştir */}
+                <div className="relative flex-1 min-w-[90px]">
+                  <button
+                    type="button"
+                    onClick={() => toggleDropdown(reservation.id)}
+                    className="w-full inline-flex items-center justify-center px-3 py-2 bg-purple-100 text-purple-800 hover:bg-purple-200 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                  >
+                    ⚡ Durum
+                  </button>
+
+                  {openDropdownId === reservation.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 bg-black bg-opacity-40"
+                        style={{ zIndex: 9998 }}
+                        onClick={() => setOpenDropdownId(null)}
+                      />
+                      <div
+                        className="fixed bg-white rounded-xl shadow-2xl border border-gray-200 p-2"
+                        style={{
+                          zIndex: 9999,
+                          minWidth: '240px',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      >
+                        <div className="py-1">
+                          <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 bg-gray-50 rounded-t-lg">
+                            Durum Değiştir
+                          </div>
+                          {reservation.status !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusChange(reservation.id, 0)}
+                              className="block w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md my-0.5"
+                            >
+                              🟡 Beklemede
+                            </button>
+                          )}
+                          {reservation.status !== 4 && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusChange(reservation.id, 4)}
+                              className="block w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md my-0.5"
+                            >
+                              🔴 İptal Et
+                            </button>
+                          )}
+                          {reservation.status !== 5 && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusChange(reservation.id, 5)}
+                              className="block w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md my-0.5"
+                            >
+                              ❌ Gelmedi
+                            </button>
+                          )}
+                          <div className="border-t border-gray-100 mt-1 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setOpenDropdownId(null)}
+                              className="block w-full text-center px-4 py-2.5 text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-md"
+                            >
+                              İptal
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Sil */}
+                <button
+                  type="button"
+                  onClick={() => handleDelete(reservation.id)}
+                  className="flex-1 min-w-[70px] inline-flex items-center justify-center px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                >
+                  🗑️ Sil
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="py-12 text-center text-gray-500">
+            <p className="text-sm">Rezervasyon bulunamadı.</p>
+          </div>
+        )}
       </div>
 
       {/* DataTables sayfalama ve arama özelliklerini kullanacağız, bu kısmı kaldırabiliriz */}
@@ -1097,6 +1253,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       <Tooltip id="checkout-tooltip" />
       <Tooltip id="status-change-tooltip" />
       <Tooltip id="delete-reservation-tooltip" />
+    </div>
+    </div>
     </div>
   );
 };

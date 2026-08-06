@@ -564,9 +564,21 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
                       <p className="text-xs text-gray-500 mt-0.5">📍 {[customerData.city, customerData.country].filter(Boolean).join(', ')}</p>
                     )}
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => onEditCustomer(customer)} className="text-green-600 p-2 rounded-md hover:bg-green-50 touch-manipulation text-base">✏️</button>
-                    <button onClick={() => handleDelete(customerData.id)} className="text-red-600 p-2 rounded-md hover:bg-red-50 touch-manipulation text-base">🗑️</button>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onEditCustomer(customer)}
+                      className="inline-flex items-center px-2.5 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-md text-xs font-semibold touch-manipulation active:scale-95 transition-all"
+                    >
+                      ✏️ Düzenle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(customerData.id)}
+                      className="inline-flex items-center px-2.5 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-md text-xs font-semibold touch-manipulation active:scale-95 transition-all"
+                    >
+                      🗑️ Sil
+                    </button>
                   </div>
                 </div>
               </div>

@@ -210,10 +210,28 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
                   <span className="text-xs text-gray-600">Stok: {product.stockQuantity} {product.unit}</span>
                 </div>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button onClick={() => onEditProduct(product)} className="text-blue-600 p-2 rounded-md hover:bg-blue-50 touch-manipulation" title="Düzenle">✏️</button>
-                <button onClick={() => onStockUpdate(product)} className="text-green-600 p-2 rounded-md hover:bg-green-50 touch-manipulation" title="Stok">📦</button>
-                <button onClick={() => handleDelete(product.id)} className="text-red-600 p-2 rounded-md hover:bg-red-50 touch-manipulation" title="Sil">🗑️</button>
+              <div className="flex flex-wrap gap-1.5 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onEditProduct(product)}
+                  className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md text-xs font-semibold touch-manipulation active:scale-95 transition-all"
+                >
+                  ✏️ Düzenle
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onStockUpdate(product)}
+                  className="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded-md text-xs font-semibold touch-manipulation active:scale-95 transition-all"
+                >
+                  📦 Stok
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(product.id)}
+                  className="inline-flex items-center px-2 py-1 bg-red-50 text-red-700 hover:bg-red-100 rounded-md text-xs font-semibold touch-manipulation active:scale-95 transition-all"
+                >
+                  🗑️ Sil
+                </button>
               </div>
             </div>
           </div>
