@@ -143,7 +143,7 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden xl:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -194,7 +194,7 @@ const ProductList = ({ onEditProduct, onStockUpdate, refreshTrigger }) => {
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+      <div className="xl:hidden divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
         {filteredProducts.map((product, index) => (
           <div key={product.id} className="p-4 bg-white hover:bg-gray-50">
             <div className="flex items-start justify-between gap-2">

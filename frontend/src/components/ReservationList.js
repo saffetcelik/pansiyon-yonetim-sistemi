@@ -1027,7 +1027,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       )}
 
       {/* Table View (Tüm ekran çözünürlüklerinde görünür ve kaydırılabilir) */}
-      <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="hidden xl:block overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
         <table ref={tableRef} className="min-w-full divide-y divide-gray-200 display nowrap w-full border-collapse">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -1269,7 +1269,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       </div>
 
       {/* Mobile Card View (Teknolojik ve Dokunmatik Dostu) */}
-      <div className="md:hidden divide-y divide-gray-200">
+      <div className="xl:hidden divide-y divide-gray-200">
         {reservations && reservations.length > 0 ? (
           reservations.map((reservation, index) => (
             <div key={reservation.id} className="p-4 bg-white hover:bg-gray-50">

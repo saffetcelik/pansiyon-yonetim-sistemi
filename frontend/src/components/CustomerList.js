@@ -467,7 +467,7 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
       )}
 
       {/* Desktop Table */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden xl:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -548,7 +548,7 @@ const CustomerList = ({ onEditCustomer, onCreateCustomer }) => {
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden divide-y divide-gray-200">
+      <div className="xl:hidden divide-y divide-gray-200">
         {customers && customers.length > 0 ? (
           customers.map((customer, index) => {
             const customerData = {
