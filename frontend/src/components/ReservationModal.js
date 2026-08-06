@@ -536,9 +536,7 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         errors.checkOutDate = 'Çıkış tarihi giriş tarihinden sonra olmalıdır';
       }
 
-      if (new Date(formData.checkInDate) < new Date().setHours(0, 0, 0, 0)) {
-        errors.checkInDate = 'Giriş tarihi bugünden önce olamaz';
-      }
+
     }
 
     if (formData.numberOfGuests < 1) {

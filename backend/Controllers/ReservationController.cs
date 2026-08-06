@@ -267,11 +267,6 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return BadRequest(new { message = "Çıkış tarihi giriş tarihinden sonra olmalıdır" });
                 }
 
-                if (createReservationDto.CheckInDate < DateTime.Today)
-                {
-                    return BadRequest(new { message = "Giriş tarihi bugünden önce olamaz" });
-                }
-
                 // Check room availability
                 var isRoomAvailable = await IsRoomAvailable(
                     createReservationDto.RoomId,
