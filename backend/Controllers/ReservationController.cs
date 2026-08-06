@@ -937,16 +937,33 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpGet("calendar")]
-        public async Task<IActionResult> GetReservationCalendar([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+        public async Task<IActionResult> GetReservationCalendar(
+            [FromQuery] int? month,
+            [FromQuery] int? year,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate)
         {
             try
             {
-                var start = startDate ?? DateTime.Today;
-                var end = endDate ?? DateTime.Today.AddDays(30);
+                DateTime start, end;
+
+                if (month.HasValue && year.HasValue)
+                {
+                    // month/year parametresi varsa o ayın tamamını getir
+                    start = new DateTime(year.Value, month.Value, 1);
+                    end = start.AddMonths(1).AddDays(-1);
+                }
+                else
+                {
+                    start = startDate ?? DateTime.Today;
+                    end = endDate ?? DateTime.Today.AddDays(30);
+                }
 
                 var reservations = await _context.Reservations
                     .Include(r => r.Customer)
                     .Include(r => r.Room)
+                    .Include(r => r.ReservationCustomers)
+                        .ThenInclude(rc => rc.Customer)
                     .Where(r => r.CheckInDate <= end && r.CheckOutDate >= start &&
                                r.Status != ReservationStatus.Cancelled &&
                                r.Status != ReservationStatus.NoShow)
@@ -954,8 +971,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     {
                         r.Id,
                         r.ReservationName,
-                        CustomerName = r.Customer != null 
-                            ? (r.Customer.FirstName + " " + r.Customer.LastName) 
+                        CustomerName = r.Customer != null
+                            ? (r.Customer.FirstName + " " + r.Customer.LastName)
                             : (r.ReservationName ?? "Misafir"),
                         RoomNumber = r.Room != null ? r.Room.RoomNumber : "",
                         r.CheckInDate,
@@ -977,6 +994,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 return StatusCode(500, new { message = "Takvim verileri getirilirken hata oluştu", error = ex.Message });
             }
         }
+
 
         private async Task<bool> IsRoomAvailable(int roomId, DateTime checkInDate, DateTime checkOutDate, int? excludeReservationId = null)
         {

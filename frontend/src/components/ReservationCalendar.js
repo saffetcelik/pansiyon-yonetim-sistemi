@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { reservationService } from '../services/api';
 import '../styles/calendar.css';
 
@@ -16,7 +15,6 @@ const ReservationCalendar = ({ onReservationClick }) => {
   const loadCalendarData = async () => {
     setLoading(true);
     setError(null);
-    
     try {
       const month = currentDate.getMonth() + 1;
       const year = currentDate.getFullYear();
@@ -39,23 +37,15 @@ const ReservationCalendar = ({ onReservationClick }) => {
     const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    
-    // Add all days of the month
+    for (let i = 0; i < startingDayOfWeek; i++) days.push(null);
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day));
     }
-    
     return days;
   };
 
   const getReservationsForDate = (date) => {
     if (!date) return [];
-    
     const dateStr = date.toISOString().split('T')[0];
     return calendarData.filter(reservation => {
       const checkIn = new Date(reservation.checkInDate).toISOString().split('T')[0];
@@ -66,12 +56,12 @@ const ReservationCalendar = ({ onReservationClick }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      0: 'bg-yellow-200 text-yellow-800', // Pending
-      1: 'bg-blue-200 text-blue-800',     // Confirmed
-      2: 'bg-green-200 text-green-800',   // Checked In
-      3: 'bg-gray-200 text-gray-800',     // Checked Out
-      4: 'bg-red-200 text-red-800',       // Cancelled
-      5: 'bg-red-300 text-red-900',       // No Show
+      0: 'bg-yellow-200 text-yellow-800',
+      1: 'bg-blue-200 text-blue-800',
+      2: 'bg-green-200 text-green-800',
+      3: 'bg-gray-200 text-gray-800',
+      4: 'bg-red-200 text-red-800',
+      5: 'bg-red-300 text-red-900',
     };
     return colors[status] || 'bg-gray-200 text-gray-800';
   };
@@ -82,30 +72,152 @@ const ReservationCalendar = ({ onReservationClick }) => {
     setCurrentDate(newDate);
   };
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
+  const goToToday = () => setCurrentDate(new Date());
 
-  const formatMonthYear = (date) => {
-    return date.toLocaleDateString('tr-TR', { 
-      year: 'numeric', 
-      month: 'long' 
-    });
-  };
+  const formatMonthYear = (date) =>
+    date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' });
 
   const isToday = (date) => {
     if (!date) return false;
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
-
-  const isCurrentMonth = (date) => {
-    if (!date) return false;
-    return date.getMonth() === currentDate.getMonth();
+    return date.toDateString() === new Date().toDateString();
   };
 
   const days = getDaysInMonth(currentDate);
   const weekDays = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+  // ─── PDF / Print ────────────────────────────────────────────────────────────
+  const buildPrintHtml = () => {
+    const monthLabel = formatMonthYear(currentDate);
+    const statusColors = {
+      0: '#fef9c3', 1: '#dbeafe', 2: '#dcfce7',
+      3: '#f3f4f6', 4: '#fee2e2', 5: '#fecaca'
+    };
+    const statusLabels = {
+      0: 'Beklemede', 1: 'Onaylandı', 2: 'Giriş Yapıldı',
+      3: 'Çıkış Yapıldı', 4: 'İptal', 5: 'Gelmedi'
+    };
+
+    // Tüm rezervasyonları tarih sırasına göre listele
+    const sortedReservations = [...calendarData].sort(
+      (a, b) => new Date(a.checkInDate) - new Date(b.checkInDate)
+    );
+
+    const resRows = sortedReservations.map((r, i) => {
+      const name = (r.reservationName && r.reservationName.trim())
+        || (r.customerName && r.customerName.trim())
+        || 'Misafir';
+      const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+      const statusBg = statusColors[r.status] || '#f3f4f6';
+      const nights = Math.max(0, Math.round((new Date(r.checkOutDate) - new Date(r.checkInDate)) / 86400000));
+      return `<tr style="background:${bg}">
+        <td style="padding:6px 8px;border:1px solid #e5e7eb">${i + 1}</td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;font-weight:600">${name}</td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:center">${r.roomNumber || '-'}</td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:center">${new Date(r.checkInDate).toLocaleDateString('tr-TR')}</td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:center">${new Date(r.checkOutDate).toLocaleDateString('tr-TR')}</td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:center">${nights} gece</td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:center">
+          <span style="background:${statusBg};padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600">${statusLabels[r.status] || '?'}</span>
+        </td>
+        <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right">${r.totalAmount ? r.totalAmount.toLocaleString('tr-TR') + ' ₺' : '-'}</td>
+      </tr>`;
+    }).join('');
+
+    const totalAmount = sortedReservations.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+    const confirmed = calendarData.filter(r => r.status === 1).length;
+    const checkedIn = calendarData.filter(r => r.status === 2).length;
+    const pending = calendarData.filter(r => r.status === 0).length;
+
+    return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+<title>Güneş Pansiyon — Rezervasyon Takvimi ${monthLabel}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #1f2937; padding: 16px; }
+  h1 { font-size: 16px; font-weight: 700; color: #4c1d95; }
+  h2 { font-size: 12px; font-weight: 600; color: #374151; margin-top: 20px; margin-bottom: 6px; }
+  .header { border-bottom: 2px solid #7c3aed; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-right { text-align: right; font-size: 9px; color: #6b7280; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; text-align: center; }
+  .stat-val { font-size: 18px; font-weight: 700; }
+  .stat-lbl { font-size: 8px; color: #6b7280; margin-top: 2px; }
+  table { border-collapse: collapse; width: 100%; }
+  thead { background: #7c3aed; color: white; }
+  thead th { padding: 6px 8px; border: 1px solid #6d28d9; text-align: left; font-size: 9px; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; font-size: 9px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  @media print { @page { size: A4; margin: 10mm; } }
+</style></head><body>
+<div class="header">
+  <div>
+    <h1>🏨 Güneş Pansiyon — Rezervasyon Raporu</h1>
+    <p style="color:#6b7280;font-size:9px;margin-top:4px">Dönem: ${monthLabel}</p>
+  </div>
+  <div class="header-right">
+    <p>Yazdırma Tarihi: ${new Date().toLocaleDateString('tr-TR')}</p>
+    <p>${new Date().toLocaleTimeString('tr-TR')}</p>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat-card"><div class="stat-val" style="color:#7c3aed">${calendarData.length}</div><div class="stat-lbl">Toplam Rezervasyon</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:#2563eb">${confirmed}</div><div class="stat-lbl">Onaylandı</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:#16a34a">${checkedIn}</div><div class="stat-lbl">Giriş Yapıldı</div></div>
+  <div class="stat-card"><div class="stat-val" style="color:#ca8a04">${pending}</div><div class="stat-lbl">Beklemede</div></div>
+</div>
+
+<h2>📋 Rezervasyon Listesi — ${monthLabel}</h2>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Misafir / Rezervasyon Adı</th>
+      <th style="text-align:center">Oda</th>
+      <th style="text-align:center">Giriş</th>
+      <th style="text-align:center">Çıkış</th>
+      <th style="text-align:center">Süre</th>
+      <th style="text-align:center">Durum</th>
+      <th style="text-align:right">Tutar</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${resRows}
+    <tr style="background:#f3f4f6;font-weight:700">
+      <td colspan="7" style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right">TOPLAM</td>
+      <td style="padding:6px 8px;border:1px solid #e5e7eb;text-align:right">${totalAmount.toLocaleString('tr-TR')} ₺</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#fef9c3"></div>Beklemede</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#dbeafe"></div>Onaylandı</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#dcfce7"></div>Giriş Yapıldı</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6"></div>Çıkış Yapıldı</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div>İptal/Gelmedi</div>
+</div>
+</body></html>`;
+  };
+
+  const handlePrint = () => {
+    const html = buildPrintHtml();
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
+  };
+
+  const handlePdfDownload = () => {
+    const html = buildPrintHtml();
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
+  };
+  // ────────────────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -152,10 +264,7 @@ const ReservationCalendar = ({ onReservationClick }) => {
             </button>
 
             <button
-              onClick={() => {
-                document.title = `Gunes_Pansiyon_Rezervasyon_Takvimi_${formatMonthYear(currentDate).replace(/\s+/g, '_')}`;
-                window.print();
-              }}
+              onClick={handlePdfDownload}
               className="no-print bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-2 text-sm"
               title="PDF belgesi indir / kaydet"
             >
@@ -163,7 +272,7 @@ const ReservationCalendar = ({ onReservationClick }) => {
             </button>
 
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="no-print bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-1 text-sm"
               title="Takvimi yazdır"
             >
@@ -173,28 +282,9 @@ const ReservationCalendar = ({ onReservationClick }) => {
         </div>
       </div>
 
-      {/* Yazdırma / PDF Rapor Başlığı */}
-      <div className="print-header p-4 border-b border-gray-300 mb-4 bg-gray-50 rounded-lg">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">🏨 Güneş Pansiyon — Rezervasyon Takvimi Raporu</h1>
-            <p className="text-xs text-gray-600 mt-1">Dönem: {formatMonthYear(currentDate)}</p>
-          </div>
-          <div className="text-right text-xs text-gray-500">
-            <p>Tarih: {new Date().toLocaleDateString('tr-TR')}</p>
-            <p>Kayıtlı Rezervasyon: {calendarData.length}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 m-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
@@ -212,37 +302,32 @@ const ReservationCalendar = ({ onReservationClick }) => {
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
           {days.map((date, index) => {
-            const reservations = getReservationsForDate(date);
+            const dayReservations = getReservationsForDate(date);
             const isCurrentDay = isToday(date);
-            const isCurrentMonthDay = isCurrentMonth(date);
 
             return (
               <div
                 key={index}
                 className={`min-h-[120px] border border-gray-200 p-1 ${
-                  !isCurrentMonthDay ? 'bg-gray-50' : 'bg-white'
+                  !date ? 'bg-gray-50' : 'bg-white'
                 } ${isCurrentDay ? 'ring-2 ring-blue-500' : ''}`}
               >
                 {date && (
                   <>
-                    {/* Date Number */}
                     <div className={`text-sm font-medium mb-1 ${
-                      isCurrentDay 
-                        ? 'text-blue-600 font-bold' 
-                        : isCurrentMonthDay 
-                          ? 'text-gray-900' 
-                          : 'text-gray-400'
+                      isCurrentDay ? 'text-blue-600 font-bold' : 'text-gray-900'
                     }`}>
                       {date.getDate()}
                     </div>
-
-                    {/* Reservations */}
                     <div className="space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
-                      {reservations.map((reservation) => {
-                        const displayName = (reservation.reservationName && reservation.reservationName.trim())
-                          || (reservation.customerName && reservation.customerName.trim())
-                          || (reservation.customers && reservation.customers.length > 0 ? `${reservation.customers[0].firstName || reservation.customers[0].customerName || ''} ${reservation.customers[0].lastName || ''}`.trim() : '')
-                          || `Oda ${reservation.roomNumber}`;
+                      {dayReservations.map((reservation) => {
+                        const displayName =
+                          (reservation.reservationName && reservation.reservationName.trim()) ||
+                          (reservation.customerName && reservation.customerName.trim()) ||
+                          (reservation.customers && reservation.customers.length > 0
+                            ? `${reservation.customers[0].firstName || reservation.customers[0].customerName || ''} ${reservation.customers[0].lastName || ''}`.trim()
+                            : '') ||
+                          `Oda ${reservation.roomNumber}`;
 
                         return (
                           <div
@@ -270,26 +355,18 @@ const ReservationCalendar = ({ onReservationClick }) => {
 
         {/* Legend */}
         <div className="mt-6 flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-200 rounded mr-2"></div>
-            <span>Beklemede</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-200 rounded mr-2"></div>
-            <span>Onaylandı</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-200 rounded mr-2"></div>
-            <span>Giriş Yapıldı</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-gray-200 rounded mr-2"></div>
-            <span>Çıkış Yapıldı</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-200 rounded mr-2"></div>
-            <span>İptal/Gelmedi</span>
-          </div>
+          {[
+            ['bg-yellow-200', 'Beklemede'],
+            ['bg-blue-200', 'Onaylandı'],
+            ['bg-green-200', 'Giriş Yapıldı'],
+            ['bg-gray-200', 'Çıkış Yapıldı'],
+            ['bg-red-200', 'İptal/Gelmedi'],
+          ].map(([color, label]) => (
+            <div key={label} className="flex items-center">
+              <div className={`w-3 h-3 ${color} rounded mr-2`}></div>
+              <span>{label}</span>
+            </div>
+          ))}
         </div>
       </div>
 

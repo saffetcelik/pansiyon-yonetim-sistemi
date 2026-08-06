@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { reservationService, roomService } from '../services/api';
 import '../styles/calendar.css';
 
@@ -8,7 +8,8 @@ const RoomCalendar = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState('horizontal'); // 'horizontal' or 'vertical'
+  const [viewMode, setViewMode] = useState('horizontal');
+  const printFrameRef = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -43,12 +44,10 @@ const RoomCalendar = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
     const days = [];
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day));
     }
-    
     return days;
   };
 
@@ -63,17 +62,23 @@ const RoomCalendar = () => {
 
   const getReservationStyle = (reservation) => {
     if (!reservation) return '';
-    
     const colors = {
-      0: 'bg-yellow-200 text-yellow-800', // Pending
-      1: 'bg-blue-200 text-blue-800',     // Confirmed
-      2: 'bg-green-200 text-green-800',   // Checked In
-      3: 'bg-gray-200 text-gray-800',     // Checked Out
-      4: 'bg-red-200 text-red-800',       // Cancelled
-      5: 'bg-red-300 text-red-900',       // No Show
+      0: 'bg-yellow-200 text-yellow-800',
+      1: 'bg-blue-200 text-blue-800',
+      2: 'bg-green-200 text-green-800',
+      3: 'bg-gray-200 text-gray-800',
+      4: 'bg-red-200 text-red-800',
+      5: 'bg-red-300 text-red-900',
     };
-    
     return colors[reservation.status] || 'bg-gray-200 text-gray-800';
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      0: 'Beklemede', 1: 'Onaylandı', 2: 'Giriş Yapıldı',
+      3: 'Çıkış Yapıldı', 4: 'İptal Edildi', 5: 'Gelmedi'
+    };
+    return labels[status] || 'Bilinmiyor';
   };
 
   const navigateMonth = (direction) => {
@@ -82,33 +87,164 @@ const RoomCalendar = () => {
     setCurrentDate(newDate);
   };
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
+  const goToToday = () => setCurrentDate(new Date());
 
-  const formatMonthYear = (date) => {
-    return date.toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long'
-    });
-  };
+  const formatMonthYear = (date) =>
+    date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' });
 
   const days = getDaysInMonth();
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // ─── PDF / Print ────────────────────────────────────────────────────────────
+  const buildPrintHtml = () => {
+    const monthLabel = formatMonthYear(currentDate);
+    const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    const statusColors = {
+      0: '#fef9c3', 1: '#dbeafe', 2: '#dcfce7',
+      3: '#f3f4f6', 4: '#fee2e2', 5: '#fecaca'
+    };
+
+    // Yatay tablo: Odalar satır, günler sütun
+    const colWidths = `<col style="width:120px">` + days.map(() => `<col style="width:${Math.max(28, Math.floor(650 / days.length))}px">`).join('');
+
+    const headerDays = days.map(d => {
+      const isToday = d.toDateString() === new Date().toDateString();
+      return `<th style="text-align:center;font-size:9px;padding:3px 1px;background:${isToday ? '#3b82f6' : '#6366f1'};color:white;border:1px solid #ccc">
+        <div>${d.getDate()}</div>
+        <div style="opacity:.8">${dayNames[d.getDay()]}</div>
+      </th>`;
+    }).join('');
+
+    const roomRows = rooms.map(room => {
+      const cells = days.map(date => {
+        const res = isRoomReserved(room.roomNumber, date);
+        if (!res) return `<td style="border:1px solid #e5e7eb;background:#f9fafb"></td>`;
+        const name = (res.reservationName && res.reservationName.trim())
+          || (res.customerName && res.customerName.trim())
+          || `Oda ${res.roomNumber}`;
+        const bg = statusColors[res.status] || '#f3f4f6';
+        return `<td style="border:1px solid #e5e7eb;background:${bg};padding:2px;font-size:8px;text-align:center;overflow:hidden" title="${name}">
+          <div style="font-weight:600;overflow:hidden;max-height:28px">${name.length > 8 ? name.substring(0, 7) + '…' : name}</div>
+        </td>`;
+      }).join('');
+      return `<tr>
+        <td style="border:1px solid #e5e7eb;padding:4px 6px;font-weight:600;font-size:10px;background:#f8fafc;white-space:nowrap">
+          Oda ${room.roomNumber}
+          <div style="font-size:8px;color:#6b7280;font-weight:400">${room.capacity || ''}  kişilik</div>
+        </td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    // Özet tablosu
+    const summary = rooms.map(room => {
+      const roomRes = reservations.filter(r => r.roomNumber === room.roomNumber);
+      const confirmed = roomRes.filter(r => r.status === 1).length;
+      const checkedIn = roomRes.filter(r => r.status === 2).length;
+      const pending = roomRes.filter(r => r.status === 0).length;
+      const totalGuests = roomRes.reduce((sum, r) => sum + (r.numberOfGuests || 1), 0);
+      return `<tr>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb;font-weight:600">Oda ${room.roomNumber}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">${roomRes.length}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;color:#2563eb">${confirmed}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;color:#16a34a">${checkedIn}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;color:#ca8a04">${pending}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">${totalGuests}</td>
+      </tr>`;
+    }).join('');
+
+    return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+<title>Güneş Pansiyon — Oda Takvimi ${monthLabel}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #1f2937; padding: 16px; }
+  h1 { font-size: 16px; font-weight: 700; color: #1e1b4b; }
+  h2 { font-size: 12px; font-weight: 600; color: #374151; margin-top: 20px; margin-bottom: 6px; }
+  .header { border-bottom: 2px solid #6366f1; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-right { text-align: right; font-size: 9px; color: #6b7280; }
+  table { border-collapse: collapse; width: 100%; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; font-size: 9px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  @media print { @page { size: A4 landscape; margin: 10mm; } }
+</style></head><body>
+<div class="header">
+  <div>
+    <h1>🏨 Güneş Pansiyon — Oda Takvimi</h1>
+    <p style="color:#6b7280;font-size:9px;margin-top:4px">Dönem: ${monthLabel} | Oda Sayısı: ${rooms.length} | Toplam Rezervasyon: ${reservations.length}</p>
+  </div>
+  <div class="header-right">
+    <p>Yazdırma Tarihi: ${new Date().toLocaleDateString('tr-TR')}</p>
+    <p>${new Date().toLocaleTimeString('tr-TR')}</p>
+  </div>
+</div>
+
+<h2>📅 Rezervasyon Matrisi</h2>
+<div style="overflow:hidden">
+  <table>
+    <colgroup>${colWidths}</colgroup>
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:5px 6px;background:#6366f1;color:white;border:1px solid #ccc;font-size:10px">Oda</th>
+        ${headerDays}
+      </tr>
+    </thead>
+    <tbody>${roomRows}</tbody>
+  </table>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#fef9c3"></div>Beklemede</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#dbeafe"></div>Onaylandı</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#dcfce7"></div>Giriş Yapıldı</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6"></div>Çıkış Yapıldı</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div>İptal/Gelmedi</div>
+</div>
+
+<h2 style="margin-top:24px">📊 Oda Özet Raporu — ${monthLabel}</h2>
+<table>
+  <thead>
+    <tr style="background:#6366f1;color:white">
+      <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Oda</th>
+      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Toplam Rezervasyon</th>
+      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Onaylandı</th>
+      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Giriş Yapıldı</th>
+      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Beklemede</th>
+      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Toplam Misafir</th>
+    </tr>
+  </thead>
+  <tbody>${summary}</tbody>
+</table>
+</body></html>`;
+  };
+
+  const handlePrint = () => {
+    const html = buildPrintHtml();
+    const win = window.open('', '_blank', 'width=1100,height=800');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
+  };
+
+  const handlePdfDownload = () => {
+    const html = buildPrintHtml();
+    const win = window.open('', '_blank', 'width=1100,height=800');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    // Kullanıcı tarayıcıdan "PDF olarak kaydet" seçeneğiyle kaydedebilir
+    setTimeout(() => { win.print(); }, 600);
+  };
+  // ────────────────────────────────────────────────────────────────────────────
 
   const renderReservationCell = (room, date) => {
     const reservation = isRoomReserved(room.roomNumber, date);
     const displayName = reservation
       ? (reservation.reservationName && reservation.reservationName.trim())
         || (reservation.customerName && reservation.customerName.trim())
-        || (reservation.customers && reservation.customers.length > 0 ? `${reservation.customers[0].firstName || reservation.customers[0].customerName || ''} ${reservation.customers[0].lastName || ''}`.trim() : '')
+        || (reservation.customers && reservation.customers.length > 0
+          ? `${reservation.customers[0].firstName || reservation.customers[0].customerName || ''} ${reservation.customers[0].lastName || ''}`.trim()
+          : '')
         || `Oda ${reservation.roomNumber}`
       : '';
 
@@ -121,27 +257,13 @@ const RoomCalendar = () => {
         }`}
         title={
           reservation
-            ? `${displayName}
-Oda: ${reservation.roomNumber}
-Giriş: ${new Date(reservation.checkInDate).toLocaleDateString('tr-TR')}
-Çıkış: ${new Date(reservation.checkOutDate).toLocaleDateString('tr-TR')}
-Durum: ${
-              reservation.status === 0 ? 'Beklemede' :
-              reservation.status === 1 ? 'Onaylandı' :
-              reservation.status === 2 ? 'Giriş Yapıldı' :
-              reservation.status === 3 ? 'Çıkış Yapıldı' :
-              reservation.status === 4 ? 'İptal Edildi' :
-              reservation.status === 5 ? 'Gelmedi' : 'Bilinmiyor'
-            }
-Misafir Sayısı: ${reservation.numberOfGuests || 1}`
+            ? `${displayName}\nOda: ${reservation.roomNumber}\nGiriş: ${new Date(reservation.checkInDate).toLocaleDateString('tr-TR')}\nÇıkış: ${new Date(reservation.checkOutDate).toLocaleDateString('tr-TR')}\nDurum: ${getStatusLabel(reservation.status)}`
             : 'Müsait'
         }
       >
         {reservation && (
           <>
-            <div className="text-[11px] leading-tight font-bold truncate">
-              {displayName}
-            </div>
+            <div className="text-[11px] leading-tight font-bold truncate">{displayName}</div>
             <div className="text-[10px] leading-tight truncate opacity-85 mt-0.5">
               👥 {reservation.numberOfGuests || 1} misafir
             </div>
@@ -158,13 +280,19 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
         {room.roomType} · {room.capacity} kişilik
       </div>
       <div className="text-xs">
-        <span className="font-medium text-green-600">
-          {room.pricePerNight} ₺
-        </span>
+        <span className="font-medium text-green-600">{room.pricePerNight} ₺</span>
         <span className="text-gray-500"> / gece</span>
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="printable-area bg-white shadow-lg rounded-lg overflow-hidden">
@@ -229,18 +357,15 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
             </button>
 
             <button
-              onClick={() => {
-                document.title = `Gunes_Pansiyon_Oda_Takvimi_${formatMonthYear(currentDate).replace(/\s+/g, '_')}`;
-                window.print();
-              }}
+              onClick={handlePdfDownload}
               className="no-print bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-2 text-sm"
-              title="PDF olarak kaydet / indir"
+              title="PDF olarak kaydet"
             >
               📄 <span>PDF İndir</span>
             </button>
 
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="no-print bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg font-medium transition-all shadow-sm flex items-center gap-1.5 ml-1 text-sm"
               title="Yazıcı çıktısı al"
             >
@@ -250,27 +375,9 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
         </div>
       </div>
 
-      {/* Yazdırma / PDF Rapor Başlığı */}
-      <div className="print-header p-4 border-b border-gray-300 mb-4 bg-gray-50 rounded-lg">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">🏨 Güneş Pansiyon — Oda Takvimi Raporu</h1>
-            <p className="text-xs text-gray-600 mt-1">Dönem: {formatMonthYear(currentDate)} | Görünüm: {viewMode === 'horizontal' ? 'Yatay Matris' : 'Dikey Matris'}</p>
-          </div>
-          <div className="text-right text-xs text-gray-500">
-            <p>Tarih: {new Date().toLocaleDateString('tr-TR')}</p>
-            <p>Oda Sayısı: {rooms.length} | Kayıtlı Rezervasyon: {reservations.length}</p>
-          </div>
-        </div>
-      </div>
-
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 m-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
@@ -278,12 +385,8 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
       <div className="p-6 overflow-x-auto">
         <div className="min-w-max">
           {viewMode === 'horizontal' ? (
-            // Yatay Görünüm (Günler soldan sağa, Odalar yukarıdan aşağıya)
             <div className="grid" style={{ gridTemplateColumns: 'minmax(150px, auto) repeat(' + days.length + ', minmax(40px, 1fr))' }}>
-              {/* Header Row - Days */}
-              <div className="sticky left-0 z-10 bg-white border-b font-medium p-2">
-                Oda
-              </div>
+              <div className="sticky left-0 z-10 bg-white border-b font-medium p-2">Oda</div>
               {days.map((date, index) => (
                 <div
                   key={index}
@@ -296,8 +399,6 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
                   {date.getDate()}
                 </div>
               ))}
-
-              {/* Room Rows */}
               {rooms.map((room) => (
                 <React.Fragment key={room.id}>
                   <div className="sticky left-0 z-10 bg-white border-b border-r p-2">
@@ -312,19 +413,13 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
               ))}
             </div>
           ) : (
-            // Dikey Görünüm (Odalar soldan sağa, Günler yukarıdan aşağıya)
             <div className="grid" style={{ gridTemplateColumns: `repeat(${rooms.length + 1}, minmax(150px, 1fr))` }}>
-              {/* Header Row - Rooms */}
-              <div className="sticky top-0 z-10 bg-white border-b font-medium p-2">
-                Tarih
-              </div>
+              <div className="sticky top-0 z-10 bg-white border-b font-medium p-2">Tarih</div>
               {rooms.map((room) => (
                 <div key={room.id} className="sticky top-0 z-10 bg-white border-b border-r p-2">
                   {renderRoomInfo(room)}
                 </div>
               ))}
-
-              {/* Date Rows */}
               {days.map((date, dateIndex) => (
                 <React.Fragment key={dateIndex}>
                   <div
@@ -351,26 +446,18 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
       {/* Legend */}
       <div className="bg-gray-50 px-6 py-4 border-t">
         <div className="flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-200 rounded mr-2"></div>
-            <span>Beklemede</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-200 rounded mr-2"></div>
-            <span>Onaylandı</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-200 rounded mr-2"></div>
-            <span>Giriş Yapıldı</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-gray-200 rounded mr-2"></div>
-            <span>Çıkış Yapıldı</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-200 rounded mr-2"></div>
-            <span>İptal/Gelmedi</span>
-          </div>
+          {[
+            ['bg-yellow-200', 'Beklemede'],
+            ['bg-blue-200', 'Onaylandı'],
+            ['bg-green-200', 'Giriş Yapıldı'],
+            ['bg-gray-200', 'Çıkış Yapıldı'],
+            ['bg-red-200', 'İptal/Gelmedi'],
+          ].map(([color, label]) => (
+            <div key={label} className="flex items-center">
+              <div className={`w-3 h-3 ${color} rounded mr-2`}></div>
+              <span>{label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
