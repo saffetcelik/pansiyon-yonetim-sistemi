@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchRooms, updateRoomStatus, createRoom, updateRoom, deleteRoom } from '../store/roomSlice';
 import { ROOM_STATUS, ROOM_STATUS_NAMES, ROOM_STATUS_COLORS } from '../services/roomService';
 import RoomFormModal from './RoomFormModal';
+import Swal from 'sweetalert2';
 
 const RoomPanel = ({ readOnly = false }) => {
   const dispatch = useDispatch();
@@ -49,11 +50,24 @@ const RoomPanel = ({ readOnly = false }) => {
     if (!roomToDelete) return;
     try {
       await dispatch(deleteRoom(roomToDelete.id)).unwrap();
+      Swal.fire({
+        title: 'Başarılı!',
+        text: 'Oda başarıyla silindi.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
       setRoomToDelete(null);
     } catch (err) {
       console.error('Oda silinemedi:', err);
-      // Hata mesajını kullanıcıya gösterebiliriz.
-      setRoomToDelete(null); // Hata durumunda da dialogu kapat
+      const errMsg = typeof err === 'string' ? err : (err?.message || 'Oda silinirken hata oluştu');
+      Swal.fire({
+        title: 'Silinemedi!',
+        text: errMsg,
+        icon: 'error',
+        confirmButtonText: 'Tamam'
+      });
+      setRoomToDelete(null);
     }
   };
 

@@ -43,6 +43,7 @@ const emptyRoomItem = (roomId = '') => ({
 // ────────────────────────────────────────────────────────────────────────────
 const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false }) => {
   const dispatch = useDispatch();
+  const { reservations: allReservations } = useSelector(state => state.reservations);
   const { loading, error, filters } = useSelector((state) => state.reservations);
 
   // ── Form state ──
@@ -339,6 +340,24 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
         }));
       } catch (e) { }
     }
+  };
+
+  const getRoomMonthReservations = (roomId, targetDateStr) => {
+    if (!roomId || !allReservations || allReservations.length === 0) return [];
+    const baseDate = targetDateStr ? new Date(targetDateStr) : new Date();
+    const targetMonth = baseDate.getMonth();
+    const targetYear = baseDate.getFullYear();
+
+    return allReservations.filter(r => {
+      if (r.roomId != roomId) return false;
+      if (isEdit && reservation && r.id === reservation.id) return false;
+      if (r.status === 4 || r.status === 5) return false;
+
+      const cin = new Date(r.checkInDate);
+      const cout = new Date(r.checkOutDate);
+      return (cin.getMonth() === targetMonth && cin.getFullYear() === targetYear) ||
+             (cout.getMonth() === targetMonth && cout.getFullYear() === targetYear);
+    });
   };
 
   const updateRoomField = (index, field, value) => {
@@ -752,6 +771,42 @@ const ReservationModal = ({ isOpen, onClose, reservation = null, isEdit = false 
                       </div>
                       {formErrors[`room_${index}_roomId`] && (
                         <p className="text-red-500 text-xs mt-1">⚠️ {formErrors[`room_${index}_roomId`]}</p>
+                      )}
+
+                      {/* Seçili Odanın Ay İçi Mevcut Rezervasyonları Bilgilendirmesi */}
+                      {selectedRoom && (
+                        <div className="mt-2.5 p-3 bg-blue-50/90 border border-blue-200 rounded-xl text-xs space-y-1.5">
+                          <div className="font-semibold text-blue-950 flex items-center justify-between">
+                            <span>📌 Oda {selectedRoom.roomNumber} — {new Date(checkInDate || Date.now()).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })} Ayı Mevcut Rezervasyonları:</span>
+                            <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full font-bold">
+                              {getRoomMonthReservations(selectedRoom.id, checkInDate).length} Kayıt
+                            </span>
+                          </div>
+                          {getRoomMonthReservations(selectedRoom.id, checkInDate).length > 0 ? (
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {getRoomMonthReservations(selectedRoom.id, checkInDate).map(res => (
+                                <div key={res.id} className="flex items-center justify-between bg-white p-2 rounded-lg border border-blue-100 shadow-2xs">
+                                  <div>
+                                    <div className="font-bold text-gray-900">
+                                      📋 {res.reservationName || res.customerName || 'Rezervasyon'}
+                                    </div>
+                                    <div className="text-[11px] text-gray-600">
+                                      📅 {new Date(res.checkInDate).toLocaleDateString('tr-TR')} → {new Date(res.checkOutDate).toLocaleDateString('tr-TR')}
+                                    </div>
+                                  </div>
+                                  <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold ${
+                                    res.status === 2 ? 'bg-green-100 text-green-800' :
+                                    res.status === 1 ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {res.status === 2 ? 'Giriş Yapıldı' : res.status === 1 ? 'Onaylandı' : 'Beklemede'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 italic">Bu oda için seçilen ayda aktif başka rezervasyon bulunmuyor.</p>
+                          )}
+                        </div>
                       )}
                     </div>
 

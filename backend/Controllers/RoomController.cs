@@ -175,7 +175,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<IActionResult> DeleteRoom(int id)
         {
             try
@@ -186,13 +186,26 @@ namespace PansiyonYonetimSistemi.API.Controllers
                     return NotFound(new { message = "Oda bulunamadı" });
                 }
 
-                // Check if room has any reservations
-                var hasReservations = await _context.Reservations
-                    .AnyAsync(r => r.RoomId == id);
+                // Check if room has active/ongoing reservations
+                var hasActiveReservations = await _context.Reservations
+                    .AnyAsync(r => r.RoomId == id && 
+                        (r.Status == ReservationStatus.Pending || 
+                         r.Status == ReservationStatus.Confirmed || 
+                         r.Status == ReservationStatus.CheckedIn));
 
-                if (hasReservations)
+                if (hasActiveReservations)
                 {
-                    return BadRequest(new { message = "Bu odanın rezervasyonları bulunduğu için silinemez" });
+                    return BadRequest(new { message = "Bu odada aktif veya devam eden bir rezervasyon bulunduğu için silinemez." });
+                }
+
+                // Clean up inactive/past reservations tied to this room to prevent FK violation
+                var relatedReservations = await _context.Reservations
+                    .Where(r => r.RoomId == id)
+                    .ToListAsync();
+
+                if (relatedReservations.Any())
+                {
+                    _context.Reservations.RemoveRange(relatedReservations);
                 }
 
                 _context.Rooms.Remove(room);

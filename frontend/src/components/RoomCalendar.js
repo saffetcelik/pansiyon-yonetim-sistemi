@@ -105,16 +105,23 @@ const RoomCalendar = () => {
 
   const renderReservationCell = (room, date) => {
     const reservation = isRoomReserved(room.roomNumber, date);
+    const displayName = reservation
+      ? (reservation.reservationName && reservation.reservationName.trim())
+        || (reservation.customerName && reservation.customerName.trim())
+        || (reservation.customers && reservation.customers.length > 0 ? `${reservation.customers[0].firstName || reservation.customers[0].customerName || ''} ${reservation.customers[0].lastName || ''}`.trim() : '')
+        || `Oda ${reservation.roomNumber}`
+      : '';
+
     return (
       <div
-        className={`border-b border-r p-2 ${
+        className={`border-b border-r p-1.5 min-h-[44px] flex flex-col justify-center ${
           reservation
-            ? `${getReservationStyle(reservation)} cursor-pointer`
+            ? `${getReservationStyle(reservation)} cursor-pointer font-medium`
             : 'hover:bg-gray-50'
         }`}
         title={
           reservation
-            ? `${reservation.customerName}
+            ? `${displayName}
 Oda: ${reservation.roomNumber}
 Giriş: ${new Date(reservation.checkInDate).toLocaleDateString('tr-TR')}
 Çıkış: ${new Date(reservation.checkOutDate).toLocaleDateString('tr-TR')}
@@ -132,11 +139,11 @@ Misafir Sayısı: ${reservation.numberOfGuests || 1}`
       >
         {reservation && (
           <>
-            <div className="text-xs font-medium truncate">
-              {reservation.customerName}
+            <div className="text-[11px] leading-tight font-bold truncate">
+              {displayName}
             </div>
-            <div className="text-xs truncate opacity-75">
-              {reservation.numberOfGuests || 1} misafir
+            <div className="text-[10px] leading-tight truncate opacity-85 mt-0.5">
+              👥 {reservation.numberOfGuests || 1} misafir
             </div>
           </>
         )}

@@ -238,21 +238,28 @@ const ReservationCalendar = ({ onReservationClick }) => {
 
                     {/* Reservations */}
                     <div className="space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
-                      {reservations.map((reservation) => (
-                        <div
-                          key={reservation.id}
-                          onClick={() => onReservationClick && onReservationClick(reservation)}
-                          className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity mb-1 ${getStatusColor(reservation.status)}`}
-                          title={`${reservation.customerName} - ${reservation.roomNumber}`}
-                        >
-                          <div className="truncate font-medium">
-                            {reservation.customerName}
+                      {reservations.map((reservation) => {
+                        const displayName = (reservation.reservationName && reservation.reservationName.trim())
+                          || (reservation.customerName && reservation.customerName.trim())
+                          || (reservation.customers && reservation.customers.length > 0 ? `${reservation.customers[0].firstName || reservation.customers[0].customerName || ''} ${reservation.customers[0].lastName || ''}`.trim() : '')
+                          || `Oda ${reservation.roomNumber}`;
+
+                        return (
+                          <div
+                            key={reservation.id}
+                            onClick={() => onReservationClick && onReservationClick(reservation)}
+                            className={`text-xs p-1.5 rounded-lg cursor-pointer hover:opacity-90 transition-all mb-1 border shadow-xs ${getStatusColor(reservation.status)}`}
+                            title={`${displayName} - Oda: ${reservation.roomNumber}`}
+                          >
+                            <div className="truncate font-bold text-[11px] leading-tight">
+                              📋 {displayName}
+                            </div>
+                            <div className="truncate text-[10px] opacity-90 mt-0.5 font-medium">
+                              🛏️ Oda {reservation.roomNumber}
+                            </div>
                           </div>
-                          <div className="truncate">
-                            {reservation.roomNumber}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 )}

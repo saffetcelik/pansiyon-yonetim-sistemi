@@ -320,29 +320,9 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             '<"table-responsive"t>' +
             '<"dataTables_wrapper-footer"<"dataTables_info-container"i><"dataTables_paginate-container"p>>',
           columnDefs: [
-            { orderable: false, targets: [1, 7] }, // Müşteriler ve İşlemler sütunlarında sıralama yapma
-            { responsivePriority: 1, targets: [0, 1] }, // Oda No ve Müşteri öncelikli gösterilecek
-            { responsivePriority: 2, targets: 7 }, // İşlemler sütunu da önemli
-            { responsivePriority: 3, targets: [2, 3] } // Giriş/Çıkış tarihleri de gösterilmeli
+            { orderable: false, targets: isBulkMode ? [0, 2, 5, 8] : [1, 4, 7] }
           ],
-          responsive: {
-            details: {
-              type: 'column',
-              target: 'tr',
-              renderer: function (api, rowIdx, columns) {
-                let data = '';
-                // Sadece gizlenen sütunları göster
-                columns.filter(col => !col.visible).forEach(col => {
-                  data += '<li>' +
-                    '<span class="dtr-title">' + col.title + '</span> ' +
-                    '<span class="dtr-data">' + col.data + '</span>' +
-                    '</li>';
-                });
-
-                return data ? '<ul class="dtr-details">' + data + '</ul>' : false;
-              }
-            }
-          },
+          responsive: false,
           drawCallback: function () {
             // Tablo çizildikten sonra responsive uyumluluğu tekrar kontrol et
             $(window).trigger('resize');
@@ -1046,10 +1026,10 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         </div>
       )}
 
-      {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-        <table ref={tableRef} className="min-w-full divide-y divide-gray-200 display nowrap w-full table-responsive">
-          <thead className="bg-gray-50">
+      {/* Table View (Tüm ekran çözünürlüklerinde görünür ve kaydırılabilir) */}
+      <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <table ref={tableRef} className="min-w-full divide-y divide-gray-200 display nowrap w-full border-collapse">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               {isBulkMode && (
                 <th className="px-3 py-3 text-center w-10 bg-purple-50">
@@ -1067,28 +1047,28 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   />
                 </th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 #
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Rezervasyon Adı
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Oda
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="3">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Tarihler
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="4">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Müşteriler
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="3">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Tutar
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="2">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Durum
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="2">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 İşlemler
               </th>
             </tr>
