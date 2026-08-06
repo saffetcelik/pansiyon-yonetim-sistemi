@@ -847,7 +847,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 Tarihler
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="4">
-                Misafir
+                Müşteriler
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="3">
                 Tutar
@@ -922,14 +922,14 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {/* Misafir sayısı - tıklanabilir popup */}
+                  {/* Kayıtlı müşteri sayısı - tıklanabilir popup */}
                   <button
                     type="button"
                     onClick={() => setGuestPopupReservation(reservation)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm font-medium"
-                    title="Müşteri listesini gör"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm font-medium border border-blue-200"
+                    title="Kayıtlı müşteri listesini gör"
                   >
-                    👥 {reservation.numberOfGuests}
+                    👥 {reservation.customers?.length ?? (reservation.customerId ? 1 : 0)}
                   </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -945,17 +945,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-1 items-center">
-                    {/* Not megafon ikonu - sadece not varsa */}
-                    {reservation.notes && (
-                      <button
-                        onClick={() => setNotePopupReservation(reservation)}
-                        className="text-amber-500 hover:text-amber-700 p-2 rounded-md hover:bg-amber-50 transition"
-                        title="Notu göster"
-                      >
-                        📢
-                      </button>
-                    )}
-
                     <button
                       onClick={() => onEditReservation(reservation)}
                       className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50"
@@ -1064,6 +1053,17 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                     >
                       🗑️
                     </button>
+
+                    {/* Not megafon ikonu - en sağda */}
+                    {reservation.notes && (
+                      <button
+                        onClick={() => setNotePopupReservation(reservation)}
+                        className="text-amber-500 hover:text-amber-700 p-2 rounded-md hover:bg-amber-50 transition"
+                        title="Notu göster"
+                      >
+                        📢
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -1104,13 +1104,13 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   <span className="font-semibold text-gray-900">{formatDate(reservation.checkInDate)} - {formatDate(reservation.checkOutDate)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 font-medium">👥 Misafir:</span>
+                  <span className="text-gray-500 font-medium">👥 Müşteriler:</span>
                   <button
                     type="button"
                     onClick={() => setGuestPopupReservation(reservation)}
                     className="font-semibold text-blue-700 hover:text-blue-900 underline underline-offset-2"
                   >
-                    {reservation.numberOfGuests} Kişi
+                    {reservation.customers?.length ?? (reservation.customerId ? 1 : 0)} Kişi
                   </button>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-blue-100">
@@ -1125,17 +1125,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
 
               {/* Butonlar: Yazılı ve Dokunmatik Dostu */}
               <div className="flex flex-wrap gap-2 pt-1">
-                {/* Not megafon - sadece not varsa */}
-                {reservation.notes && (
-                  <button
-                    type="button"
-                    onClick={() => setNotePopupReservation(reservation)}
-                    className="flex-1 min-w-[80px] inline-flex items-center justify-center px-3 py-2 bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
-                  >
-                    📢 Not
-                  </button>
-                )}
-
                 {/* Düzenle */}
                 <button
                   type="button"
@@ -1248,6 +1237,17 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 >
                   🗑️ Sil
                 </button>
+
+                {/* Not megafon - en sağda */}
+                {reservation.notes && (
+                  <button
+                    type="button"
+                    onClick={() => setNotePopupReservation(reservation)}
+                    className="flex-1 min-w-[80px] inline-flex items-center justify-center px-3 py-2 bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                  >
+                    📢 Not
+                  </button>
+                )}
               </div>
             </div>
           ))

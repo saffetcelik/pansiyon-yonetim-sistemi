@@ -22,10 +22,17 @@ namespace PansiyonYonetimSistemi.API.Data
         public DbSet<Expense> Expenses { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Log> Logs { get; set; }
+        public DbSet<SystemSetting> SystemSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // SystemSetting Configuration
+            modelBuilder.Entity<SystemSetting>(entity =>
+            {
+                entity.HasIndex(e => e.Key).IsUnique();
+            });
 
             // Customer Configuration
             modelBuilder.Entity<Customer>(entity =>

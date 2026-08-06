@@ -293,6 +293,19 @@ export const reservationService = {
 
 
 
+export const backupService = {
+  getBackups: () => api.get('/backup/list'),
+  createBackup: () => api.post('/backup/create'),
+  downloadUrl: (fileName) => `${API_BASE_URL}/backup/download/${fileName}`,
+  restoreBackup: (formData) => api.post('/backup/restore', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteBackup: (fileName) => api.delete(`/backup/${fileName}`),
+  getSettings: () => api.get('/backup/settings'),
+  saveSettings: (data) => api.put('/backup/settings', data),
+  testCloud: (data) => api.post('/backup/test-cloud', data)
+};
+
 export const testService = {
   health: () => api.get('/test/health'),
   database: () => api.get('/test/database'),
