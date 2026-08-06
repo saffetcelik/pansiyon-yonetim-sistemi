@@ -162,6 +162,16 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Console.WriteLine("[Database] Kolon kontrolü ve DDL uygulanıyor...");
+        
+        // Direct DDL Garanti Bloğu: PostgreSQL'de eksik kolonları doğruda ekler (Idempotent)
+        await context.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE ""Reservations"" ADD COLUMN IF NOT EXISTS ""ReservationName"" character varying(200);
+            ALTER TABLE ""Reservations"" ADD COLUMN IF NOT EXISTS ""ReservationGroupId"" character varying(36);
+            ALTER TABLE ""Reservations"" ALTER COLUMN ""CustomerId"" DROP NOT NULL;
+        ");
+        Console.WriteLine("[Database] DDL kontrolü tamamlandı.");
+
         Console.WriteLine("[Database] Migration uygulanıyor...");
         await context.Database.MigrateAsync();
         Console.WriteLine("[Database] Migration başarılı.");
