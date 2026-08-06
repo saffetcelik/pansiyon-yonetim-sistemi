@@ -97,58 +97,104 @@ const RoomCalendar = () => {
   // ─── PDF / Print ────────────────────────────────────────────────────────────
   const buildPrintHtml = () => {
     const monthLabel = formatMonthYear(currentDate);
+    const isHorizontal = viewMode === 'horizontal';
     const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
     const statusColors = {
       0: '#fef9c3', 1: '#dbeafe', 2: '#dcfce7',
       3: '#f3f4f6', 4: '#fee2e2', 5: '#fecaca'
     };
 
-    // Yatay tablo: Odalar satır, günler sütun
-    const colWidths = `<col style="width:120px">` + days.map(() => `<col style="width:${Math.max(28, Math.floor(650 / days.length))}px">`).join('');
+    // ── YATAY: Odalar satır, günler sütun ──────────────────────────
+    const buildHorizontalTable = () => {
+      const colWidths = `<col style="width:120px">` +
+        days.map(() => `<col style="width:${Math.max(26, Math.floor(660 / days.length))}px">`).join('');
 
-    const headerDays = days.map(d => {
-      const isToday = d.toDateString() === new Date().toDateString();
-      return `<th style="text-align:center;font-size:9px;padding:3px 1px;background:${isToday ? '#3b82f6' : '#6366f1'};color:white;border:1px solid #ccc">
-        <div>${d.getDate()}</div>
-        <div style="opacity:.8">${dayNames[d.getDay()]}</div>
-      </th>`;
-    }).join('');
-
-    const roomRows = rooms.map(room => {
-      const cells = days.map(date => {
-        const res = isRoomReserved(room.roomNumber, date);
-        if (!res) return `<td style="border:1px solid #e5e7eb;background:#f9fafb"></td>`;
-        const name = (res.reservationName && res.reservationName.trim())
-          || (res.customerName && res.customerName.trim())
-          || `Oda ${res.roomNumber}`;
-        const bg = statusColors[res.status] || '#f3f4f6';
-        return `<td style="border:1px solid #e5e7eb;background:${bg};padding:2px;font-size:8px;text-align:center;overflow:hidden" title="${name}">
-          <div style="font-weight:600;overflow:hidden;max-height:28px">${name.length > 8 ? name.substring(0, 7) + '…' : name}</div>
-        </td>`;
+      const headerDays = days.map(d => {
+        const isTdy = d.toDateString() === new Date().toDateString();
+        return `<th style="text-align:center;font-size:9px;padding:3px 1px;background:${isTdy ? '#3b82f6' : '#6366f1'};color:white;border:1px solid #ccc">
+          <div>${d.getDate()}</div><div style="opacity:.8">${dayNames[d.getDay()]}</div></th>`;
       }).join('');
-      return `<tr>
-        <td style="border:1px solid #e5e7eb;padding:4px 6px;font-weight:600;font-size:10px;background:#f8fafc;white-space:nowrap">
-          Oda ${room.roomNumber}
-          <div style="font-size:8px;color:#6b7280;font-weight:400">${room.capacity || ''}  kişilik</div>
-        </td>
-        ${cells}
-      </tr>`;
-    }).join('');
 
-    // Özet tablosu
-    const summary = rooms.map(room => {
+      const rows = rooms.map(room => {
+        const cells = days.map(date => {
+          const res = isRoomReserved(room.roomNumber, date);
+          if (!res) return `<td style="border:1px solid #e5e7eb;background:#f9fafb"></td>`;
+          const name = (res.reservationName && res.reservationName.trim()) ||
+            (res.customerName && res.customerName.trim()) || `Oda ${res.roomNumber}`;
+          const bg = statusColors[res.status] || '#f3f4f6';
+          const short = name.length > 8 ? name.substring(0, 7) + '…' : name;
+          return `<td style="border:1px solid #e5e7eb;background:${bg};padding:2px;font-size:8px;text-align:center" title="${name}">
+            <div style="font-weight:600">${short}</div></td>`;
+        }).join('');
+        return `<tr>
+          <td style="border:1px solid #e5e7eb;padding:4px 6px;font-weight:600;font-size:10px;background:#f8fafc;white-space:nowrap">
+            Oda ${room.roomNumber}<div style="font-size:8px;color:#6b7280;font-weight:400">${room.capacity || ''} kişilik</div></td>
+          ${cells}</tr>`;
+      }).join('');
+
+      return `<colgroup>${colWidths}</colgroup>
+        <thead><tr>
+          <th style="text-align:left;padding:5px 6px;background:#6366f1;color:white;border:1px solid #ccc;font-size:10px">Oda</th>
+          ${headerDays}</tr></thead>
+        <tbody>${rows}</tbody>`;
+    };
+
+    // ── DİKEY: Günler satır, odalar sütun ──────────────────────────
+    const buildVerticalTable = () => {
+      const roomColWidth = Math.max(80, Math.floor(600 / rooms.length));
+      const colWidths = `<col style="width:60px">` +
+        rooms.map(() => `<col style="width:${roomColWidth}px">`).join('');
+
+      const headerRooms = rooms.map(room =>
+        `<th style="text-align:center;font-size:9px;padding:4px 2px;background:#6366f1;color:white;border:1px solid #ccc">
+          <div style="font-weight:700">Oda ${room.roomNumber}</div>
+          <div style="opacity:.8;font-size:8px">${room.capacity || ''} kişi</div></th>`
+      ).join('');
+
+      const rows = days.map(date => {
+        const isTdy = date.toDateString() === new Date().toDateString();
+        const dateCells = rooms.map(room => {
+          const res = isRoomReserved(room.roomNumber, date);
+          if (!res) return `<td style="border:1px solid #e5e7eb;background:#f9fafb"></td>`;
+          const name = (res.reservationName && res.reservationName.trim()) ||
+            (res.customerName && res.customerName.trim()) || `Oda ${res.roomNumber}`;
+          const bg = statusColors[res.status] || '#f3f4f6';
+          const short = name.length > 9 ? name.substring(0, 8) + '…' : name;
+          return `<td style="border:1px solid #e5e7eb;background:${bg};padding:2px;font-size:8px;text-align:center" title="${name}">
+            <div style="font-weight:600">${short}</div></td>`;
+        }).join('');
+        return `<tr>
+          <td style="border:1px solid #e5e7eb;padding:3px 5px;font-weight:600;font-size:9px;background:${isTdy ? '#eff6ff' : '#f8fafc'};text-align:center;color:${isTdy ? '#1d4ed8' : '#374151'}">
+            <div>${date.getDate()}</div><div style="font-size:8px;opacity:.7">${dayNames[date.getDay()]}</div></td>
+          ${dateCells}</tr>`;
+      }).join('');
+
+      return `<colgroup>${colWidths}</colgroup>
+        <thead><tr>
+          <th style="text-align:center;padding:5px 6px;background:#6366f1;color:white;border:1px solid #ccc;font-size:10px">Tarih</th>
+          ${headerRooms}</tr></thead>
+        <tbody>${rows}</tbody>`;
+    };
+
+    const tableContent = isHorizontal ? buildHorizontalTable() : buildVerticalTable();
+    const pageSize = isHorizontal ? 'A4 landscape' : 'A4';
+    const viewLabel = isHorizontal ? 'Yatay (Oda × Gün)' : 'Dikey (Gün × Oda)';
+
+    // Özet tablosu (2. sayfa)
+    const summary = rooms.map((room, i) => {
       const roomRes = reservations.filter(r => r.roomNumber === room.roomNumber);
       const confirmed = roomRes.filter(r => r.status === 1).length;
       const checkedIn = roomRes.filter(r => r.status === 2).length;
-      const pending = roomRes.filter(r => r.status === 0).length;
+      const pending   = roomRes.filter(r => r.status === 0).length;
       const totalGuests = roomRes.reduce((sum, r) => sum + (r.numberOfGuests || 1), 0);
-      return `<tr>
-        <td style="padding:5px 8px;border:1px solid #e5e7eb;font-weight:600">Oda ${room.roomNumber}</td>
-        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">${roomRes.length}</td>
-        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;color:#2563eb">${confirmed}</td>
-        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;color:#16a34a">${checkedIn}</td>
-        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;color:#ca8a04">${pending}</td>
-        <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">${totalGuests}</td>
+      const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+      return `<tr style="background:${rowBg}">
+        <td style="padding:6px 10px;border:1px solid #e5e7eb;font-weight:600">Oda ${room.roomNumber}</td>
+        <td style="padding:6px 10px;border:1px solid #e5e7eb;text-align:center">${roomRes.length}</td>
+        <td style="padding:6px 10px;border:1px solid #e5e7eb;text-align:center;color:#2563eb;font-weight:600">${confirmed}</td>
+        <td style="padding:6px 10px;border:1px solid #e5e7eb;text-align:center;color:#16a34a;font-weight:600">${checkedIn}</td>
+        <td style="padding:6px 10px;border:1px solid #e5e7eb;text-align:center;color:#ca8a04;font-weight:600">${pending}</td>
+        <td style="padding:6px 10px;border:1px solid #e5e7eb;text-align:center">${totalGuests}</td>
       </tr>`;
     }).join('');
 
@@ -158,19 +204,22 @@ const RoomCalendar = () => {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; font-size: 10px; color: #1f2937; padding: 16px; }
   h1 { font-size: 16px; font-weight: 700; color: #1e1b4b; }
-  h2 { font-size: 12px; font-weight: 600; color: #374151; margin-top: 20px; margin-bottom: 6px; }
+  h2 { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 8px; }
   .header { border-bottom: 2px solid #6366f1; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
   .header-right { text-align: right; font-size: 9px; color: #6b7280; }
   table { border-collapse: collapse; width: 100%; }
-  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; font-size: 9px; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 9px; }
   .legend-item { display: flex; align-items: center; gap: 4px; }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-  @media print { @page { size: A4 landscape; margin: 10mm; } }
+  .page-2 { page-break-before: always; padding-top: 16px; }
+  @media print { @page { size: ${pageSize}; margin: 10mm; } }
 </style></head><body>
+
+<!-- SAYFA 1: Rezervasyon Matrisi -->
 <div class="header">
   <div>
     <h1>🏨 Güneş Pansiyon — Oda Takvimi</h1>
-    <p style="color:#6b7280;font-size:9px;margin-top:4px">Dönem: ${monthLabel} | Oda Sayısı: ${rooms.length} | Toplam Rezervasyon: ${reservations.length}</p>
+    <p style="color:#6b7280;font-size:9px;margin-top:4px">Dönem: ${monthLabel} &nbsp;|&nbsp; Görünüm: ${viewLabel} &nbsp;|&nbsp; Oda: ${rooms.length} &nbsp;|&nbsp; Rezervasyon: ${reservations.length}</p>
   </div>
   <div class="header-right">
     <p>Yazdırma Tarihi: ${new Date().toLocaleDateString('tr-TR')}</p>
@@ -178,18 +227,9 @@ const RoomCalendar = () => {
   </div>
 </div>
 
-<h2>📅 Rezervasyon Matrisi</h2>
+<h2>📅 Rezervasyon Matrisi — ${viewLabel}</h2>
 <div style="overflow:hidden">
-  <table>
-    <colgroup>${colWidths}</colgroup>
-    <thead>
-      <tr>
-        <th style="text-align:left;padding:5px 6px;background:#6366f1;color:white;border:1px solid #ccc;font-size:10px">Oda</th>
-        ${headerDays}
-      </tr>
-    </thead>
-    <tbody>${roomRows}</tbody>
-  </table>
+  <table>${tableContent}</table>
 </div>
 
 <div class="legend">
@@ -200,20 +240,33 @@ const RoomCalendar = () => {
   <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div>İptal/Gelmedi</div>
 </div>
 
-<h2 style="margin-top:24px">📊 Oda Özet Raporu — ${monthLabel}</h2>
+<!-- SAYFA 2: Oda Özet Raporu -->
+<div class="page-2">
+<div class="header">
+  <div>
+    <h1>🏨 Güneş Pansiyon — Oda Özet Raporu</h1>
+    <p style="color:#6b7280;font-size:9px;margin-top:4px">Dönem: ${monthLabel}</p>
+  </div>
+  <div class="header-right">
+    <p>Yazdırma Tarihi: ${new Date().toLocaleDateString('tr-TR')}</p>
+    <p>${new Date().toLocaleTimeString('tr-TR')}</p>
+  </div>
+</div>
+<h2>📊 Oda Bazında İstatistikler — ${monthLabel}</h2>
 <table>
   <thead>
     <tr style="background:#6366f1;color:white">
-      <th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Oda</th>
-      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Toplam Rezervasyon</th>
-      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Onaylandı</th>
-      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Giriş Yapıldı</th>
-      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Beklemede</th>
-      <th style="padding:5px 8px;border:1px solid #ccc;text-align:center">Toplam Misafir</th>
+      <th style="padding:8px 10px;border:1px solid #4f46e5;text-align:left;font-size:11px">Oda</th>
+      <th style="padding:8px 10px;border:1px solid #4f46e5;text-align:center;font-size:11px">Toplam Rezervasyon</th>
+      <th style="padding:8px 10px;border:1px solid #4f46e5;text-align:center;font-size:11px">Onaylandı</th>
+      <th style="padding:8px 10px;border:1px solid #4f46e5;text-align:center;font-size:11px">Giriş Yapıldı</th>
+      <th style="padding:8px 10px;border:1px solid #4f46e5;text-align:center;font-size:11px">Beklemede</th>
+      <th style="padding:8px 10px;border:1px solid #4f46e5;text-align:center;font-size:11px">Toplam Misafir</th>
     </tr>
   </thead>
   <tbody>${summary}</tbody>
 </table>
+</div>
 </body></html>`;
   };
 
