@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PansiyonYonetimSistemi.API.Data;
 using PansiyonYonetimSistemi.API.Services;
+using PansiyonYonetimSistemi.API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
