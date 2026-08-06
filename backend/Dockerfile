@@ -16,6 +16,10 @@ RUN dotnet publish "PansiyonYonetimSistemi.API.csproj" -c Release -o /app/publis
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+
+# Install postgresql-client for native pg_dump and psql backup/restore utilities
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+
 COPY --from=publish /app/publish .
 
 ENV ASPNETCORE_HTTP_PORTS=8080

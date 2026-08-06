@@ -1,6 +1,9 @@
+using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PansiyonYonetimSistemi.API.Data;
 using PansiyonYonetimSistemi.API.DTOs;
 using PansiyonYonetimSistemi.API.Models;
@@ -11,12 +14,14 @@ namespace PansiyonYonetimSistemi.API.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _configuration;
         private readonly string _backupDirectory;
 
-        public DatabaseBackupService(ApplicationDbContext context, IWebHostEnvironment env)
+        public DatabaseBackupService(ApplicationDbContext context, IWebHostEnvironment env, IConfiguration configuration)
         {
             _context = context;
             _env = env;
+            _configuration = configuration;
             _backupDirectory = Path.Combine(_env.ContentRootPath, "App_Data", "Backups");
             if (!Directory.Exists(_backupDirectory))
             {
@@ -31,174 +36,15 @@ namespace PansiyonYonetimSistemi.API.Services
             var fileName = $"{prefix}_{timeStamp}.sql";
             var filePath = Path.Combine(_backupDirectory, fileName);
 
-            var sqlBuilder = new StringBuilder();
-            sqlBuilder.AppendLine($"-- Pansiyon Yönetim Sistemi Veritabanı Yedeği");
-            sqlBuilder.AppendLine($"-- Oluşturulma Tarihi: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            sqlBuilder.AppendLine($"-- Otomatik Yedek: {(isAutoBackup ? "Evet" : "Hayır")}");
-            sqlBuilder.AppendLine();
-            sqlBuilder.AppendLine("BEGIN;");
-            sqlBuilder.AppendLine();
+            // 1. Yerel / Docker ortamında native pg_dump komutunu dene
+            bool success = await TryCreateNativePgDumpAsync(filePath, isAutoBackup);
 
-            // 1. Users
-            var users = await _context.Users.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Users ({users.Count} kayıt)");
-            foreach (var u in users)
+            // 2. pg_dump bulunamadıysa veya hata verdiyse Dinamik C# Dump Motoruna geç
+            if (!success)
             {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Users\" (\"Id\", \"Username\", \"PasswordHash\", \"Email\", \"FirstName\", \"LastName\", \"Phone\", \"Role\", \"IsActive\", \"CreatedAt\", \"UpdatedAt\", \"LastLoginDate\") " +
-                    $"VALUES ({u.Id}, {SqlString(u.Username)}, {SqlString(u.PasswordHash)}, {SqlString(u.Email)}, {SqlString(u.FirstName)}, {SqlString(u.LastName)}, {SqlString(u.Phone)}, {(int)u.Role}, {SqlBool(u.IsActive)}, {SqlDate(u.CreatedAt)}, {SqlDate(u.UpdatedAt)}, {SqlDate(u.LastLoginDate)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Username\" = EXCLUDED.\"Username\", \"PasswordHash\" = EXCLUDED.\"PasswordHash\", \"Email\" = EXCLUDED.\"Email\", \"FirstName\" = EXCLUDED.\"FirstName\", \"LastName\" = EXCLUDED.\"LastName\", \"Phone\" = EXCLUDED.\"Phone\", \"Role\" = EXCLUDED.\"Role\", \"IsActive\" = EXCLUDED.\"IsActive\";"
-                );
+                var sqlContent = await GenerateDynamicFullDumpSqlAsync(isAutoBackup);
+                await File.WriteAllTextAsync(filePath, sqlContent, Encoding.UTF8);
             }
-            sqlBuilder.AppendLine();
-
-            // 2. Customers
-            var customers = await _context.Customers.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Customers ({customers.Count} kayıt)");
-            foreach (var c in customers)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Customers\" (\"Id\", \"FirstName\", \"LastName\", \"TCKimlikNo\", \"PassportNo\", \"Phone\", \"Email\", \"Address\", \"City\", \"Country\", \"DateOfBirth\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({c.Id}, {SqlString(c.FirstName)}, {SqlString(c.LastName)}, {SqlString(c.TCKimlikNo)}, {SqlString(c.PassportNo)}, {SqlString(c.Phone)}, {SqlString(c.Email)}, {SqlString(c.Address)}, {SqlString(c.City)}, {SqlString(c.Country)}, {SqlDate(c.DateOfBirth)}, {SqlDate(c.CreatedAt)}, {SqlDate(c.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"FirstName\" = EXCLUDED.\"FirstName\", \"LastName\" = EXCLUDED.\"LastName\", \"TCKimlikNo\" = EXCLUDED.\"TCKimlikNo\", \"PassportNo\" = EXCLUDED.\"PassportNo\", \"Phone\" = EXCLUDED.\"Phone\", \"Email\" = EXCLUDED.\"Email\", \"Address\" = EXCLUDED.\"Address\", \"City\" = EXCLUDED.\"City\", \"Country\" = EXCLUDED.\"Country\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 3. Rooms
-            var rooms = await _context.Rooms.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Rooms ({rooms.Count} kayıt)");
-            foreach (var r in rooms)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Rooms\" (\"Id\", \"RoomNumber\", \"Type\", \"Capacity\", \"PricePerNight\", \"Status\", \"Description\", \"HasWiFi\", \"HasTV\", \"HasAirConditioning\", \"HasBalcony\", \"HasMinibar\", \"HasSeaView\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({r.Id}, {SqlString(r.RoomNumber)}, {(int)r.Type}, {r.Capacity}, {SqlNum(r.PricePerNight)}, {(int)r.Status}, {SqlString(r.Description)}, {SqlBool(r.HasWiFi)}, {SqlBool(r.HasTV)}, {SqlBool(r.HasAirConditioning)}, {SqlBool(r.HasBalcony)}, {SqlBool(r.HasMinibar)}, {SqlBool(r.HasSeaView)}, {SqlDate(r.CreatedAt)}, {SqlDate(r.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"RoomNumber\" = EXCLUDED.\"RoomNumber\", \"Type\" = EXCLUDED.\"Type\", \"Capacity\" = EXCLUDED.\"Capacity\", \"PricePerNight\" = EXCLUDED.\"PricePerNight\", \"Status\" = EXCLUDED.\"Status\", \"Description\" = EXCLUDED.\"Description\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 4. Reservations
-            var reservations = await _context.Reservations.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Reservations ({reservations.Count} kayıt)");
-            foreach (var res in reservations)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Reservations\" (\"Id\", \"ReservationName\", \"ReservationGroupId\", \"CustomerId\", \"RoomId\", \"CheckInDate\", \"CheckOutDate\", \"NumberOfGuests\", \"TotalAmount\", \"PaidAmount\", \"Status\", \"Notes\", \"ActualCheckInDate\", \"ActualCheckOutDate\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({res.Id}, {SqlString(res.ReservationName)}, {SqlString(res.ReservationGroupId)}, {SqlNullable(res.CustomerId)}, {res.RoomId}, {SqlDate(res.CheckInDate)}, {SqlDate(res.CheckOutDate)}, {res.NumberOfGuests}, {SqlNum(res.TotalAmount)}, {SqlNum(res.PaidAmount)}, {(int)res.Status}, {SqlString(res.Notes)}, {SqlDate(res.ActualCheckInDate)}, {SqlDate(res.ActualCheckOutDate)}, {SqlDate(res.CreatedAt)}, {SqlDate(res.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"ReservationName\" = EXCLUDED.\"ReservationName\", \"ReservationGroupId\" = EXCLUDED.\"ReservationGroupId\", \"CustomerId\" = EXCLUDED.\"CustomerId\", \"RoomId\" = EXCLUDED.\"RoomId\", \"CheckInDate\" = EXCLUDED.\"CheckInDate\", \"CheckOutDate\" = EXCLUDED.\"CheckOutDate\", \"NumberOfGuests\" = EXCLUDED.\"NumberOfGuests\", \"TotalAmount\" = EXCLUDED.\"TotalAmount\", \"PaidAmount\" = EXCLUDED.\"PaidAmount\", \"Status\" = EXCLUDED.\"Status\", \"Notes\" = EXCLUDED.\"Notes\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 5. ReservationCustomers
-            var resCustomers = await _context.ReservationCustomers.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: ReservationCustomers ({resCustomers.Count} kayıt)");
-            foreach (var rc in resCustomers)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"ReservationCustomers\" (\"Id\", \"ReservationId\", \"CustomerId\", \"Role\", \"OrderIndex\", \"CreatedAt\") " +
-                    $"VALUES ({rc.Id}, {rc.ReservationId}, {rc.CustomerId}, {SqlString(rc.Role)}, {rc.OrderIndex}, {SqlDate(rc.CreatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Role\" = EXCLUDED.\"Role\", \"OrderIndex\" = EXCLUDED.\"OrderIndex\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 6. Products
-            var products = await _context.Products.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Products ({products.Count} kayıt)");
-            foreach (var p in products)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Products\" (\"Id\", \"Name\", \"Barcode\", \"Category\", \"Price\", \"CostPrice\", \"StockQuantity\", \"MinStockLevel\", \"Unit\", \"Description\", \"IsActive\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({p.Id}, {SqlString(p.Name)}, {SqlString(p.Barcode)}, {(int)p.Category}, {SqlNum(p.Price)}, {SqlNum(p.CostPrice)}, {p.StockQuantity}, {p.MinStockLevel}, {SqlString(p.Unit)}, {SqlString(p.Description)}, {SqlBool(p.IsActive)}, {SqlDate(p.CreatedAt)}, {SqlDate(p.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Name\" = EXCLUDED.\"Name\", \"Price\" = EXCLUDED.\"Price\", \"StockQuantity\" = EXCLUDED.\"StockQuantity\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 7. Sales
-            var sales = await _context.Sales.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Sales ({sales.Count} kayıt)");
-            foreach (var s in sales)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Sales\" (\"Id\", \"SaleNumber\", \"SaleDate\", \"CustomerId\", \"ReservationId\", \"TotalAmount\", \"DiscountAmount\", \"NetAmount\", \"PaymentMethod\", \"Notes\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({s.Id}, {SqlString(s.SaleNumber)}, {SqlDate(s.SaleDate)}, {SqlNullable(s.CustomerId)}, {SqlNullable(s.ReservationId)}, {SqlNum(s.TotalAmount)}, {SqlNum(s.DiscountAmount)}, {SqlNum(s.NetAmount)}, {(int)s.PaymentMethod}, {SqlString(s.Notes)}, {SqlDate(s.CreatedAt)}, {SqlDate(s.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"SaleNumber\" = EXCLUDED.\"SaleNumber\", \"TotalAmount\" = EXCLUDED.\"TotalAmount\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 8. SaleItems
-            var saleItems = await _context.SaleItems.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: SaleItems ({saleItems.Count} kayıt)");
-            foreach (var si in saleItems)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"SaleItems\" (\"Id\", \"SaleId\", \"ProductId\", \"Quantity\", \"UnitPrice\", \"TotalPrice\") " +
-                    $"VALUES ({si.Id}, {si.SaleId}, {si.ProductId}, {si.Quantity}, {SqlNum(si.UnitPrice)}, {SqlNum(si.TotalPrice)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Quantity\" = EXCLUDED.\"Quantity\", \"TotalPrice\" = EXCLUDED.\"TotalPrice\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 9. Expenses
-            var expenses = await _context.Expenses.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Expenses ({expenses.Count} kayıt)");
-            foreach (var ex in expenses)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Expenses\" (\"Id\", \"ExpenseNumber\", \"Title\", \"Description\", \"Amount\", \"ExpenseDate\", \"Category\", \"Status\", \"Vendor\", \"InvoiceNumber\", \"PaymentMethod\", \"PaymentDate\", \"DueDate\", \"Notes\", \"AttachmentPath\", \"UserId\", \"ApprovedByUserId\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({ex.Id}, {SqlString(ex.ExpenseNumber)}, {SqlString(ex.Title)}, {SqlString(ex.Description)}, {SqlNum(ex.Amount)}, {SqlDate(ex.ExpenseDate)}, {(int)ex.Category}, {(int)ex.Status}, {SqlString(ex.Vendor)}, {SqlString(ex.InvoiceNumber)}, {SqlNullable((int?)ex.PaymentMethod)}, {SqlDate(ex.PaymentDate)}, {SqlDate(ex.DueDate)}, {SqlString(ex.Notes)}, {SqlString(ex.AttachmentPath)}, {SqlNullable(ex.UserId)}, {SqlNullable(ex.ApprovedByUserId)}, {SqlDate(ex.CreatedAt)}, {SqlDate(ex.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Title\" = EXCLUDED.\"Title\", \"Amount\" = EXCLUDED.\"Amount\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 10. Payments
-            var payments = await _context.Payments.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: Payments ({payments.Count} kayıt)");
-            foreach (var pay in payments)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"Payments\" (\"Id\", \"PaymentNumber\", \"Type\", \"Method\", \"Amount\", \"PaymentDate\", \"Status\", \"CustomerId\", \"ReservationId\", \"SaleId\", \"UserId\", \"Reference\", \"Description\", \"Notes\", \"CreatedAt\", \"UpdatedAt\") " +
-                    $"VALUES ({pay.Id}, {SqlString(pay.PaymentNumber)}, {(int)pay.Type}, {(int)pay.Method}, {SqlNum(pay.Amount)}, {SqlDate(pay.PaymentDate)}, {(int)pay.Status}, {SqlNullable(pay.CustomerId)}, {SqlNullable(pay.ReservationId)}, {SqlNullable(pay.SaleId)}, {SqlNullable(pay.UserId)}, {SqlString(pay.Reference)}, {SqlString(pay.Description)}, {SqlString(pay.Notes)}, {SqlDate(pay.CreatedAt)}, {SqlDate(pay.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Amount\" = EXCLUDED.\"Amount\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // 11. SystemSettings
-            var settings = await _context.SystemSettings.AsNoTracking().ToListAsync();
-            sqlBuilder.AppendLine($"-- Table: SystemSettings ({settings.Count} kayıt)");
-            foreach (var st in settings)
-            {
-                sqlBuilder.AppendLine(
-                    $"INSERT INTO \"SystemSettings\" (\"Id\", \"Key\", \"Value\", \"Description\", \"UpdatedAt\") " +
-                    $"VALUES ({st.Id}, {SqlString(st.Key)}, {SqlString(st.Value)}, {SqlString(st.Description)}, {SqlDate(st.UpdatedAt)}) " +
-                    $"ON CONFLICT (\"Id\") DO UPDATE SET \"Value\" = EXCLUDED.\"Value\";"
-                );
-            }
-            sqlBuilder.AppendLine();
-
-            // Sequence Reset
-            sqlBuilder.AppendLine("-- Reset PostgreSQL Primary Key Sequences");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Users\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Users\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Customers\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Customers\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Rooms\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Rooms\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Reservations\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Reservations\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"ReservationCustomers\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"ReservationCustomers\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Products\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Products\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Sales\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Sales\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"SaleItems\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"SaleItems\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Expenses\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Expenses\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"Payments\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"Payments\"), 1));");
-            sqlBuilder.AppendLine("SELECT setval(pg_get_serial_sequence('\"SystemSettings\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"SystemSettings\"), 1));");
-            sqlBuilder.AppendLine();
-            sqlBuilder.AppendLine("COMMIT;");
-
-            await File.WriteAllTextAsync(filePath, sqlBuilder.ToString(), Encoding.UTF8);
 
             var fileInfo = new FileInfo(filePath);
             var settingsDto = await GetSettingsAsync();
@@ -217,6 +63,217 @@ namespace PansiyonYonetimSistemi.API.Services
             };
         }
 
+        private async Task<bool> TryCreateNativePgDumpAsync(string filePath, bool isAutoBackup)
+        {
+            try
+            {
+                var connString = _context.Database.GetConnectionString();
+                if (string.IsNullOrWhiteSpace(connString)) return false;
+
+                var builder = new NpgsqlConnectionStringBuilder(connString);
+                var host = builder.Host ?? "localhost";
+                var port = builder.Port > 0 ? builder.Port : 5432;
+                var dbName = builder.Database;
+                var username = builder.Username;
+                var password = builder.Password;
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "pg_dump",
+                    Arguments = $"--host={host} --port={port} --username={username} --dbname={dbName} --clean --if-exists --inserts --file=\"{filePath}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                if (!string.IsNullOrWhiteSpace(password))
+                {
+                    startInfo.EnvironmentVariables["PGPASSWORD"] = password;
+                }
+
+                using var process = new Process { StartInfo = startInfo };
+                process.Start();
+
+                var error = await process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode == 0 && File.Exists(filePath) && new FileInfo(filePath).Length > 0)
+                {
+                    Console.WriteLine($"[Backup] Native pg_dump ile full yedek alındı: {filePath}");
+                    return true;
+                }
+
+                Console.WriteLine($"[Backup Note] pg_dump uyarısı: {error}. Dinamik C# motoru kullanılacak.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Backup Note] pg_dump çalıştırılamadı ({ex.Message}). Dinamik C# yedekleme motoru devreye girdi.");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// PostgreSQL Veritabanındaki TÜM tabloları, sütunları, veri tiplerini ve verileri
+        /// hiçbir tablo adı elle yazılmadan DİNAMİK olarak sorgular ve tam SQL dump üretir.
+        /// </summary>
+        private async Task<string> GenerateDynamicFullDumpSqlAsync(bool isAutoBackup)
+        {
+            var sqlBuilder = new StringBuilder();
+            sqlBuilder.AppendLine($"-- Pansiyon Yönetim Sistemi Dinamik Tam Veritabanı Yedeği (Full PostgreSQL Dump)");
+            sqlBuilder.AppendLine($"-- Oluşturulma Tarihi: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sqlBuilder.AppendLine($"-- Otomatik Yedek: {(isAutoBackup ? "Evet" : "Hayır")}");
+            sqlBuilder.AppendLine();
+            sqlBuilder.AppendLine("BEGIN;");
+            sqlBuilder.AppendLine();
+
+            var connection = _context.Database.GetDbConnection();
+            var wasOpen = connection.State == ConnectionState.Open;
+            if (!wasOpen) await connection.OpenAsync();
+
+            try
+            {
+                // 1. Veritabanındaki TÜM Tablo İsimlerini Dinamik Çek
+                var tableNames = new List<string>();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT table_name 
+                        FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                          AND table_type = 'BASE TABLE' 
+                          AND table_name NOT LIKE '__EF%'
+                        ORDER BY table_name;";
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            tableNames.Add(reader.GetString(0));
+                        }
+                    }
+                }
+
+                // 2. TÜM TABLOLAR İÇİN DİNAMİK DDL (CREATE TABLE IF NOT EXISTS) ÜRET
+                sqlBuilder.AppendLine("-- ── 1. DİNAMİK ŞEMA TANIMLARI (CREATE TABLE IF NOT EXISTS) ────────");
+                foreach (var tableName in tableNames)
+                {
+                    sqlBuilder.AppendLine($"-- Table Schema: \"{tableName}\"");
+                    var columns = new List<ColumnMeta>();
+                    using (var cmd = connection.CreateCommand())
+                    {
+                        cmd.CommandText = $@"
+                            SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+                            FROM information_schema.columns
+                            WHERE table_schema = 'public' AND table_name = '{tableName}'
+                            ORDER BY ordinal_position;";
+
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                columns.Add(new ColumnMeta
+                                {
+                                    Name = reader.GetString(0),
+                                    DataType = reader.GetString(1),
+                                    MaxLength = reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                                    IsNullable = reader.GetString(3) == "YES",
+                                    DefaultValue = reader.IsDBNull(4) ? null : reader.GetString(4)
+                                });
+                            }
+                        }
+                    }
+
+                    var colDefinitions = columns.Select(c =>
+                    {
+                        var nullStr = c.IsNullable ? "NULL" : "NOT NULL";
+                        var typeStr = MapPgType(c.DataType, c.MaxLength);
+                        var defStr = string.IsNullOrWhiteSpace(c.DefaultValue) ? "" : $" DEFAULT {c.DefaultValue}";
+                        return $"    \"{c.Name}\" {typeStr} {nullStr}{defStr}";
+                    });
+
+                    sqlBuilder.AppendLine($"CREATE TABLE IF NOT EXISTS \"{tableName}\" (");
+                    sqlBuilder.AppendLine(string.Join(",\n", colDefinitions));
+                    sqlBuilder.AppendLine(");");
+                    sqlBuilder.AppendLine();
+                }
+
+                // 3. TÜM TABLOLAR İÇİN DİNAMİK VERİ YÜKLEME (INSERT INTO STATEMENTS)
+                sqlBuilder.AppendLine("-- ── 2. DİNAMİK VERİ KAYITLARI (INSERT INTO STATEMENTS) ─────────────");
+                foreach (var tableName in tableNames)
+                {
+                    using (var cmd = connection.CreateCommand())
+                    {
+                        cmd.CommandText = $"SELECT * FROM \"{tableName}\";";
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            var colCount = reader.FieldCount;
+                            var colNames = new List<string>();
+                            for (int i = 0; i < colCount; i++)
+                            {
+                                colNames.Add($"\"{reader.GetName(i)}\"");
+                            }
+                            var joinedCols = string.Join(", ", colNames);
+                            int rowCount = 0;
+
+                            while (await reader.ReadAsync())
+                            {
+                                rowCount++;
+                                var vals = new List<string>();
+                                for (int i = 0; i < colCount; i++)
+                                {
+                                    vals.Add(FormatSqlValue(reader.GetValue(i)));
+                                }
+                                var joinedVals = string.Join(", ", vals);
+                                sqlBuilder.AppendLine($"INSERT INTO \"{tableName}\" ({joinedCols}) VALUES ({joinedVals}) ON CONFLICT DO NOTHING;");
+                            }
+
+                            sqlBuilder.AppendLine($"-- Total {rowCount} rows inserted for \"{tableName}\"");
+                            sqlBuilder.AppendLine();
+                        }
+                    }
+                }
+
+                // 4. TÜM OTOMATİK SAYACLAR (SEQUENCES) İÇİN DİNAMİK RESET
+                sqlBuilder.AppendLine("-- ── 3. DİNAMİK SEQUENCE SAYAÇ RESETLERİ ─────────────────────────");
+                var sequences = new List<string>();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT sequence_name 
+                        FROM information_schema.sequences 
+                        WHERE sequence_schema = 'public';";
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            sequences.Add(reader.GetString(0));
+                        }
+                    }
+                }
+
+                foreach (var seq in sequences)
+                {
+                    var parts = seq.Split('_');
+                    if (parts.Length >= 2)
+                    {
+                        var targetTable = parts[0];
+                        sqlBuilder.AppendLine($"SELECT setval('{seq}', COALESCE((SELECT MAX(\"Id\") FROM \"{targetTable}\"), 1), true);");
+                    }
+                }
+
+                sqlBuilder.AppendLine();
+                sqlBuilder.AppendLine("COMMIT;");
+                return sqlBuilder.ToString();
+            }
+            finally
+            {
+                if (!wasOpen) await connection.CloseAsync();
+            }
+        }
+
         public async Task<bool> RestoreBackupAsync(Stream backupStream)
         {
             using var reader = new StreamReader(backupStream, Encoding.UTF8);
@@ -227,18 +284,130 @@ namespace PansiyonYonetimSistemi.API.Services
                 throw new InvalidOperationException("Yedek dosyası boş veya geçersiz!");
             }
 
-            // Güvenli restore: Raw SQL çalıştırma
+            // 1. ÖNLEM: Geri yükleme öncesinde anlık Otomatik Güvenlik Yedeği (Safety Snapshot) al
+            try
+            {
+                Console.WriteLine("[Restore Safety Net] Geri yükleme öncesi otomatik güvenlik yedeği alınıyor...");
+                await CreateBackupAsync(isAutoBackup: true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Restore Safety Warning] Ön yedek alınırken hata (Devam ediliyor): {ex.Message}");
+            }
+
+            // 2. BLUE-GREEN FAIL-SAFE GERİ YÜKLEME MEKANİZMASI:
+            // Orijinal public şeması silinmez! Adı public_backup_temp yapılır.
+            // Yeni yedek yüklendikten sonra eğer BAŞARILI olursa eski şema imha edilir.
+            // Eğer BAŞARISIZ olursa ROLLBACK ile eski şema anında ve kayıpsız geri gelir!
+            var tempRestoreFile = Path.Combine(Path.GetTempPath(), $"restore_{Guid.NewGuid()}.sql");
+            
+            var failSafeSql = new StringBuilder();
+            failSafeSql.AppendLine("BEGIN;");
+            failSafeSql.AppendLine("ALTER SCHEMA public RENAME TO public_backup_temp;");
+            failSafeSql.AppendLine("CREATE SCHEMA public;");
+            failSafeSql.AppendLine("GRANT ALL ON SCHEMA public TO public;");
+            failSafeSql.AppendLine(sqlContent);
+            failSafeSql.AppendLine("DROP SCHEMA public_backup_temp CASCADE;");
+            failSafeSql.AppendLine("COMMIT;");
+
+            await File.WriteAllTextAsync(tempRestoreFile, failSafeSql.ToString(), Encoding.UTF8);
+
+            try
+            {
+                // A. Yerel / Docker psql komutunu dene (Atomik Transaction ile)
+                bool nativeSuccess = await TryRestoreNativePsqlAsync(tempRestoreFile);
+                if (nativeSuccess)
+                {
+                    Console.WriteLine("[Restore Success] Blue-Green yedek geri yükleme başarıyla tamamlandı!");
+                    return true;
+                }
+            }
+            finally
+            {
+                if (File.Exists(tempRestoreFile)) File.Delete(tempRestoreFile);
+            }
+
+            // B. psql çalıştırılamadıysa EF Core Transactional Rollback ile Blue-Green Geri Yükle
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 1. Mevcut şemayı sakla, yeni temiz şema aç
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    ALTER SCHEMA public RENAME TO public_backup_temp;
+                    CREATE SCHEMA public;
+                    GRANT ALL ON SCHEMA public TO public;
+                ");
+
+                // 2. Yedeği yükle
                 await _context.Database.ExecuteSqlRawAsync(sqlContent);
+
+                // 3. Başarılı ise geçici şemayı temizle
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    DROP SCHEMA public_backup_temp CASCADE;
+                ");
+
                 await transaction.CommitAsync();
+                Console.WriteLine("[Restore Success] EF Core Blue-Green yedek geri yükleme tamamlandı!");
                 return true;
             }
             catch (Exception ex)
             {
+                // BAŞARISIZLIK DURUMUNDA OTOMATİK ROLLBACK:
+                // Transaction iptal edilir, public_backup_temp anında orijinal public ismine geri döner!
                 await transaction.RollbackAsync();
-                throw new Exception($"Yedek geri yükleme hatası: {ex.Message}", ex);
+                Console.WriteLine($"[Restore Fail-Safe Executed] Geri yükleme başarısız olduğu için otomatik ROLLBACK yapıldı: {ex.Message}");
+                throw new Exception($"Yedek dosyası hatalı veya uyumsuz! Geri yükleme İPTAL EDİLDİ ve mevcut verileriniz HİÇBİR KAYIP OLMADAN korundu. Detay: {ex.Message}", ex);
+            }
+        }
+
+        private async Task<bool> TryRestoreNativePsqlAsync(string filePath)
+        {
+            try
+            {
+                var connString = _context.Database.GetConnectionString();
+                if (string.IsNullOrWhiteSpace(connString)) return false;
+
+                var builder = new NpgsqlConnectionStringBuilder(connString);
+                var host = builder.Host ?? "localhost";
+                var port = builder.Port > 0 ? builder.Port : 5432;
+                var dbName = builder.Database;
+                var username = builder.Username;
+                var password = builder.Password;
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "psql",
+                    Arguments = $"--host={host} --port={port} --username={username} --dbname={dbName} --file=\"{filePath}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                if (!string.IsNullOrWhiteSpace(password))
+                {
+                    startInfo.EnvironmentVariables["PGPASSWORD"] = password;
+                }
+
+                using var process = new Process { StartInfo = startInfo };
+                process.Start();
+
+                var error = await process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode == 0)
+                {
+                    Console.WriteLine("[Restore] Native psql ile veritabanı başarıyla geri yüklendi.");
+                    return true;
+                }
+
+                Console.WriteLine($"[Restore Note] psql uyarısı: {error}. EF Core raw sql geri yüklemesi kullanılacak.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Restore Note] psql çalıştırılamadı ({ex.Message}). EF Core raw sql kullanılıyor.");
+                return false;
             }
         }
 
@@ -347,18 +516,46 @@ namespace PansiyonYonetimSistemi.API.Services
             await _context.SaveChangesAsync();
         }
 
-        // Helper formatting functions
-        private static string SqlString(string? val) =>
-            val == null ? "NULL" : $"'{val.Replace("'", "''")}'";
+        // ── Helper Meta & Formatting Functions ─────────────────────────────
+        private class ColumnMeta
+        {
+            public string Name { get; set; } = string.Empty;
+            public string DataType { get; set; } = string.Empty;
+            public int? MaxLength { get; set; }
+            public bool IsNullable { get; set; }
+            public string? DefaultValue { get; set; }
+        }
 
-        private static string SqlDate(DateTime? val) =>
-            val.HasValue ? $"'{val.Value:yyyy-MM-dd HH:mm:ss}'" : "NULL";
+        private static string MapPgType(string rawType, int? maxLen)
+        {
+            return rawType.ToLower() switch
+            {
+                "character varying" => maxLen.HasValue ? $"character varying({maxLen})" : "text",
+                "character" => maxLen.HasValue ? $"character({maxLen})" : "character(1)",
+                "timestamp without time zone" => "timestamp without time zone",
+                "timestamp with time zone" => "timestamp with time zone",
+                "USER-DEFINED" => "text",
+                _ => rawType
+            };
+        }
 
-        private static string SqlBool(bool val) => val ? "TRUE" : "FALSE";
+        private static string FormatSqlValue(object val)
+        {
+            if (val == DBNull.Value || val == null) return "NULL";
 
-        private static string SqlNum(decimal val) => val.ToString(CultureInfo.InvariantCulture);
-
-        private static string SqlNullable(int? val) => val.HasValue ? val.Value.ToString() : "NULL";
+            return val switch
+            {
+                bool b => b ? "TRUE" : "FALSE",
+                DateTime dt => $"'{dt:yyyy-MM-dd HH:mm:ss.fff}'",
+                DateTimeOffset dto => $"'{dto:yyyy-MM-dd HH:mm:ss.fff zzz}'",
+                string s => $"'{s.Replace("'", "''")}'",
+                decimal dec => dec.ToString(CultureInfo.InvariantCulture),
+                double d => d.ToString(CultureInfo.InvariantCulture),
+                float f => f.ToString(CultureInfo.InvariantCulture),
+                byte[] bytes => $"decode('{Convert.ToHexString(bytes)}', 'hex')",
+                _ => $"'{val.ToString()?.Replace("'", "''")}'"
+            };
+        }
 
         private static string FormatBytes(long bytes)
         {

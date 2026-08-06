@@ -281,7 +281,13 @@ const Dashboard = () => {
         <div className="w-full mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-2xl font-bold text-white truncate">🏨 Güneş Pansiyon</h1>
+              <h1
+                onClick={() => { setActiveTab('dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="text-lg sm:text-2xl font-bold text-white truncate cursor-pointer hover:opacity-90 transition-opacity"
+                title="Ana Sayfaya Dön"
+              >
+                🏨 Güneş Pansiyon
+              </h1>
               <p className="text-blue-100 text-xs sm:text-sm truncate">
                 Hoş geldiniz, {user?.fullName || user?.firstName || 'Kullanıcı'}!
               </p>
