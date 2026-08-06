@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   createReservation,
   updateReservation,
   fetchReservations
 } from '../store/slices/reservationSlice';
-import { fetchCustomers } from '../store/slices/customerSlice';
 import { customerService, roomService } from '../services/api';
 import { format } from 'date-fns';
 import { tr as trLocale } from 'date-fns/locale';

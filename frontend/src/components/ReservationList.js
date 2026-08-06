@@ -11,7 +11,6 @@ import CheckInOutModal from './CheckInOutModal';
 import CustomerModal from './CustomerModal';
 import Swal from 'sweetalert2';
 import { Tooltip } from 'react-tooltip';
-import { reservationService } from '../services/api';
 import { format, parse } from 'date-fns';
 import { tr as trLocale } from 'date-fns/locale';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -1088,10 +1087,10 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                     <p className={`truncate ${reservation.reservationName ? 'text-sm text-gray-600' : 'text-base font-bold text-gray-900'}`}>
                       {reservation.customerName}
                     </p>
-                    <p className="text-xs text-blue-600 font-bold mt-0.5">
-                      🏨 Oda {reservation.roomNumber}
-                    </p>
-                  </div>
+                  )}
+                  <p className="text-xs text-blue-600 font-bold mt-0.5">
+                    🏨 Oda {reservation.roomNumber}
+                  </p>
                 </div>
                 <div className="flex-shrink-0">
                   {getStatusBadge(reservation.status)}
