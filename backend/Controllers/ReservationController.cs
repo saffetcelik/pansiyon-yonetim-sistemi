@@ -956,7 +956,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         r.ReservationName,
                         CustomerName = r.Customer != null 
                             ? (r.Customer.FirstName + " " + r.Customer.LastName) 
-                            : (r.ReservationCustomers.Select(rc => rc.Customer.FirstName + " " + rc.Customer.LastName).FirstOrDefault() ?? r.ReservationName),
+                            : (r.ReservationName ?? "Misafir"),
                         RoomNumber = r.Room != null ? r.Room.RoomNumber : 0,
                         r.CheckInDate,
                         r.CheckOutDate,
