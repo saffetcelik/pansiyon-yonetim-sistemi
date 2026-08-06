@@ -84,6 +84,8 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
   const [selectedReservationForAction, setSelectedReservationForAction] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [guestPopupReservation, setGuestPopupReservation] = useState(null);
+  const [notePopupReservation, setNotePopupReservation] = useState(null);
 
   // DataTable referansı
   const tableRef = useRef(null);
@@ -837,7 +839,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 #
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
-                Müşteriler
+                Rezervasyon / Müşteri
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-priority="1">
                 Oda
@@ -868,36 +870,43 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     <div className="flex-shrink-0 h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                      {reservation.customerName ? reservation.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
+                      {(reservation.reservationName || reservation.customerName || '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {reservation.customerName}
-                        {reservation.customers && reservation.customers.length > 1 && (
-                          <span className="ml-1 text-xs text-gray-500">
-                            (Ana müşteri)
-                          </span>
-                        )}
-                      </div>
+                      {/* Önce rezervasyon adı, yoksa müşteri adı */}
+                      {reservation.reservationName ? (
+                        <div className="text-sm font-bold text-gray-900 truncate">
+                          📋 {reservation.reservationName}
+                        </div>
+                      ) : null}
+                      {reservation.customerName && (
+                        <div className={`truncate ${reservation.reservationName ? 'text-xs text-gray-500 mt-0.5' : 'text-sm font-medium text-gray-900'}`}>
+                          {reservation.customerName}
+                          {reservation.customers && reservation.customers.length > 1 && (
+                            <span className="ml-1 text-xs text-gray-400">(Ana)</span>
+                          )}
+                        </div>
+                      )}
+                      {!reservation.reservationName && !reservation.customerName && (
+                        <div className="text-sm text-gray-400 italic">— İsimsiz —</div>
+                      )}
+                      {/* Ek müşteriler avatarları */}
                       {reservation.customers && reservation.customers.length > 1 && (
                         <div className="flex items-center mt-1 space-x-1">
                           {reservation.customers.slice(1, 4).map((customer) => (
                             <div
                               key={customer.customerId}
-                              className="h-6 w-6 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                              className="h-5 w-5 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium"
                               title={customer.customerName}
                             >
-                              {customer.customerName ? customer.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
+                              {customer.customerName ? customer.customerName.charAt(0).toUpperCase() : '?'}
                             </div>
                           ))}
                           {reservation.customers.length > 4 && (
-                            <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-medium">
+                            <div className="h-5 w-5 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-medium">
                               +{reservation.customers.length - 4}
                             </div>
                           )}
-                          <span className="text-xs text-gray-500 ml-2">
-                            {reservation.customers.length} kişi
-                          </span>
                         </div>
                       )}
                     </div>
@@ -914,9 +923,15 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {reservation.numberOfGuests}
-                  </div>
+                  {/* Misafir sayısı - tıklanabilir popup */}
+                  <button
+                    type="button"
+                    onClick={() => setGuestPopupReservation(reservation)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition text-sm font-medium"
+                    title="Müşteri listesini gör"
+                  >
+                    👥 {reservation.numberOfGuests}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
@@ -930,7 +945,18 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                   {getStatusBadge(reservation.status)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1 items-center">
+                    {/* Not megafon ikonu - sadece not varsa */}
+                    {reservation.notes && (
+                      <button
+                        onClick={() => setNotePopupReservation(reservation)}
+                        className="text-amber-500 hover:text-amber-700 p-2 rounded-md hover:bg-amber-50 transition"
+                        title="Notu göster"
+                      >
+                        📢
+                      </button>
+                    )}
+
                     <button
                       onClick={() => onEditReservation(reservation)}
                       className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50"
@@ -1054,12 +1080,12 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
             <div key={reservation.id} className="p-4 bg-white hover:bg-gray-50">
               {/* Kart Üst Bilgisi */}
               <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0 flex-1 flex items-center space-x-3">
-                  <div className="flex-shrink-0 h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                    {reservation.customerName ? reservation.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-base font-bold text-gray-900 truncate">
+                <div className="min-w-0 flex-1">
+                  {reservation.reservationName ? (
+                    <p className="text-base font-bold text-gray-900 truncate">📋 {reservation.reservationName}</p>
+                  ) : null}
+                  {reservation.customerName && (
+                    <p className={`truncate ${reservation.reservationName ? 'text-sm text-gray-600' : 'text-base font-bold text-gray-900'}`}>
                       {reservation.customerName}
                     </p>
                     <p className="text-xs text-blue-600 font-bold mt-0.5">
@@ -1080,7 +1106,13 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-medium">👥 Misafir:</span>
-                  <span className="font-semibold text-gray-900">{reservation.numberOfGuests} Kişi</span>
+                  <button
+                    type="button"
+                    onClick={() => setGuestPopupReservation(reservation)}
+                    className="font-semibold text-blue-700 hover:text-blue-900 underline underline-offset-2"
+                  >
+                    {reservation.numberOfGuests} Kişi
+                  </button>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-blue-100">
                   <span className="text-gray-500 font-medium">💰 Toplam Tutar:</span>
@@ -1094,6 +1126,17 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
 
               {/* Butonlar: Yazılı ve Dokunmatik Dostu */}
               <div className="flex flex-wrap gap-2 pt-1">
+                {/* Not megafon - sadece not varsa */}
+                {reservation.notes && (
+                  <button
+                    type="button"
+                    onClick={() => setNotePopupReservation(reservation)}
+                    className="flex-1 min-w-[80px] inline-flex items-center justify-center px-3 py-2 bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-lg text-xs font-semibold touch-manipulation active:scale-95 transition-all shadow-sm"
+                  >
+                    📢 Not
+                  </button>
+                )}
+
                 {/* Düzenle */}
                 <button
                   type="button"
@@ -1246,6 +1289,118 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
         isSearchMode={true}
         onSelectCustomer={handleSelectCustomer}
       />
+
+      {/* ─── Misafir Listesi Popup ─── */}
+      {guestPopupReservation && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center px-4"
+          onClick={() => setGuestPopupReservation(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">👥 Misafir Listesi</h3>
+              <button
+                onClick={() => setGuestPopupReservation(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Rezervasyon özeti */}
+            <div className="bg-blue-50 rounded-xl p-3 mb-4 text-sm">
+              {guestPopupReservation.reservationName && (
+                <div className="font-bold text-blue-900 mb-1">📋 {guestPopupReservation.reservationName}</div>
+              )}
+              <div className="flex items-center gap-4 text-gray-600">
+                <span>🛏️ Oda {guestPopupReservation.roomNumber}</span>
+                <span>📅 {formatDate(guestPopupReservation.checkInDate)} → {formatDate(guestPopupReservation.checkOutDate)}</span>
+              </div>
+            </div>
+
+            {/* Müşteri listesi */}
+            {guestPopupReservation.customers && guestPopupReservation.customers.length > 0 ? (
+              <div className="space-y-2">
+                {guestPopupReservation.customers.map((c, i) => (
+                  <div key={c.customerId} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {c.customerName?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900 truncate">{c.customerName}</div>
+                      <div className="text-xs text-gray-500">
+                        {c.tcKimlikNo && `TC: ${c.tcKimlikNo}`}
+                        {c.phone && ` | ${c.phone}`}
+                      </div>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      i === 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {i === 0 ? 'Ana' : `Misafir ${i}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-400">
+                <p className="text-sm">Kayıtlı müşteri bulunmuyor</p>
+                <p className="text-xs mt-1">Misafir sayısı: {guestPopupReservation.numberOfGuests}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Not Popup ─── */}
+      {notePopupReservation && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center px-4"
+          onClick={() => setNotePopupReservation(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">📢 Rezervasyon Notu</h3>
+              <button
+                onClick={() => setNotePopupReservation(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Rezervasyon özeti */}
+            <div className="bg-amber-50 rounded-xl p-3 mb-4 text-sm border border-amber-200">
+              {notePopupReservation.reservationName && (
+                <div className="font-bold text-amber-900 mb-1">📋 {notePopupReservation.reservationName}</div>
+              )}
+              {notePopupReservation.customerName && (
+                <div className="text-amber-800 font-medium mb-1">👤 {notePopupReservation.customerName}</div>
+              )}
+              <div className="flex items-center gap-4 text-amber-700">
+                <span>🛏️ Oda {notePopupReservation.roomNumber}</span>
+                <span>📅 {formatDate(notePopupReservation.checkInDate)} → {formatDate(notePopupReservation.checkOutDate)}</span>
+              </div>
+            </div>
+
+            {/* Not içeriği */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
+                {notePopupReservation.notes}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tooltips */}
       <Tooltip id="edit-reservation-tooltip" />

@@ -48,9 +48,11 @@ namespace PansiyonYonetimSistemi.API.Data
                 entity.Property(e => e.TotalAmount).HasPrecision(10, 2);
                 entity.Property(e => e.PaidAmount).HasPrecision(10, 2);
 
+                // CustomerId nullable - müşteri seçimi opsiyonel
                 entity.HasOne(e => e.Customer)
                       .WithMany(e => e.Reservations)
                       .HasForeignKey(e => e.CustomerId)
+                      .IsRequired(false)
                       .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Room)

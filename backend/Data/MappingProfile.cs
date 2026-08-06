@@ -21,12 +21,15 @@ namespace PansiyonYonetimSistemi.API.Data
 
             // Reservation Mappings
             CreateMap<Reservation, ReservationDto>()
-                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => $"{src.Customer.FirstName} {src.Customer.LastName}"))
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src =>
+                    src.Customer != null ? $"{src.Customer.FirstName} {src.Customer.LastName}" : null))
                 .ForMember(dest => dest.RoomNumber, opt => opt.MapFrom(src => src.Room.RoomNumber));
             
-            CreateMap<CreateReservationDto, Reservation>();
+            CreateMap<CreateReservationDto, Reservation>()
+                .ForMember(dest => dest.ReservationCustomers, opt => opt.Ignore());
             CreateMap<UpdateReservationDto, Reservation>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore()); // Ignore Id to prevent EF key modification error
+                .ForMember(dest => dest.Id, opt => opt.Ignore()) // Ignore Id to prevent EF key modification error
+                .ForMember(dest => dest.ReservationCustomers, opt => opt.Ignore());
 
             // Product Mappings
             CreateMap<Product, ProductDto>();

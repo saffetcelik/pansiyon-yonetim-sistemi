@@ -6,8 +6,10 @@ namespace PansiyonYonetimSistemi.API.DTOs
     public class ReservationDto
     {
         public int Id { get; set; }
-        public int CustomerId { get; set; }
-        public string CustomerName { get; set; } = string.Empty;
+        public string? ReservationName { get; set; }
+        public string? ReservationGroupId { get; set; }
+        public int? CustomerId { get; set; }
+        public string? CustomerName { get; set; }
         public int RoomId { get; set; }
         public string RoomNumber { get; set; } = string.Empty;
         public DateTime CheckInDate { get; set; }
@@ -44,12 +46,51 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public bool IsActive => Status == ReservationStatus.Confirmed || Status == ReservationStatus.CheckedIn;
     }
 
+    /// <summary>
+    /// Çoklu oda rezervasyonu için her oda başına veri
+    /// </summary>
+    public class RoomReservationItemDto
+    {
+        [Required(ErrorMessage = "Oda seçimi zorunludur")]
+        public int RoomId { get; set; }
+
+        [Range(1, 10, ErrorMessage = "Misafir sayısı 1-10 arasında olmalıdır")]
+        public int NumberOfGuests { get; set; } = 1;
+
+        [Range(0, 100000, ErrorMessage = "Toplam tutar 0-100000 arasında olmalıdır")]
+        public decimal TotalAmount { get; set; }
+
+        [Range(0, 100000, ErrorMessage = "Ödenen tutar 0-100000 arasında olmalıdır")]
+        public decimal PaidAmount { get; set; } = 0;
+
+        /// <summary>
+        /// Bu odadaki müşteri ID'leri
+        /// </summary>
+        public List<int> CustomerIds { get; set; } = new List<int>();
+    }
+
     public class CreateReservationDto
     {
-        [Required(ErrorMessage = "Müşteri seçimi zorunludur")]
-        public int CustomerId { get; set; }
+        /// <summary>
+        /// Rezervasyon adı (opsiyonel). Hiç müşteri seçilmemişse zorunludur.
+        /// </summary>
+        [StringLength(200, ErrorMessage = "Rezervasyon adı en fazla 200 karakter olabilir")]
+        public string? ReservationName { get; set; }
 
-        [Required(ErrorMessage = "Oda seçimi zorunludur")]
+        /// <summary>
+        /// Çoklu oda gruplama ID'si. Birden fazla oda seçiliyse tüm odalara aynı GroupId atanır.
+        /// </summary>
+        [StringLength(36)]
+        public string? ReservationGroupId { get; set; }
+
+        /// <summary>
+        /// Ana müşteri ID'si (opsiyonel). Çoklu oda varsa her odanın müşterileri RoomItems'tan alınır.
+        /// </summary>
+        public int? CustomerId { get; set; }
+
+        /// <summary>
+        /// Tekil oda rezervasyonu için oda ID'si (RoomItems boşsa kullanılır)
+        /// </summary>
         public int RoomId { get; set; }
 
         [Required(ErrorMessage = "Giriş tarihi zorunludur")]
@@ -59,7 +100,7 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public DateTime CheckOutDate { get; set; }
 
         [Range(1, 10, ErrorMessage = "Misafir sayısı 1-10 arasında olmalıdır")]
-        public int NumberOfGuests { get; set; }
+        public int NumberOfGuests { get; set; } = 1;
 
         [Range(0, 100000, ErrorMessage = "Toplam tutar 0-100000 arasında olmalıdır")]
         public decimal TotalAmount { get; set; }
@@ -71,16 +112,54 @@ namespace PansiyonYonetimSistemi.API.DTOs
         public string? Notes { get; set; }
 
         /// <summary>
-        /// Rezervasyona eklenecek müşteri ID'leri (çoklu müşteri desteği)
-        /// İlk müşteri ana müşteri olarak kabul edilir
+        /// Rezervasyona eklenecek müşteri ID'leri (tekil oda için)
         /// </summary>
         public List<int> CustomerIds { get; set; } = new List<int>();
+
+        /// <summary>
+        /// Çoklu oda rezervasyonu için oda listesi.
+        /// Dolu ise bu liste kullanılır; boşsa RoomId/NumberOfGuests/TotalAmount/PaidAmount/CustomerIds kullanılır.
+        /// </summary>
+        public List<RoomReservationItemDto> RoomItems { get; set; } = new List<RoomReservationItemDto>();
     }
 
-    public class UpdateReservationDto : CreateReservationDto
+    public class UpdateReservationDto
     {
         public int Id { get; set; }
+
+        [StringLength(200, ErrorMessage = "Rezervasyon adı en fazla 200 karakter olabilir")]
+        public string? ReservationName { get; set; }
+
+        [StringLength(36)]
+        public string? ReservationGroupId { get; set; }
+
+        public int? CustomerId { get; set; }
+
+        public int RoomId { get; set; }
+
+        [Required(ErrorMessage = "Giriş tarihi zorunludur")]
+        public DateTime CheckInDate { get; set; }
+
+        [Required(ErrorMessage = "Çıkış tarihi zorunludur")]
+        public DateTime CheckOutDate { get; set; }
+
+        [Range(1, 10, ErrorMessage = "Misafir sayısı 1-10 arasında olmalıdır")]
+        public int NumberOfGuests { get; set; } = 1;
+
+        [Range(0, 100000, ErrorMessage = "Toplam tutar 0-100000 arasında olmalıdır")]
+        public decimal TotalAmount { get; set; }
+
+        [Range(0, 100000, ErrorMessage = "Ödenen tutar 0-100000 arasında olmalıdır")]
+        public decimal PaidAmount { get; set; } = 0;
+
+        [StringLength(1000, ErrorMessage = "Notlar en fazla 1000 karakter olabilir")]
+        public string? Notes { get; set; }
+
         public ReservationStatus? Status { get; set; }
+
+        public List<int> CustomerIds { get; set; } = new List<int>();
+
+        public List<RoomReservationItemDto> RoomItems { get; set; } = new List<RoomReservationItemDto>();
     }
 
     public class UpdateStatusDto
