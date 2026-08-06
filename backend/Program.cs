@@ -165,30 +165,31 @@ app.MapControllers();
 // Database Migration & Seed Data (Container Başlangıcı)
 using (var scope = app.Services.CreateScope())
 {
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+    if (pendingMigrations.Any())
+    {
+        Console.WriteLine($"[Database] Uygulanacak {pendingMigrations.Count()} yeni migration: {string.Join(", ", pendingMigrations)}");
+    }
+    else
+    {
+        Console.WriteLine("[Database] Veritabanı güncel, bekleyen migration yok.");
+    }
+
+    // Migration hataları critical — sessizce yutma, uygulama restart etsin
+    await context.Database.MigrateAsync();
+
+    var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+    Console.WriteLine($"[Database] Migration tamamlandı. Toplam: {appliedMigrations.Count()} (Son: {appliedMigrations.LastOrDefault()})");
+
     try
     {
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
-        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-        if (pendingMigrations.Any())
-        {
-            Console.WriteLine($"[Database] Uygulanacak {pendingMigrations.Count()} yeni migration bulundu: {string.Join(", ", pendingMigrations)}");
-        }
-        else
-        {
-            Console.WriteLine("[Database] Veritabanı güncel, uygulanacak yeni migration yok.");
-        }
-
-        await context.Database.MigrateAsync();
-
-        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
-        Console.WriteLine($"[Database] Migration başarılı. Toplam uygulanan migration sayısı: {appliedMigrations.Count()} (Son: {appliedMigrations.LastOrDefault()})");
-
         await SeedData.SeedAsync(context);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Database Error] Startup migration veya seed hatası: {ex.Message}");
+        Console.WriteLine($"[Seed Warning] Seed hatası (kritik değil): {ex.Message}");
     }
 }
 

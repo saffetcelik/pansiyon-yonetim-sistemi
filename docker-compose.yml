@@ -13,6 +13,12 @@ services:
     # Exposing the port internally within the docker network
     expose:
       - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pansiyondb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   backend:
     build:
@@ -24,7 +30,8 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=pansiyondb;Username=postgres;Password=postgres_secure_pass_123
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     expose:
       - "8080" # Coolify will use this port or whichever ASPNETCORE_HTTP_PORTS is set to
 
