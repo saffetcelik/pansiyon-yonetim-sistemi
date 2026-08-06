@@ -44,8 +44,8 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 if (!string.IsNullOrEmpty(searchDto.CustomerName))
                 {
                     query = query.Where(r => 
-                        r.Customer.FirstName.Contains(searchDto.CustomerName) ||
-                        r.Customer.LastName.Contains(searchDto.CustomerName));
+                        (r.ReservationName != null && r.ReservationName.Contains(searchDto.CustomerName)) ||
+                        (r.Customer != null && (r.Customer.FirstName.Contains(searchDto.CustomerName) || r.Customer.LastName.Contains(searchDto.CustomerName))));
                 }
                 
                 if (searchDto.CustomerId.HasValue && searchDto.CustomerId > 0)
@@ -161,7 +161,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         CustomerId = r.CustomerId,
                         CustomerName = r.Customer != null ? r.Customer.FirstName + " " + r.Customer.LastName : null,
                         RoomId = r.RoomId,
-                        RoomNumber = r.Room.RoomNumber,
+                        RoomNumber = r.Room != null ? r.Room.RoomNumber : string.Empty,
                         CheckInDate = r.CheckInDate,
                         CheckOutDate = r.CheckOutDate,
                         NumberOfGuests = r.NumberOfGuests,
@@ -177,9 +177,9 @@ namespace PansiyonYonetimSistemi.API.Controllers
                             {
                                 Id = rc.Id,
                                 CustomerId = rc.CustomerId,
-                                CustomerName = rc.Customer.FirstName + " " + rc.Customer.LastName,
-                                TCKimlikNo = rc.Customer.TCKimlikNo,
-                                Phone = rc.Customer.Phone,
+                                CustomerName = rc.Customer != null ? rc.Customer.FirstName + " " + rc.Customer.LastName : string.Empty,
+                                TCKimlikNo = rc.Customer != null ? rc.Customer.TCKimlikNo : null,
+                                Phone = rc.Customer != null ? rc.Customer.Phone : null,
                                 Role = rc.Role,
                                 OrderIndex = rc.OrderIndex
                             }).ToList()
@@ -193,7 +193,12 @@ namespace PansiyonYonetimSistemi.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Rezervasyonlar getirilirken hata oluştu", error = ex.Message });
+                Console.WriteLine($"GetReservations Error: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"GetReservations InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Rezervasyonlar getirilirken hata oluştu", error = ex.Message, details = ex.InnerException?.Message });
             }
         }
 
@@ -238,9 +243,9 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         {
                             Id = rc.Id,
                             CustomerId = rc.CustomerId,
-                            CustomerName = rc.Customer.FirstName + " " + rc.Customer.LastName,
-                            TCKimlikNo = rc.Customer.TCKimlikNo,
-                            Phone = rc.Customer.Phone,
+                            CustomerName = rc.Customer != null ? rc.Customer.FirstName + " " + rc.Customer.LastName : string.Empty,
+                            TCKimlikNo = rc.Customer != null ? rc.Customer.TCKimlikNo : null,
+                            Phone = rc.Customer != null ? rc.Customer.Phone : null,
                             Role = rc.Role,
                             OrderIndex = rc.OrderIndex
                         }).ToList()
@@ -400,9 +405,9 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         {
                             Id = rc.Id,
                             CustomerId = rc.CustomerId,
-                            CustomerName = rc.Customer.FirstName + " " + rc.Customer.LastName,
-                            TCKimlikNo = rc.Customer.TCKimlikNo,
-                            Phone = rc.Customer.Phone,
+                            CustomerName = rc.Customer != null ? rc.Customer.FirstName + " " + rc.Customer.LastName : string.Empty,
+                            TCKimlikNo = rc.Customer != null ? rc.Customer.TCKimlikNo : null,
+                            Phone = rc.Customer != null ? rc.Customer.Phone : null,
                             Role = rc.Role,
                             OrderIndex = rc.OrderIndex
                         }).ToList()
@@ -651,9 +656,9 @@ namespace PansiyonYonetimSistemi.API.Controllers
                         {
                             Id = rc.Id,
                             CustomerId = rc.CustomerId,
-                            CustomerName = rc.Customer.FirstName + " " + rc.Customer.LastName,
-                            TCKimlikNo = rc.Customer.TCKimlikNo,
-                            Phone = rc.Customer.Phone,
+                            CustomerName = rc.Customer != null ? rc.Customer.FirstName + " " + rc.Customer.LastName : string.Empty,
+                            TCKimlikNo = rc.Customer != null ? rc.Customer.TCKimlikNo : null,
+                            Phone = rc.Customer != null ? rc.Customer.Phone : null,
                             Role = rc.Role,
                             OrderIndex = rc.OrderIndex
                         }).ToList()

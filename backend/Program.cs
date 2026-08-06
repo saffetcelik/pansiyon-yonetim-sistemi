@@ -156,11 +156,21 @@ app.UseAuthorization();
 // Map Controllers
 app.MapControllers();
 
-// Seed Data
+// Database Migration & Seed Data (Container Başlangıcı)
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await SeedData.SeedAsync(context);
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Console.WriteLine("[Database] Migration uygulanıyor...");
+        await context.Database.MigrateAsync();
+        Console.WriteLine("[Database] Migration başarılı.");
+        await SeedData.SeedAsync(context);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Database Error] Startup migration veya seed hatası: {ex.Message}");
+    }
 }
 
 app.Run();
