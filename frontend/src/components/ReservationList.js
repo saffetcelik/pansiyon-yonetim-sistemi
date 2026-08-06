@@ -1254,8 +1254,6 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
       <Tooltip id="status-change-tooltip" />
       <Tooltip id="delete-reservation-tooltip" />
     </div>
-    </div>
-    </div>
   );
 };
 
