@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Linq;
 using PansiyonYonetimSistemi.API.Data;
 using PansiyonYonetimSistemi.API.Services;
 using PansiyonYonetimSistemi.API.Models;
