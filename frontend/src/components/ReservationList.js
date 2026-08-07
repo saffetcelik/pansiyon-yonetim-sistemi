@@ -610,33 +610,35 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
     <div className="bg-white shadow-lg rounded-lg overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-white flex flex-wrap items-center gap-2">
             <span>Rezervasyonlar</span>
             {isBulkMode && (
-              <span className="text-xs bg-purple-500 text-white px-2.5 py-1 rounded-full font-normal shadow-sm">
-                Toplu İşlem Modu ({selectedReservationIds.length} Seçili)
+              <span className="text-[10px] sm:text-xs bg-purple-500 text-white px-2 py-1 rounded-full font-normal shadow-sm">
+                Toplu İşlem ({selectedReservationIds.length})
               </span>
             )}
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {!isBulkMode ? (
               <button
                 onClick={() => {
                   setIsBulkMode(true);
                   setShowBulkDropdown(true);
                 }}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center gap-1.5 shadow-sm"
+                className="w-full sm:w-auto justify-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-1.5 shadow-sm"
               >
-                ⚡ Toplu İşlemler
+                <span className="sm:hidden">⚡ Toplu İşlem</span>
+                <span className="hidden sm:inline">⚡ Toplu İşlemler</span>
               </button>
             ) : (
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <button
                   onClick={() => setShowBulkDropdown(!showBulkDropdown)}
-                  className="bg-purple-800 hover:bg-purple-900 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base flex items-center gap-1.5 shadow-md"
+                  className="w-full sm:w-auto justify-center bg-purple-800 hover:bg-purple-900 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-1.5 shadow-md"
                 >
-                  ⚡ Toplu İşlemler Menüsü ({selectedReservationIds.length}) ▼
+                  <span className="sm:hidden">⚡ Menü ({selectedReservationIds.length}) ▼</span>
+                  <span className="hidden sm:inline">⚡ Toplu İşlemler Menüsü ({selectedReservationIds.length}) ▼</span>
                 </button>
                 {showBulkDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden text-gray-800 text-sm">
@@ -1296,7 +1298,13 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               key={reservation.id} 
               className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${isBulkMode && selectedReservationIds.includes(reservation.id) ? 'bg-purple-50/50 relative' : 'bg-white'}`}
               onClick={() => {
-                if (isBulkMode) toggleReservationSelection(reservation.id);
+                if (isBulkMode) {
+                  if (selectedReservationIds.includes(reservation.id)) {
+                    setSelectedReservationIds(selectedReservationIds.filter(id => id !== reservation.id));
+                  } else {
+                    setSelectedReservationIds([...selectedReservationIds, reservation.id]);
+                  }
+                }
               }}
             >
               {/* Seçim Efekti Kenarlığı (Sadece seçiliyse) */}
@@ -1311,7 +1319,7 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
                     <input
                       type="checkbox"
                       checked={selectedReservationIds.includes(reservation.id)}
-                      onChange={() => toggleReservationSelection(reservation.id)}
+                      readOnly
                       className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 cursor-pointer pointer-events-none"
                     />
                   </div>
