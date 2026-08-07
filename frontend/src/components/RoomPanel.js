@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchRooms, updateRoomStatus, createRoom, updateRoom, deleteRoom } from '../store/roomSlice';
+import { fetchReservations } from '../store/slices/reservationSlice';
 import { ROOM_STATUS, ROOM_STATUS_NAMES, ROOM_STATUS_COLORS } from '../services/roomService';
 import RoomFormModal from './RoomFormModal';
 import Swal from 'sweetalert2';
@@ -8,6 +9,7 @@ import Swal from 'sweetalert2';
 const RoomPanel = ({ readOnly = false }) => {
   const dispatch = useDispatch();
   const { rooms, loading, error } = useSelector((state) => state.rooms);
+  const { reservations } = useSelector((state) => state.reservations);
   const [selectedRoomForStatus, setSelectedRoomForStatus] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
   const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
@@ -16,6 +18,7 @@ const RoomPanel = ({ readOnly = false }) => {
 
   useEffect(() => {
     dispatch(fetchRooms());
+    dispatch(fetchReservations({}));
   }, [dispatch]);
 
   const handleRoomClick = (room) => {

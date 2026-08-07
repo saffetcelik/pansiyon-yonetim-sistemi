@@ -32,12 +32,30 @@ namespace PansiyonYonetimSistemi.API.Services
                     if (settings.AutoBackupEnabled)
                     {
                         var now = DateTime.Now;
-                        var scheduledTime = TimeSpan.TryParse(settings.BackupTimeOfDay, out var ts) ? ts : TimeSpan.FromHours(3); // Varsayılan 03:00
+                        bool shouldRun = false;
 
-                        // Eğer saat ve dakika eşleşiyorsa (veya az geçmişse) ve bugün henüz yedek alınmadıysa:
-                        if (now.TimeOfDay >= scheduledTime && now.TimeOfDay < scheduledTime.Add(TimeSpan.FromMinutes(5)) && _lastBackupTime.Date != now.Date)
+                        if (settings.BackupIntervalHours == 24)
                         {
-                            _logger.LogInformation($"[BackupScheduler] Zamanlanmış otomatik yedekleme başlatılıyor... Saat: {settings.BackupTimeOfDay}");
+                            // Günlük çalışma: Belirli bir saatte çalış
+                            var scheduledTime = TimeSpan.TryParse(settings.BackupTimeOfDay, out var ts) ? ts : TimeSpan.FromHours(3);
+                            if (now.TimeOfDay >= scheduledTime && now.TimeOfDay < scheduledTime.Add(TimeSpan.FromMinutes(5)) && _lastBackupTime.Date != now.Date)
+                            {
+                                shouldRun = true;
+                            }
+                        }
+                        else
+                        {
+                            // Periyodik çalışma: Her N saatte bir
+                            var interval = TimeSpan.FromHours(Math.Max(1, settings.BackupIntervalHours));
+                            if (_lastBackupTime == DateTime.MinValue || now - _lastBackupTime >= interval)
+                            {
+                                shouldRun = true;
+                            }
+                        }
+
+                        if (shouldRun)
+                        {
+                            _logger.LogInformation($"[BackupScheduler] Zamanlanmış otomatik yedekleme başlatılıyor...");
                             var backupInfo = await backupService.CreateBackupAsync(isAutoBackup: true);
                             _lastBackupTime = now;
                             _logger.LogInformation($"[BackupScheduler] Yerel yedek oluşturuldu: {backupInfo.FileName}");

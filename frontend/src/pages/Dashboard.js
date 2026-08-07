@@ -29,6 +29,7 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
+    navigate('/login');
   };
 
   useEffect(() => {
@@ -198,12 +199,7 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {loadingStats ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
                     <div className="flex items-center">
                       <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
@@ -262,7 +258,6 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-              )}
             </div>
             {/* RoomPanel (readonly) */}
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mt-4 sm:mt-6">

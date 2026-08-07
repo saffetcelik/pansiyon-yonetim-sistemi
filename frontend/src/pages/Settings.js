@@ -63,6 +63,7 @@ const Settings = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
+    navigate('/login');
   };
 
   const handlePasswordChange = async (e) => {
@@ -633,15 +634,32 @@ const Settings = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Çalışma Saati</label>
-                        <input
-                          type="time"
-                          value={backupSettings.backupTimeOfDay || "03:00"}
-                          onChange={e => setBackupSettings(prev => ({ ...prev, backupTimeOfDay: e.target.value }))}
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Çalışma Periyodu</label>
+                        <select
+                          value={backupSettings.backupIntervalHours}
+                          onChange={e => setBackupSettings(prev => ({ ...prev, backupIntervalHours: parseInt(e.target.value) }))}
                           className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-                        />
-                        <p className="text-[11px] text-gray-500 mt-1">Her gün bu saatte çalışır.</p>
+                        >
+                          <option value={6}>Her 6 Saatte Bir</option>
+                          <option value={12}>Her 12 Saatte Bir</option>
+                          <option value={24}>Her Gün (Belirli Saatte)</option>
+                          <option value={48}>Her 48 Saatte Bir</option>
+                          <option value={168}>Haftada Bir</option>
+                        </select>
                       </div>
+
+                      {backupSettings.backupIntervalHours === 24 && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">Çalışma Saati</label>
+                          <input
+                            type="time"
+                            value={backupSettings.backupTimeOfDay || "03:00"}
+                            onChange={e => setBackupSettings(prev => ({ ...prev, backupTimeOfDay: e.target.value }))}
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                          />
+                          <p className="text-[11px] text-gray-500 mt-1">Her gün bu saatte çalışır.</p>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">
