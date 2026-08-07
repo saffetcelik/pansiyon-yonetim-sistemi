@@ -299,8 +299,8 @@ const RoomPanel = ({ readOnly = false }) => {
                 </div>
               )}
 
-              {/* Dolu Oda Rezervasyon Bilgisi */}
-              {room.status === 2 && reservations && (
+              {/* Dolu Oda Rezervasyon Bilgisi (Sadece Dashboard'da) */}
+              {readOnly && room.status === 1 && reservations && (
                 <div style={{
                   marginTop: '10px',
                   paddingTop: '8px',
@@ -316,17 +316,36 @@ const RoomPanel = ({ readOnly = false }) => {
                     );
                     if (!activeRes) return <span style={{ color: '#888' }}>Müşteri bilgisi bekleniyor...</span>;
                     
-                    const name = activeRes.customerName || activeRes.reservationName;
-                    const displayName = name ? name : "İsimsiz Rezervasyon";
+                    const hasMultipleCustomers = activeRes.customers && activeRes.customers.length > 1;
+                    const primaryName = hasMultipleCustomers 
+                      ? activeRes.customers[0].customerName 
+                      : (activeRes.customerName || activeRes.reservationName || "İsimsiz Rezervasyon");
                     
                     return (
                       <>
                         <div style={{ fontWeight: '600', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span>👤</span> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                          <span>👤</span> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{primaryName}</span>
                         </div>
+                        {hasMultipleCustomers && (
+                          <details style={{ marginBottom: '4px' }}>
+                            <summary style={{ cursor: 'pointer', color: '#6366f1', textDecoration: 'underline' }}>Daha fazla (+{activeRes.customers.length - 1})</summary>
+                            <div style={{ paddingLeft: '16px', marginTop: '2px' }}>
+                              {activeRes.customers.slice(1).map((c, idx) => (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#555' }}>
+                                  <span>👤</span> {c.customerName}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                        {activeRes.checkInDate && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#666', marginTop: '4px' }}>
+                            <span>📥</span> Giriş: {new Date(activeRes.checkInDate).toLocaleDateString('tr-TR')}
+                          </div>
+                        )}
                         {activeRes.checkOutDate && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#666' }}>
-                            <span>📅</span> Çıkış: {new Date(activeRes.checkOutDate).toLocaleDateString('tr-TR')}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#666', marginTop: '2px' }}>
+                            <span>📤</span> Çıkış: {new Date(activeRes.checkOutDate).toLocaleDateString('tr-TR')}
                           </div>
                         )}
                       </>
