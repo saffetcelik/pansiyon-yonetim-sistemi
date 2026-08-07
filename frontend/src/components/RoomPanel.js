@@ -314,7 +314,7 @@ const RoomPanel = ({ readOnly = false }) => {
                       (r.roomId === room.id || (r.roomItems && r.roomItems.some(i => i.roomId === room.id))) && 
                       (r.status === 2 || r.status === 1 || r.status === 'CheckedIn' || r.status === 'Confirmed')
                     );
-                    if (!activeRes) return <span style={{ color: '#888' }}>Müşteri bilgisi bekleniyor...</span>;
+                    if (!activeRes) return <span style={{ color: '#888' }}>Rezervasyon bilgisi yok.</span>;
                     
                     const hasMultipleCustomers = activeRes.customers && activeRes.customers.length > 1;
                     const primaryName = hasMultipleCustomers 
