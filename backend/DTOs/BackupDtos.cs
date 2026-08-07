@@ -19,11 +19,21 @@ namespace PansiyonYonetimSistemi.API.DTOs
 
         // Bulut ayarları
         public bool CloudBackupEnabled { get; set; } = false;
-        public string CloudProvider { get; set; } = "GoogleDrive"; // GoogleDrive, YandexDisk, OneDrive
-        public string CloudClientId { get; set; } = string.Empty;
-        public string CloudClientSecret { get; set; } = string.Empty;
-        public string CloudApiKeyToken { get; set; } = string.Empty;
         public int MaxCloudBackupCount { get; set; } = 5;  // Varsayılan bulut max 5 yedek
+
+        // Google Drive
+        public bool GoogleDriveEnabled { get; set; } = false;
+        public string GoogleDriveClientId { get; set; } = string.Empty;
+        public string GoogleDriveClientSecret { get; set; } = string.Empty;
+        public string GoogleDriveRefreshToken { get; set; } = string.Empty;
+
+        // Yandex Disk
+        public bool YandexDiskEnabled { get; set; } = false;
+        public string YandexDiskApiKey { get; set; } = string.Empty;
+
+        // OneDrive
+        public bool OneDriveEnabled { get; set; } = false;
+        public string OneDriveApiKey { get; set; } = string.Empty;
     }
 
     public class TestCloudConnectionDto

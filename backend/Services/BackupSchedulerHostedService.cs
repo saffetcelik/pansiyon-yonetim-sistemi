@@ -61,7 +61,7 @@ namespace PansiyonYonetimSistemi.API.Services
                             _logger.LogInformation($"[BackupScheduler] Yerel yedek oluşturuldu: {backupInfo.FileName}");
 
                             // Bulut yedekleme aktifse yükle
-                            if (settings.CloudBackupEnabled && !string.IsNullOrWhiteSpace(settings.CloudApiKeyToken))
+                            if (settings.CloudBackupEnabled)
                             {
                                 var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
                                 var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();

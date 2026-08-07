@@ -28,11 +28,15 @@ const Settings = () => {
     backupIntervalHours: 24,
     maxLocalBackupCount: 5,
     cloudBackupEnabled: false,
-    cloudProvider: 'GoogleDrive',
-    cloudClientId: '',
-    cloudClientSecret: '',
-    cloudApiKeyToken: '',
     maxCloudBackupCount: 5,
+    googleDriveEnabled: false,
+    googleDriveClientId: '',
+    googleDriveClientSecret: '',
+    googleDriveRefreshToken: '',
+    yandexDiskEnabled: false,
+    yandexDiskApiKey: '',
+    oneDriveEnabled: false,
+    oneDriveApiKey: '',
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingCloud, setTestingCloud] = useState(false);
@@ -234,14 +238,14 @@ const Settings = () => {
     }
   };
 
-  const handleTestCloudConnection = async () => {
+  const handleTestCloudConnection = async (provider, credentials) => {
     setTestingCloud(true);
     try {
       const res = await backupService.testCloud({
-        provider: backupSettings.cloudProvider,
-        clientId: backupSettings.cloudClientId,
-        clientSecret: backupSettings.cloudClientSecret,
-        apiKeyToken: backupSettings.cloudApiKeyToken
+        provider: provider,
+        clientId: credentials.clientId || '',
+        clientSecret: credentials.clientSecret || '',
+        apiKeyToken: credentials.apiKeyToken || ''
       });
       const data = res.data?.data;
       if (data?.success) {
@@ -668,35 +672,21 @@ const Settings = () => {
                         <input
                           type="number"
                           min={1}
-                          max={100}
-                          value={backupSettings.maxLocalBackupCount}
-                          onChange={e => setBackupSettings(prev => ({ ...prev, maxLocalBackupCount: parseInt(e.target.value) || 5 }))}
-                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-                        />
-                        <p className="text-[11px] text-gray-500 mt-1">Eski yedekler otomatik temizlenir (Varsayılan: 5).</p>
+                    <p className="text-[11px] text-gray-500 mt-1">Eski yedekler otomatik temizlenir (Varsayılan: 5).</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bulut Depolama Entegrasyonu */}
-                  <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                  <div className="bg-purple-50 p-4 sm:p-5 border-b border-purple-100 mb-6 rounded-lg">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                        ☁️ Bulut Depolama Entegrasyonu (Google Drive / Yandex Disk / OneDrive)
+                      <h3 className="text-sm font-bold text-purple-900 flex items-center gap-2">
+                        ☁️ Bulut Yedekleme ve Senkronizasyon
                       </h3>
-                      <button
-                        type="button"
-                        onClick={handleTestCloudConnection}
-                        disabled={testingCloud}
-                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg text-xs font-semibold shadow-sm transition"
-                      >
-                        🔌 {testingCloud ? 'Test Ediliyor...' : 'Bulut Bağlantısını Test Et'}
-                      </button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Bulut Otomatik Senkronizasyon</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Bulut Otomatik Senkronizasyon Ana Şalteri</label>
                         <select
                           value={backupSettings.cloudBackupEnabled ? 'true' : 'false'}
                           onChange={e => setBackupSettings(prev => ({ ...prev, cloudBackupEnabled: e.target.value === 'true' }))}
@@ -706,68 +696,9 @@ const Settings = () => {
                           <option value="false">❌ Pasif</option>
                         </select>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Bulut Servisi Seçin</label>
-                        <select
-                          value={backupSettings.cloudProvider}
-                          onChange={e => setBackupSettings(prev => ({ ...prev, cloudProvider: e.target.value }))}
-                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold"
-                        >
-                          <option value="GoogleDrive">🌐 Google Drive</option>
-                          <option value="YandexDisk">🟡 Yandex Disk</option>
-                          <option value="OneDrive">🟦 OneDrive (Microsoft)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200">
-                      <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        🔑 {backupSettings.cloudProvider} API Kimlik Bilgileri
-                      </h4>
-
-                      {backupSettings.cloudProvider === 'GoogleDrive' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Client ID / Uygulama Kimliği</label>
-                            <input
-                              type="text"
-                              value={backupSettings.cloudClientId || ''}
-                              onChange={e => setBackupSettings(prev => ({ ...prev, cloudClientId: e.target.value }))}
-                              placeholder="Örn: 123456789-abc.apps.googleusercontent.com"
-                              className="w-full px-3 py-2 border rounded-md text-xs"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Client Secret / Uygulama Gizli Anahtarı</label>
-                            <input
-                              type="password"
-                              value={backupSettings.cloudClientSecret || ''}
-                              onChange={e => setBackupSettings(prev => ({ ...prev, cloudClientSecret: e.target.value }))}
-                              placeholder="Client Secret"
-                              className="w-full px-3 py-2 border rounded-md text-xs"
-                            />
-                          </div>
-                        </div>
-                      )}
-
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          {backupSettings.cloudProvider === 'GoogleDrive' ? 'Refresh Token (Zorunlu) *' : 'API Key / Access Token (Zorunlu) *'}
-                        </label>
-                        <input
-                          type="password"
-                          value={backupSettings.cloudApiKeyToken || ''}
-                          onChange={e => setBackupSettings(prev => ({ ...prev, cloudApiKeyToken: e.target.value }))}
-                          placeholder={backupSettings.cloudProvider === 'GoogleDrive' ? 'Refresh Token yapıştırınız...' : 'API Key veya Access Token yapıştırınız...'}
-                          className="w-full px-3 py-2 border rounded-md text-xs font-mono"
-                        />
-                      </div>
-
-                      <div className="w-1/2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Bulut Tarafında Tutulacak Max Yedek Sayısı
+                          Her Bulutta Tutulacak Max Yedek Sayısı
                         </label>
                         <input
                           type="number"
@@ -779,6 +710,82 @@ const Settings = () => {
                         />
                       </div>
                     </div>
+
+                    {/* Google Drive Ayarları */}
+                    <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 mb-4 shadow-sm">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <label className="flex items-center gap-2 font-bold text-gray-800 text-sm cursor-pointer">
+                          <input type="checkbox" checked={backupSettings.googleDriveEnabled} onChange={e => setBackupSettings(prev => ({ ...prev, googleDriveEnabled: e.target.checked }))} className="w-4 h-4 text-purple-600 rounded" />
+                          🌐 Google Drive
+                        </label>
+                        {backupSettings.googleDriveEnabled && (
+                          <button type="button" onClick={() => handleTestCloudConnection('GoogleDrive', { clientId: backupSettings.googleDriveClientId, clientSecret: backupSettings.googleDriveClientSecret, apiKeyToken: backupSettings.googleDriveRefreshToken })} disabled={testingCloud} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition">
+                            🔌 {testingCloud ? 'Test...' : 'Bağlantıyı Test Et'}
+                          </button>
+                        )}
+                      </div>
+                      {backupSettings.googleDriveEnabled && (
+                        <div className="space-y-3 pt-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Client ID</label>
+                              <input type="text" value={backupSettings.googleDriveClientId || ''} onChange={e => setBackupSettings(prev => ({ ...prev, googleDriveClientId: e.target.value }))} className="w-full px-3 py-2 border rounded-md text-xs" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Client Secret</label>
+                              <input type="password" value={backupSettings.googleDriveClientSecret || ''} onChange={e => setBackupSettings(prev => ({ ...prev, googleDriveClientSecret: e.target.value }))} className="w-full px-3 py-2 border rounded-md text-xs" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Refresh Token (Zorunlu) *</label>
+                            <input type="password" value={backupSettings.googleDriveRefreshToken || ''} onChange={e => setBackupSettings(prev => ({ ...prev, googleDriveRefreshToken: e.target.value }))} className="w-full px-3 py-2 border rounded-md text-xs font-mono" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Yandex Disk Ayarları */}
+                    <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 mb-4 shadow-sm">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <label className="flex items-center gap-2 font-bold text-gray-800 text-sm cursor-pointer">
+                          <input type="checkbox" checked={backupSettings.yandexDiskEnabled} onChange={e => setBackupSettings(prev => ({ ...prev, yandexDiskEnabled: e.target.checked }))} className="w-4 h-4 text-purple-600 rounded" />
+                          🟡 Yandex Disk
+                        </label>
+                        {backupSettings.yandexDiskEnabled && (
+                          <button type="button" onClick={() => handleTestCloudConnection('YandexDisk', { apiKeyToken: backupSettings.yandexDiskApiKey })} disabled={testingCloud} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition">
+                            🔌 {testingCloud ? 'Test...' : 'Bağlantıyı Test Et'}
+                          </button>
+                        )}
+                      </div>
+                      {backupSettings.yandexDiskEnabled && (
+                        <div className="pt-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">API Key / OAuth Token (Zorunlu) *</label>
+                          <input type="password" value={backupSettings.yandexDiskApiKey || ''} onChange={e => setBackupSettings(prev => ({ ...prev, yandexDiskApiKey: e.target.value }))} className="w-full px-3 py-2 border rounded-md text-xs font-mono" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* OneDrive Ayarları */}
+                    <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <label className="flex items-center gap-2 font-bold text-gray-800 text-sm cursor-pointer">
+                          <input type="checkbox" checked={backupSettings.oneDriveEnabled} onChange={e => setBackupSettings(prev => ({ ...prev, oneDriveEnabled: e.target.checked }))} className="w-4 h-4 text-purple-600 rounded" />
+                          🟦 OneDrive (Microsoft)
+                        </label>
+                        {backupSettings.oneDriveEnabled && (
+                          <button type="button" onClick={() => handleTestCloudConnection('OneDrive', { apiKeyToken: backupSettings.oneDriveApiKey })} disabled={testingCloud} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition">
+                            🔌 {testingCloud ? 'Test...' : 'Bağlantıyı Test Et'}
+                          </button>
+                        )}
+                      </div>
+                      {backupSettings.oneDriveEnabled && (
+                        <div className="pt-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Access Token (Zorunlu) *</label>
+                          <input type="password" value={backupSettings.oneDriveApiKey || ''} onChange={e => setBackupSettings(prev => ({ ...prev, oneDriveApiKey: e.target.value }))} className="w-full px-3 py-2 border rounded-md text-xs font-mono" />
+                        </div>
+                      )}
+                    </div>
+
                   </div>
 
                   <div className="flex justify-end pt-2">

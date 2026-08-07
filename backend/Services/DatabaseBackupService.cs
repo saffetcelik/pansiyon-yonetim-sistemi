@@ -470,11 +470,18 @@ namespace PansiyonYonetimSistemi.API.Services
                 MaxLocalBackupCount = int.TryParse(GetVal("Backup_MaxLocalCount", "5"), out var m) ? m : 5,
 
                 CloudBackupEnabled = bool.TryParse(GetVal("Cloud_Enabled", "false"), out var cb) ? cb : false,
-                CloudProvider = GetVal("Cloud_Provider", "GoogleDrive"),
-                CloudClientId = GetVal("Cloud_ClientId", ""),
-                CloudClientSecret = GetVal("Cloud_ClientSecret", ""),
-                CloudApiKeyToken = GetVal("Cloud_ApiKeyToken", ""),
                 MaxCloudBackupCount = int.TryParse(GetVal("Cloud_MaxCount", "5"), out var cm) ? cm : 5,
+
+                GoogleDriveEnabled = bool.TryParse(GetVal("Cloud_GoogleDrive_Enabled", "false"), out var gde) ? gde : false,
+                GoogleDriveClientId = GetVal("Cloud_GoogleDrive_ClientId", ""),
+                GoogleDriveClientSecret = GetVal("Cloud_GoogleDrive_ClientSecret", ""),
+                GoogleDriveRefreshToken = GetVal("Cloud_GoogleDrive_RefreshToken", ""),
+
+                YandexDiskEnabled = bool.TryParse(GetVal("Cloud_YandexDisk_Enabled", "false"), out var yde) ? yde : false,
+                YandexDiskApiKey = GetVal("Cloud_YandexDisk_ApiKey", ""),
+
+                OneDriveEnabled = bool.TryParse(GetVal("Cloud_OneDrive_Enabled", "false"), out var ode) ? ode : false,
+                OneDriveApiKey = GetVal("Cloud_OneDrive_ApiKey", "")
             };
         }
 
@@ -506,11 +513,18 @@ namespace PansiyonYonetimSistemi.API.Services
             await SetVal("Backup_MaxLocalCount", dto.MaxLocalBackupCount.ToString(), "Maksimum yerel yedek sayısı");
 
             await SetVal("Cloud_Enabled", dto.CloudBackupEnabled.ToString().ToLower(), "Bulut yedekleme aktif/pasif");
-            await SetVal("Cloud_Provider", dto.CloudProvider, "Bulut servisi (GoogleDrive, YandexDisk, OneDrive)");
-            await SetVal("Cloud_ClientId", dto.CloudClientId, "Bulut Client ID");
-            await SetVal("Cloud_ClientSecret", dto.CloudClientSecret, "Bulut Client Secret");
-            await SetVal("Cloud_ApiKeyToken", dto.CloudApiKeyToken, "Bulut API Key / Refresh Token");
             await SetVal("Cloud_MaxCount", dto.MaxCloudBackupCount.ToString(), "Maksimum bulut yedek sayısı");
+
+            await SetVal("Cloud_GoogleDrive_Enabled", dto.GoogleDriveEnabled.ToString().ToLower(), "Google Drive aktif");
+            await SetVal("Cloud_GoogleDrive_ClientId", dto.GoogleDriveClientId, "Google Drive Client ID");
+            await SetVal("Cloud_GoogleDrive_ClientSecret", dto.GoogleDriveClientSecret, "Google Drive Client Secret");
+            await SetVal("Cloud_GoogleDrive_RefreshToken", dto.GoogleDriveRefreshToken, "Google Drive Refresh Token");
+
+            await SetVal("Cloud_YandexDisk_Enabled", dto.YandexDiskEnabled.ToString().ToLower(), "Yandex Disk aktif");
+            await SetVal("Cloud_YandexDisk_ApiKey", dto.YandexDiskApiKey, "Yandex Disk API Key");
+
+            await SetVal("Cloud_OneDrive_Enabled", dto.OneDriveEnabled.ToString().ToLower(), "OneDrive aktif");
+            await SetVal("Cloud_OneDrive_ApiKey", dto.OneDriveApiKey, "OneDrive API Key");
 
             await _context.SaveChangesAsync();
         }

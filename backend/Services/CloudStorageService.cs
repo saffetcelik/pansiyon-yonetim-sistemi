@@ -56,7 +56,7 @@ namespace PansiyonYonetimSistemi.API.Services
 
         public async Task UploadBackupAsync(string filePath, string fileName, BackupSettingsDto settings)
         {
-            if (!settings.CloudBackupEnabled || string.IsNullOrWhiteSpace(settings.CloudApiKeyToken))
+            if (!settings.CloudBackupEnabled)
             {
                 return;
             }
@@ -64,22 +64,26 @@ namespace PansiyonYonetimSistemi.API.Services
             try
             {
                 var fileBytes = await File.ReadAllBytesAsync(filePath);
+                var uploadTasks = new List<Task>();
 
-                switch (settings.CloudProvider?.ToLower())
+                if (settings.GoogleDriveEnabled && !string.IsNullOrWhiteSpace(settings.GoogleDriveRefreshToken))
                 {
-                    case "googledrive":
-                    case "google drive":
-                        await UploadToGoogleDriveAsync(fileBytes, fileName, settings.CloudApiKeyToken);
-                        break;
+                    uploadTasks.Add(UploadToGoogleDriveAsync(fileBytes, fileName, settings.GoogleDriveRefreshToken));
+                }
 
-                    case "yandexdisk":
-                    case "yandex disk":
-                        await UploadToYandexDiskAsync(fileBytes, fileName, settings.CloudApiKeyToken);
-                        break;
+                if (settings.YandexDiskEnabled && !string.IsNullOrWhiteSpace(settings.YandexDiskApiKey))
+                {
+                    uploadTasks.Add(UploadToYandexDiskAsync(fileBytes, fileName, settings.YandexDiskApiKey));
+                }
 
-                    case "onedrive":
-                        await UploadToOneDriveAsync(fileBytes, fileName, settings.CloudApiKeyToken);
-                        break;
+                if (settings.OneDriveEnabled && !string.IsNullOrWhiteSpace(settings.OneDriveApiKey))
+                {
+                    uploadTasks.Add(UploadToOneDriveAsync(fileBytes, fileName, settings.OneDriveApiKey));
+                }
+
+                if (uploadTasks.Any())
+                {
+                    await Task.WhenAll(uploadTasks);
                 }
 
                 // Bulut tarafındaki eski yedekleri temizle
@@ -87,13 +91,13 @@ namespace PansiyonYonetimSistemi.API.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Cloud Upload Error] {settings.CloudProvider} yükleme hatası: {ex.Message}");
+                Console.WriteLine($"[Cloud Upload Error] Çoklu yükleme sırasında hata: {ex.Message}");
             }
         }
 
         public async Task PruneCloudBackupsAsync(BackupSettingsDto settings)
         {
-            if (!settings.CloudBackupEnabled || string.IsNullOrWhiteSpace(settings.CloudApiKeyToken)) return;
+            if (!settings.CloudBackupEnabled) return;
             await Task.CompletedTask; // Future deletion extension for cloud APIs
         }
 

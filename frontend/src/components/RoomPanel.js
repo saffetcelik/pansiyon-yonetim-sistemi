@@ -298,6 +298,42 @@ const RoomPanel = ({ readOnly = false }) => {
                   Klima
                 </div>
               )}
+
+              {/* Dolu Oda Rezervasyon Bilgisi */}
+              {room.status === 2 && reservations && (
+                <div style={{
+                  marginTop: '10px',
+                  paddingTop: '8px',
+                  borderTop: '1px dashed #ddd',
+                  fontSize: '11px',
+                  textAlign: 'left',
+                  color: '#444'
+                }}>
+                  {(() => {
+                    const activeRes = reservations.find(r => 
+                      (r.roomId === room.id || (r.roomItems && r.roomItems.some(i => i.roomId === room.id))) && 
+                      r.status === 2
+                    );
+                    if (!activeRes) return <span style={{ color: '#888' }}>Müşteri bilgisi bekleniyor...</span>;
+                    
+                    const name = activeRes.customerName || activeRes.reservationName;
+                    const displayName = name ? name : "İsimsiz Rezervasyon";
+                    
+                    return (
+                      <>
+                        <div style={{ fontWeight: '600', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>👤</span> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                        </div>
+                        {activeRes.checkOutDate && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#666' }}>
+                            <span>📅</span> Çıkış: {new Date(activeRes.checkOutDate).toLocaleDateString('tr-TR')}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
             </div>
           </div>
