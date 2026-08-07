@@ -1276,7 +1276,13 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
               <input
                 type="checkbox"
                 checked={selectedReservationIds.length === reservations.length}
-                onChange={handleSelectAll}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedReservationIds(reservations.map(r => r.id));
+                  } else {
+                    setSelectedReservationIds([]);
+                  }
+                }}
                 className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
               />
               Tümünü Seç
