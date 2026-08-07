@@ -289,18 +289,19 @@ const ReservationCalendar = ({ onReservationClick }) => {
       )}
 
       {/* Calendar */}
-      <div className="p-6">
-        {/* Week Days Header */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekDays.map((day) => (
-            <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
-              {day}
-            </div>
-          ))}
-        </div>
+      <div className="p-4 sm:p-6 w-full">
+        <div className="w-full max-h-[75vh] overflow-y-auto custom-scrollbar pr-1 lg:pr-2">
+          {/* Week Days Header */}
+          <div className="hidden lg:grid grid-cols-7 gap-2 mb-2 sticky top-0 z-20 bg-white pb-2">
+            {weekDays.map((day) => (
+              <div key={day} className="p-2 text-center text-sm font-bold text-gray-600 bg-gray-50 rounded-lg border shadow-sm">
+                {day}
+              </div>
+            ))}
+          </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-1">
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3 lg:gap-2">
           {days.map((date, index) => {
             const dayReservations = getReservationsForDate(date);
             const isCurrentDay = isToday(date);
@@ -308,18 +309,23 @@ const ReservationCalendar = ({ onReservationClick }) => {
             return (
               <div
                 key={index}
-                className={`min-h-[120px] border border-gray-200 p-1 ${
-                  !date ? 'bg-gray-50' : 'bg-white'
+                className={`min-h-[100px] lg:min-h-[120px] border border-gray-200 p-2 lg:p-1 rounded-lg lg:rounded-none ${
+                  !date ? 'hidden lg:block bg-gray-50' : 'bg-white shadow-sm lg:shadow-none'
                 } ${isCurrentDay ? 'ring-2 ring-blue-500' : ''}`}
               >
                 {date && (
                   <>
-                    <div className={`text-sm font-medium mb-1 ${
+                    <div className={`text-sm font-medium mb-2 lg:mb-1 pb-1 lg:pb-0 lg:border-0 border-b border-gray-100 ${
                       isCurrentDay ? 'text-blue-600 font-bold' : 'text-gray-900'
                     }`}>
-                      {date.getDate()}
+                      <span className="lg:hidden">
+                        {date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}
+                      </span>
+                      <span className="hidden lg:inline">
+                        {date.getDate()}
+                      </span>
                     </div>
-                    <div className="space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
+                    <div className="space-y-1.5 lg:space-y-1 lg:max-h-[160px] lg:overflow-y-auto custom-scrollbar">
                       {dayReservations.map((reservation) => {
                         const displayName =
                           (reservation.reservationName && reservation.reservationName.trim()) ||
@@ -351,6 +357,7 @@ const ReservationCalendar = ({ onReservationClick }) => {
               </div>
             );
           })}
+          </div>
         </div>
 
         {/* Legend */}

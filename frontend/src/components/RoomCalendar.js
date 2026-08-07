@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { reservationService, roomService } from '../services/api';
 import '../styles/calendar.css';
 
-const RoomCalendar = () => {
+const RoomCalendar = ({ onEditReservation }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [reservations, setReservations] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -305,7 +305,7 @@ const RoomCalendar = () => {
       <div
         className={`border-b border-r p-1.5 min-h-[44px] flex flex-col justify-center ${
           reservation
-            ? `${getReservationStyle(reservation)} cursor-pointer font-medium`
+            ? `${getReservationStyle(reservation)} cursor-pointer font-medium hover:opacity-90`
             : 'hover:bg-gray-50'
         }`}
         title={
@@ -313,6 +313,7 @@ const RoomCalendar = () => {
             ? `${displayName}\nOda: ${reservation.roomNumber}\nGiriş: ${new Date(reservation.checkInDate).toLocaleDateString('tr-TR')}\nÇıkış: ${new Date(reservation.checkOutDate).toLocaleDateString('tr-TR')}\nDurum: ${getStatusLabel(reservation.status)}`
             : 'Müsait'
         }
+        onClick={() => reservation && onEditReservation && onEditReservation(reservation)}
       >
         {reservation && (
           <>
@@ -435,18 +436,22 @@ const RoomCalendar = () => {
       )}
 
       {/* Calendar Grid */}
-      <div className="p-6 overflow-x-auto">
+      <div className="overflow-auto max-h-[75vh] w-full border-t border-b custom-scrollbar">
         <div className="min-w-max">
           {viewMode === 'horizontal' ? (
             <div className="grid" style={{ gridTemplateColumns: 'minmax(150px, auto) repeat(' + days.length + ', minmax(40px, 1fr))' }}>
-              <div className="sticky left-0 z-10 bg-white border-b font-medium p-2">Oda</div>
+              {/* Köşe Hücresi */}
+              <div className="sticky top-0 left-0 z-30 bg-gray-100 border-b border-r font-bold text-gray-700 p-2 shadow-sm flex items-center justify-center">
+                Oda \\ Tarih
+              </div>
+              {/* Üst Tarih Başlıkları */}
               {days.map((date, index) => (
                 <div
                   key={index}
-                  className={`text-center border-b p-2 ${
+                  className={`sticky top-0 z-20 text-center border-b border-r p-2 shadow-sm ${
                     date.toDateString() === new Date().toDateString()
-                      ? 'bg-blue-50 font-bold text-blue-600'
-                      : ''
+                      ? 'bg-blue-100 font-bold text-blue-800'
+                      : 'bg-gray-50 text-gray-700 font-semibold'
                   }`}
                 >
                   {date.getDate()}
@@ -454,9 +459,11 @@ const RoomCalendar = () => {
               ))}
               {rooms.map((room) => (
                 <React.Fragment key={room.id}>
-                  <div className="sticky left-0 z-10 bg-white border-b border-r p-2">
+                  {/* Sol Oda Sütunu */}
+                  <div className="sticky left-0 z-10 bg-white border-b border-r p-2 shadow-sm flex items-center">
                     {renderRoomInfo(room)}
                   </div>
+                  {/* Hücreler */}
                   {days.map((date, dateIndex) => (
                     <React.Fragment key={dateIndex}>
                       {renderReservationCell(room, date)}
@@ -466,20 +473,25 @@ const RoomCalendar = () => {
               ))}
             </div>
           ) : (
-            <div className="grid" style={{ gridTemplateColumns: `repeat(${rooms.length + 1}, minmax(150px, 1fr))` }}>
-              <div className="sticky top-0 z-10 bg-white border-b font-medium p-2">Tarih</div>
+            <div className="grid" style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${rooms.length}, minmax(150px, 1fr))` }}>
+              {/* Köşe Hücresi */}
+              <div className="sticky top-0 left-0 z-30 bg-gray-100 border-b border-r font-bold text-gray-700 p-2 shadow-sm flex items-center justify-center">
+                Tarih \\ Oda
+              </div>
+              {/* Üst Oda Başlıkları */}
               {rooms.map((room) => (
-                <div key={room.id} className="sticky top-0 z-10 bg-white border-b border-r p-2">
+                <div key={room.id} className="sticky top-0 z-20 bg-gray-50 border-b border-r p-2 shadow-sm flex flex-col justify-center text-gray-700">
                   {renderRoomInfo(room)}
                 </div>
               ))}
               {days.map((date, dateIndex) => (
                 <React.Fragment key={dateIndex}>
+                  {/* Sol Tarih Sütunu */}
                   <div
-                    className={`border-b border-r p-2 ${
+                    className={`sticky left-0 z-10 border-b border-r p-2 shadow-sm flex items-center justify-center font-semibold ${
                       date.toDateString() === new Date().toDateString()
-                        ? 'bg-blue-50 font-bold text-blue-600'
-                        : ''
+                        ? 'bg-blue-100 text-blue-800 font-bold'
+                        : 'bg-white text-gray-700'
                     }`}
                   >
                     {date.getDate()}
