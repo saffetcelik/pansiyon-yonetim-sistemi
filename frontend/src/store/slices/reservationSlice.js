@@ -202,11 +202,13 @@ const reservationSlice = createSlice({
       })
       .addCase(fetchReservations.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload.data) {
-          // API yeni formatta veri dönüyorsa
-          state.reservations = action.payload.data;
-          // API artık pagination olmadan tüm veriyi dönüyor
-          state.reservations = action.payload.data || action.payload;
+        const payloadData = action.payload?.data || action.payload?.Data || action.payload;
+        if (Array.isArray(payloadData)) {
+          state.reservations = payloadData;
+        } else if (payloadData && Array.isArray(payloadData.data)) {
+          state.reservations = payloadData.data;
+        } else {
+          state.reservations = [];
         }
       })
       .addCase(fetchReservations.rejected, (state, action) => {

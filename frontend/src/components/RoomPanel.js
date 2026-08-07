@@ -312,7 +312,7 @@ const RoomPanel = ({ readOnly = false }) => {
                   {(() => {
                     const activeRes = reservations.find(r => 
                       (r.roomId === room.id || (r.roomItems && r.roomItems.some(i => i.roomId === room.id))) && 
-                      r.status === 2
+                      (r.status === 2 || r.status === 1 || r.status === 'CheckedIn' || r.status === 'Confirmed')
                     );
                     if (!activeRes) return <span style={{ color: '#888' }}>Müşteri bilgisi bekleniyor...</span>;
                     
