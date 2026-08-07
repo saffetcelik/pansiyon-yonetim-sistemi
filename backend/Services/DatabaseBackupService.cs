@@ -22,7 +22,7 @@ namespace PansiyonYonetimSistemi.API.Services
             _context = context;
             _env = env;
             _configuration = configuration;
-            _backupDirectory = Path.Combine(_env.ContentRootPath, "App_Data", "Backups");
+            _backupDirectory = _configuration["BackupSettings:DirectoryPath"] ?? Path.Combine(_env.ContentRootPath, "App_Data", "Backups");
             if (!Directory.Exists(_backupDirectory))
             {
                 Directory.CreateDirectory(_backupDirectory);
@@ -124,8 +124,6 @@ namespace PansiyonYonetimSistemi.API.Services
             sqlBuilder.AppendLine($"-- Pansiyon Yönetim Sistemi Dinamik Tam Veritabanı Yedeği (Full PostgreSQL Dump)");
             sqlBuilder.AppendLine($"-- Oluşturulma Tarihi: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             sqlBuilder.AppendLine($"-- Otomatik Yedek: {(isAutoBackup ? "Evet" : "Hayır")}");
-            sqlBuilder.AppendLine();
-            sqlBuilder.AppendLine("BEGIN;");
             sqlBuilder.AppendLine();
 
             var connection = _context.Database.GetDbConnection();
@@ -265,7 +263,6 @@ namespace PansiyonYonetimSistemi.API.Services
                 }
 
                 sqlBuilder.AppendLine();
-                sqlBuilder.AppendLine("COMMIT;");
                 return sqlBuilder.ToString();
             }
             finally
@@ -469,6 +466,7 @@ namespace PansiyonYonetimSistemi.API.Services
             {
                 AutoBackupEnabled = bool.TryParse(GetVal("Backup_AutoEnabled", "true"), out var b) ? b : true,
                 BackupIntervalHours = int.TryParse(GetVal("Backup_IntervalHours", "24"), out var i) ? i : 24,
+                BackupTimeOfDay = GetVal("Backup_TimeOfDay", "03:00"),
                 MaxLocalBackupCount = int.TryParse(GetVal("Backup_MaxLocalCount", "5"), out var m) ? m : 5,
 
                 CloudBackupEnabled = bool.TryParse(GetVal("Cloud_Enabled", "false"), out var cb) ? cb : false,
@@ -504,6 +502,7 @@ namespace PansiyonYonetimSistemi.API.Services
 
             await SetVal("Backup_AutoEnabled", dto.AutoBackupEnabled.ToString().ToLower(), "Otomatik yedekleme aktif/pasif");
             await SetVal("Backup_IntervalHours", dto.BackupIntervalHours.ToString(), "Yedekleme periyodu (saat)");
+            await SetVal("Backup_TimeOfDay", dto.BackupTimeOfDay, "Otomatik yedekleme saati (HH:mm)");
             await SetVal("Backup_MaxLocalCount", dto.MaxLocalBackupCount.ToString(), "Maksimum yerel yedek sayısı");
 
             await SetVal("Cloud_Enabled", dto.CloudBackupEnabled.ToString().ToLower(), "Bulut yedekleme aktif/pasif");

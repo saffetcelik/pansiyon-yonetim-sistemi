@@ -32,6 +32,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - backup_data:/app/App_Data/Backups
     expose:
       - "8080" # Coolify will use this port or whichever ASPNETCORE_HTTP_PORTS is set to
 
@@ -47,3 +49,4 @@ services:
 
 volumes:
   pgdata:
+  backup_data:

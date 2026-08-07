@@ -633,18 +633,14 @@ const Settings = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Çalışma Periyodu (Saat)</label>
-                        <select
-                          value={backupSettings.backupIntervalHours}
-                          onChange={e => setBackupSettings(prev => ({ ...prev, backupIntervalHours: parseInt(e.target.value) }))}
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Çalışma Saati</label>
+                        <input
+                          type="time"
+                          value={backupSettings.backupTimeOfDay || "03:00"}
+                          onChange={e => setBackupSettings(prev => ({ ...prev, backupTimeOfDay: e.target.value }))}
                           className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-                        >
-                          <option value={6}>Her 6 Saat</option>
-                          <option value={12}>Her 12 Saat</option>
-                          <option value={24}>Her 24 Saat (Günlük)</option>
-                          <option value={48}>Her 48 Saat (2 Günde Bir)</option>
-                          <option value={168}>Her 168 Saat (Haftalık)</option>
-                        </select>
+                        />
+                        <p className="text-[11px] text-gray-500 mt-1">Her gün bu saatte çalışır.</p>
                       </div>
 
                       <div>
@@ -712,39 +708,41 @@ const Settings = () => {
                         🔑 {backupSettings.cloudProvider} API Kimlik Bilgileri
                       </h4>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Client ID / Uygulama Kimliği</label>
-                          <input
-                            type="text"
-                            value={backupSettings.cloudClientId || ''}
-                            onChange={e => setBackupSettings(prev => ({ ...prev, cloudClientId: e.target.value }))}
-                            placeholder="Örn: 123456789-abc.apps.googleusercontent.com"
-                            className="w-full px-3 py-2 border rounded-md text-xs"
-                          />
-                        </div>
+                      {backupSettings.cloudProvider === 'GoogleDrive' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Client ID / Uygulama Kimliği</label>
+                            <input
+                              type="text"
+                              value={backupSettings.cloudClientId || ''}
+                              onChange={e => setBackupSettings(prev => ({ ...prev, cloudClientId: e.target.value }))}
+                              placeholder="Örn: 123456789-abc.apps.googleusercontent.com"
+                              className="w-full px-3 py-2 border rounded-md text-xs"
+                            />
+                          </div>
 
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Client Secret / Uygulama Gizli Anahtarı</label>
-                          <input
-                            type="password"
-                            value={backupSettings.cloudClientSecret || ''}
-                            onChange={e => setBackupSettings(prev => ({ ...prev, cloudClientSecret: e.target.value }))}
-                            placeholder="Client Secret"
-                            className="w-full px-3 py-2 border rounded-md text-xs"
-                          />
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Client Secret / Uygulama Gizli Anahtarı</label>
+                            <input
+                              type="password"
+                              value={backupSettings.cloudClientSecret || ''}
+                              onChange={e => setBackupSettings(prev => ({ ...prev, cloudClientSecret: e.target.value }))}
+                              placeholder="Client Secret"
+                              className="w-full px-3 py-2 border rounded-md text-xs"
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          API Key / OAuth Access Token / Refresh Token *
+                          {backupSettings.cloudProvider === 'GoogleDrive' ? 'Refresh Token (Zorunlu) *' : 'API Key / Access Token (Zorunlu) *'}
                         </label>
                         <input
                           type="password"
                           value={backupSettings.cloudApiKeyToken || ''}
                           onChange={e => setBackupSettings(prev => ({ ...prev, cloudApiKeyToken: e.target.value }))}
-                          placeholder="API Key veya Access Token yapıştırınız..."
+                          placeholder={backupSettings.cloudProvider === 'GoogleDrive' ? 'Refresh Token yapıştırınız...' : 'API Key veya Access Token yapıştırınız...'}
                           className="w-full px-3 py-2 border rounded-md text-xs font-mono"
                         />
                       </div>

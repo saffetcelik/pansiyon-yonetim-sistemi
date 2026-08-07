@@ -31,21 +31,25 @@ namespace PansiyonYonetimSistemi.API.Services
 
                     if (settings.AutoBackupEnabled)
                     {
-                        var interval = TimeSpan.FromHours(Math.Max(1, settings.BackupIntervalHours));
-                        var timeSinceLastBackup = DateTime.Now - _lastBackupTime;
+                        var now = DateTime.Now;
+                        var scheduledTime = TimeSpan.TryParse(settings.BackupTimeOfDay, out var ts) ? ts : TimeSpan.FromHours(3); // Varsayılan 03:00
 
-                        if (_lastBackupTime == DateTime.MinValue || timeSinceLastBackup >= interval)
+                        // Eğer saat ve dakika eşleşiyorsa (veya az geçmişse) ve bugün henüz yedek alınmadıysa:
+                        if (now.TimeOfDay >= scheduledTime && now.TimeOfDay < scheduledTime.Add(TimeSpan.FromMinutes(5)) && _lastBackupTime.Date != now.Date)
                         {
-                            _logger.LogInformation("[BackupScheduler] Zamanlanmış otomatik yedekleme başlatılıyor...");
+                            _logger.LogInformation($"[BackupScheduler] Zamanlanmış otomatik yedekleme başlatılıyor... Saat: {settings.BackupTimeOfDay}");
                             var backupInfo = await backupService.CreateBackupAsync(isAutoBackup: true);
-                            _lastBackupTime = DateTime.Now;
+                            _lastBackupTime = now;
                             _logger.LogInformation($"[BackupScheduler] Yerel yedek oluşturuldu: {backupInfo.FileName}");
 
                             // Bulut yedekleme aktifse yükle
                             if (settings.CloudBackupEnabled && !string.IsNullOrWhiteSpace(settings.CloudApiKeyToken))
                             {
                                 var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
-                                var filePath = Path.Combine(env.ContentRootPath, "App_Data", "Backups", backupInfo.FileName);
+                                var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                                var backupDir = config["BackupSettings:DirectoryPath"] ?? Path.Combine(env.ContentRootPath, "App_Data", "Backups");
+                                var filePath = Path.Combine(backupDir, backupInfo.FileName);
+                                
                                 await cloudService.UploadBackupAsync(filePath, backupInfo.FileName, settings);
                             }
                         }
@@ -56,8 +60,8 @@ namespace PansiyonYonetimSistemi.API.Services
                     _logger.LogError(ex, "[BackupScheduler] Otomatik yedekleme döngüsünde hata oluştu.");
                 }
 
-                // Her 30 dakikada bir kontrol et
-                await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
+                // Her 1 dakikada bir kontrol et (saati kaçırmamak için)
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
     }

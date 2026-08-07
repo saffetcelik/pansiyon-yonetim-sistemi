@@ -13,7 +13,8 @@ namespace PansiyonYonetimSistemi.API.DTOs
     public class BackupSettingsDto
     {
         public bool AutoBackupEnabled { get; set; } = true;
-        public int BackupIntervalHours { get; set; } = 24; // 24 = günlük
+        public int BackupIntervalHours { get; set; } = 24; // 24 = günlük (Geriye dönük uyumluluk için tutulabilir)
+        public string BackupTimeOfDay { get; set; } = "03:00"; // HH:mm formatında çalışma saati
         public int MaxLocalBackupCount { get; set; } = 5;  // Varsayılan max 5 yedek
 
         // Bulut ayarları
