@@ -672,7 +672,12 @@ const Settings = () => {
                         <input
                           type="number"
                           min={1}
-                    <p className="text-[11px] text-gray-500 mt-1">Eski yedekler otomatik temizlenir (Varsayılan: 5).</p>
+                          max={100}
+                          value={backupSettings.maxLocalBackupCount}
+                          onChange={e => setBackupSettings(prev => ({ ...prev, maxLocalBackupCount: parseInt(e.target.value) || 5 }))}
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                        />
+                        <p className="text-[11px] text-gray-500 mt-1">Eski yedekler otomatik temizlenir (Varsayılan: 5).</p>
                       </div>
                     </div>
                   </div>
