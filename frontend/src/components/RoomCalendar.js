@@ -202,13 +202,13 @@ const RoomCalendar = ({ onEditReservation }) => {
 <title>Güneş Pansiyon — Oda Takvimi ${monthLabel}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #1f2937; padding: 16px; }
-  h1 { font-size: 16px; font-weight: 700; color: #1e1b4b; }
-  h2 { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1f2937; padding: 16px; }
+  h1 { font-size: 18px; font-weight: 700; color: #1e1b4b; }
+  h2 { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
   .header { border-bottom: 2px solid #6366f1; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header-right { text-align: right; font-size: 9px; color: #6b7280; }
+  .header-right { text-align: right; font-size: 10px; color: #6b7280; }
   table { border-collapse: collapse; width: 100%; }
-  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 9px; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 10px; }
   .legend-item { display: flex; align-items: center; gap: 4px; }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
   .page-2 { page-break-before: always; padding-top: 16px; }
@@ -280,13 +280,32 @@ const RoomCalendar = ({ onEditReservation }) => {
   };
 
   const handlePdfDownload = () => {
+    const isHorizontal = viewMode === 'horizontal';
     const html = buildPrintHtml();
+    const pdfHtml = html.replace('<body>', '<body><div id="pdf-content">').replace('</body>', '</div></body>');
+    const script = `
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>
+      <script>
+        window.onload = function() {
+          const element = document.getElementById('pdf-content');
+          const opt = {
+            margin:       10,
+            filename:     'Oda_Takvimi_${isHorizontal ? 'Yatay' : 'Dikey'}.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: '${isHorizontal ? 'landscape' : 'portrait'}' }
+          };
+          html2pdf().set(opt).from(element).save().then(() => {
+            setTimeout(() => window.close(), 1000);
+          });
+        }
+      <\\/script>
+    `;
+    const finalHtml = pdfHtml.replace('</body>', script + '</body>');
+    
     const win = window.open('', '_blank', 'width=1100,height=800');
-    win.document.write(html);
+    win.document.write(finalHtml);
     win.document.close();
-    win.focus();
-    // Kullanıcı tarayıcıdan "PDF olarak kaydet" seçeneğiyle kaydedebilir
-    setTimeout(() => { win.print(); }, 600);
   };
   // ────────────────────────────────────────────────────────────────────────────
 

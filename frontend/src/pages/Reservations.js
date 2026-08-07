@@ -90,7 +90,7 @@ const Reservations = () => {
             onReservationClick={handleReservationClick}
           />
         ) : (
-          <RoomCalendar />
+          <RoomCalendar onEditReservation={handleEditReservation} />
         )}
 
         {/* Reservation Modals */}

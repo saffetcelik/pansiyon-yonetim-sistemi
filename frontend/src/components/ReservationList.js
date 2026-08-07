@@ -1270,11 +1270,46 @@ const ReservationList = ({ onEditReservation, onCreateReservation }) => {
 
       {/* Mobile Card View (Teknolojik ve Dokunmatik Dostu) */}
       <div className="xl:hidden divide-y divide-gray-200">
+        {isBulkMode && reservations && reservations.length > 0 && (
+          <div className="p-3 bg-purple-50 flex items-center justify-between border-b border-purple-100">
+            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-purple-800">
+              <input
+                type="checkbox"
+                checked={selectedReservationIds.length === reservations.length}
+                onChange={handleSelectAll}
+                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+              />
+              Tümünü Seç
+            </label>
+            <span className="text-xs text-purple-600 font-bold">{selectedReservationIds.length} Seçili</span>
+          </div>
+        )}
         {reservations && reservations.length > 0 ? (
           reservations.map((reservation, index) => (
-            <div key={reservation.id} className="p-4 bg-white hover:bg-gray-50">
+            <div 
+              key={reservation.id} 
+              className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${isBulkMode && selectedReservationIds.includes(reservation.id) ? 'bg-purple-50/50 relative' : 'bg-white'}`}
+              onClick={() => {
+                if (isBulkMode) toggleReservationSelection(reservation.id);
+              }}
+            >
+              {/* Seçim Efekti Kenarlığı (Sadece seçiliyse) */}
+              {isBulkMode && selectedReservationIds.includes(reservation.id) && (
+                <div className="absolute inset-y-0 left-0 w-1 bg-purple-500"></div>
+              )}
+
               {/* Kart Üst Bilgisi */}
-              <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-start justify-between gap-3 mb-2 relative">
+                {isBulkMode && (
+                  <div className="flex-shrink-0 pt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={selectedReservationIds.includes(reservation.id)}
+                      onChange={() => toggleReservationSelection(reservation.id)}
+                      className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 cursor-pointer pointer-events-none"
+                    />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   {reservation.reservationName ? (
                     <p className="text-base font-bold text-gray-900 truncate">📋 {reservation.reservationName}</p>

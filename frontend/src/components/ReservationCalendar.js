@@ -132,18 +132,18 @@ const ReservationCalendar = ({ onReservationClick }) => {
 <title>Güneş Pansiyon — Rezervasyon Takvimi ${monthLabel}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #1f2937; padding: 16px; }
-  h1 { font-size: 16px; font-weight: 700; color: #4c1d95; }
-  h2 { font-size: 12px; font-weight: 600; color: #374151; margin-top: 20px; margin-bottom: 6px; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1f2937; padding: 16px; }
+  h1 { font-size: 18px; font-weight: 700; color: #4c1d95; }
+  h2 { font-size: 14px; font-weight: 600; color: #374151; margin-top: 20px; margin-bottom: 6px; }
   .header { border-bottom: 2px solid #7c3aed; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header-right { text-align: right; font-size: 9px; color: #6b7280; }
+  .header-right { text-align: right; font-size: 10px; color: #6b7280; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
   .stat-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; text-align: center; }
-  .stat-val { font-size: 18px; font-weight: 700; }
-  .stat-lbl { font-size: 8px; color: #6b7280; margin-top: 2px; }
+  .stat-val { font-size: 20px; font-weight: 700; }
+  .stat-lbl { font-size: 10px; color: #6b7280; margin-top: 2px; }
   table { border-collapse: collapse; width: 100%; }
   thead { background: #7c3aed; color: white; }
-  thead th { padding: 6px 8px; border: 1px solid #6d28d9; text-align: left; font-size: 9px; }
+  thead th { padding: 8px; border: 1px solid #6d28d9; text-align: left; font-size: 11px; }
   .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; font-size: 9px; }
   .legend-item { display: flex; align-items: center; gap: 4px; }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
@@ -211,11 +211,30 @@ const ReservationCalendar = ({ onReservationClick }) => {
 
   const handlePdfDownload = () => {
     const html = buildPrintHtml();
+    const pdfHtml = html.replace('<body>', '<body><div id="pdf-content">').replace('</body>', '</div></body>');
+    const script = `
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\\/script>
+      <script>
+        window.onload = function() {
+          const element = document.getElementById('pdf-content');
+          const opt = {
+            margin:       10,
+            filename:     'Rezervasyon_Raporu.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          html2pdf().set(opt).from(element).save().then(() => {
+            setTimeout(() => window.close(), 1000);
+          });
+        }
+      <\\/script>
+    `;
+    const finalHtml = pdfHtml.replace('</body>', script + '</body>');
+    
     const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(html);
+    win.document.write(finalHtml);
     win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); }, 600);
   };
   // ────────────────────────────────────────────────────────────────────────────
 
