@@ -44,7 +44,7 @@ namespace PansiyonYonetimSistemi.API.Controllers
                 var settings = await _backupService.GetSettingsAsync();
 
                 // Bulut yedekleme aktifse manuel yedeği de buluta yükle
-                if (settings.CloudBackupEnabled && !string.IsNullOrWhiteSpace(settings.CloudApiKeyToken))
+                if (settings.CloudBackupEnabled)
                 {
                     var filePath = Path.Combine(_env.ContentRootPath, "App_Data", "Backups", backupInfo.FileName);
                     _ = Task.Run(() => _cloudService.UploadBackupAsync(filePath, backupInfo.FileName, settings));
